@@ -2,51 +2,86 @@ import { globalShortcut } from 'electron'
 import type { DictationController } from './dictation'
 
 /**
- * Global kısayollar (Faz 2.2).
+ * Global kısayollar (Faz 2.2 · Faz 3.5).
  *
- * `Ctrl+Alt+Space` bas-bırak değil, **aç-kapa** çalışır: bir kez basınca kayıt
- * başlar, ikinci kez basınca biter.
+ * ## Neden chord değil, ayrı hızlandırıcılar
  *
- * Neden bas-basılı-tut değil: Electron'un `globalShortcut` API'si yalnız tuşa
- * basma anını bildirir, bırakma anını bildirmez. Basılı tutma davranışı düşük
- * seviyeli bir klavye kancası (`WH_KEYBOARD_LL`) gerektirir. O kanca zaten
- * Faz 3.5'teki chorded shortcut'lar için kurulacak; bas-basılı-tut da o zaman
- * gelecek. Aç-kapa modeli bu fazda hem güvenilir hem de uzun diktede parmağı
- * yormuyor.
+ * Mockup "Ctrl+Alt+Space → K" biçiminde bir chord gösteriyor: basılı tut,
+ * sonra mod harfine bas. Bunu gerçekten yapmak düşük seviyeli bir klavye
+ * kancası (`WH_KEYBOARD_LL`) gerektirir, çünkü Electron'un `globalShortcut`
+ * API'si yalnız tuşa basmayı bildirir, bırakmayı bildirmez.
+ *
+ * O kanca üç bedel getiriyor: antivirüs yazılımları düşük seviyeli klavye
+ * kancalarını sık sık keylogger sanıyor, ayrı bir mesaj döngüsü iş parçacığı
+ * gerekiyor ve kancanın kendisi tüm sistem klavyesini yavaşlatabiliyor.
+ *
+ * Ayrı hızlandırıcılar (`Ctrl+Alt+K`, `Ctrl+Alt+E` …) aynı yeteneği —
+ * klavyeden mod seçimi — tam olarak ve güvenilir biçimde veriyor. Bedeli daha
+ * çok global kısayol kaydetmek; onu da çakışma bildirimiyle görünür kılıyoruz.
+ *
+ * ## Kayıt başarısız olursa
+ *
+ * Bir kısayol başka bir uygulama tarafından kapılmış olabilir. Bunu sessizce
+ * geçmiyoruz: kullanıcı neden çalışmadığını bilmeli, yoksa uygulamayı bozuk
+ * sanar.
  */
 
-export interface HotkeyBinding {
+/** Modun kimliği ile kısayolu. Motor tarafındaki `ModeId` ile eşleşir. */
+export interface ModeBinding {
+  mode: string
   accelerator: string
-  description: string
-  handler: () => void
+  /** Kayıt başarılı oldu mu? Başarısızsa arayüzde uyarı gösterilir. */
+  registered: boolean
 }
 
-export function registerHotkeys(dictation: DictationController): HotkeyBinding[] {
-  const bindings: HotkeyBinding[] = [
-    {
-      accelerator: 'Control+Alt+Space',
-      description: 'Dikte başlat / bitir',
-      handler: () => dictation.toggle(),
-    },
-    {
-      accelerator: 'Control+Alt+Escape',
-      description: 'Dikteyi iptal et',
-      handler: () => dictation.cancel(),
-    },
-  ]
+/**
+ * Mod → kısayol eşlemesi.
+ *
+ * Harfler motor tarafındaki `Mode.chord_key` değerleriyle aynı; mockup'taki
+ * "K kod, E İngilizce, M mega-prompt" gösterimi böylece hâlâ doğru okunuyor.
+ */
+const MODE_ACCELERATORS: ReadonlyArray<{ mode: string; key: string }> = [
+  { mode: 'quick', key: 'Space' },
+  { mode: 'code', key: 'K' },
+  { mode: 'translate_en', key: 'E' },
+  { mode: 'mega_prompt', key: 'M' },
+  { mode: 'image_prompt', key: 'G' },
+  { mode: 'sql', key: 'S' },
+  { mode: 'commit', key: 'C' },
+]
 
-  for (const binding of bindings) {
-    // Kısayol başka bir uygulama tarafından kapılmış olabilir; bu ölümcül
-    // değil ama sessizce geçilmemeli — kullanıcı neden çalışmadığını bilmeli.
-    const registered = globalShortcut.register(binding.accelerator, binding.handler)
+export interface HotkeyRegistration {
+  modes: ModeBinding[]
+  /** Kaydedilemeyen kısayollar — arayüzde uyarı olarak gösterilir. */
+  conflicts: string[]
+}
+
+export function registerHotkeys(dictation: DictationController): HotkeyRegistration {
+  const modes: ModeBinding[] = []
+  const conflicts: string[] = []
+
+  for (const { mode, key } of MODE_ACCELERATORS) {
+    const accelerator = `Control+Alt+${key}`
+    const registered = globalShortcut.register(accelerator, () => {
+      void dictation.toggle(mode)
+    })
+
     if (!registered) {
+      conflicts.push(accelerator)
       console.warn(
-        `[kısayol] ${binding.accelerator} kaydedilemedi — başka bir uygulama kullanıyor olabilir`,
+        `[kısayol] ${accelerator} kaydedilemedi — başka bir uygulama kullanıyor olabilir`,
       )
     }
+    modes.push({ mode, accelerator, registered })
   }
 
-  return bindings
+  // İptal her modda aynı.
+  const cancelAccelerator = 'Control+Alt+Escape'
+  if (!globalShortcut.register(cancelAccelerator, () => dictation.cancel())) {
+    conflicts.push(cancelAccelerator)
+  }
+
+  return { modes, conflicts }
 }
 
 export function unregisterHotkeys(): void {

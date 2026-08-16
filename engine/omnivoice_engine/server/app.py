@@ -25,7 +25,9 @@ from omnivoice_engine.audio.capture import (
 from omnivoice_engine.config import get_settings
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
 from omnivoice_engine.pipeline.dictation import DictationPipeline
+from omnivoice_engine.pipeline.modes import MODES
 from omnivoice_engine.storage.db import Database
+from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
 from omnivoice_engine.vault import list_entries
 
@@ -45,6 +47,7 @@ class EngineContext:
         self.stt = SttRouter()
         self.llm = OpenRouterLlm()
         self.db = Database()
+        self.vocabulary = Vocabulary.load()
         self.budget_usd = settings.budget_usd
 
         #: Bağlı arayüz istemcileri. Olaylar hepsine yayınlanır.
@@ -56,6 +59,7 @@ class EngineContext:
             llm=self.llm,
             db=self.db,
             emit=self.broadcast,
+            vocabulary=self.vocabulary,
         )
 
     async def broadcast(self, message: dict[str, Any]) -> None:
@@ -169,10 +173,10 @@ async def _handle_message(
 
         # ── Dikte ─────────────────────────────────────────────────────────
         case "dictation:toggle":
-            await context.pipeline.toggle()
+            await context.pipeline.toggle(str(message.get("mode", "quick")))
 
         case "dictation:start":
-            await context.pipeline.start()
+            await context.pipeline.start(str(message.get("mode", "quick")))
 
         case "dictation:stop":
             await context.pipeline.stop()
@@ -212,6 +216,52 @@ async def _handle_message(
                     "current": context.mic.device,
                     "streaming": context.mic.is_streaming,
                     "error": error,
+                }
+            )
+
+        # ── Modlar ────────────────────────────────────────────────────────
+        case "modes:list":
+            await reply(
+                {
+                    "type": "modes:list",
+                    "modes": [
+                        {
+                            "id": mode.id.value,
+                            "chordKey": mode.chord_key,
+                            "module": mode.module,
+                            "model": mode.model,
+                            "requirePreflight": mode.require_preflight,
+                            "usesSelection": mode.uses_selection,
+                        }
+                        for mode in MODES.values()
+                    ],
+                    "defaultModel": context.llm.default_model,
+                }
+            )
+
+        # ── Sözlük ────────────────────────────────────────────────────────
+        case "vocabulary:list":
+            await reply({"type": "vocabulary:list", **context.vocabulary.to_payload()})
+
+        case "vocabulary:add":
+            text = str(message.get("text", ""))
+            added = await asyncio.to_thread(context.vocabulary.add, text)
+            await reply(
+                {
+                    "type": "vocabulary:add",
+                    "added": added,
+                    **context.vocabulary.to_payload(),
+                }
+            )
+
+        case "vocabulary:remove":
+            text = str(message.get("text", ""))
+            removed = await asyncio.to_thread(context.vocabulary.remove, text)
+            await reply(
+                {
+                    "type": "vocabulary:remove",
+                    "removed": removed,
+                    **context.vocabulary.to_payload(),
                 }
             )
 

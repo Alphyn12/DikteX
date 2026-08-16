@@ -10,7 +10,10 @@ import type {
   AudioDeviceList,
   DictationState,
   EngineStats,
+  ModeId,
+  ModeList,
   VaultEntry,
+  VocabularyList,
 } from './dictation'
 
 export type {
@@ -20,9 +23,15 @@ export type {
   DictationState,
   DictationStatus,
   EngineStats,
+  ModeId,
+  ModeInfo,
+  ModeList,
+  OutputProfile,
   SpendStats,
   TodayStats,
   VaultEntry,
+  VocabularyList,
+  VocabularyTerm,
 } from './dictation'
 export { INITIAL_DICTATION_STATE } from './dictation'
 
@@ -67,10 +76,19 @@ export interface IpcInvokeMap {
 
   // ── Dikte ──────────────────────────────────────────────────────────────
   'dictation:get-state': { args: []; result: DictationState }
-  'dictation:toggle': { args: []; result: void }
+  /** Modu belirtilmezse hızlı dikte başlar. */
+  'dictation:toggle': { args: [mode?: ModeId]; result: void }
   'dictation:cancel': { args: []; result: void }
   /** Pre-flight'taki metni yapıştırır. Kullanıcı düzenlemişse düzenlenmiş hâli. */
   'dictation:paste': { args: [text: string]; result: void }
+
+  // ── Modlar ─────────────────────────────────────────────────────────────
+  'modes:list': { args: []; result: ModeList }
+
+  // ── Sözlük ─────────────────────────────────────────────────────────────
+  'vocabulary:list': { args: []; result: VocabularyList }
+  'vocabulary:add': { args: [text: string]; result: VocabularyList }
+  'vocabulary:remove': { args: [text: string]; result: VocabularyList }
 
   // ── Mikrofon ───────────────────────────────────────────────────────────
   'audio:list-devices': { args: []; result: AudioDeviceList }

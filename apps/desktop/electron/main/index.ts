@@ -57,9 +57,15 @@ async function main(): Promise<void> {
     syncHud(getHudWindow(), state)
   })
 
-  registerIpc({ engine, dictation, getMainWindow })
+  // Kısayolları IPC'den önce kaydediyoruz: `modes:list` yanıtı hangi
+  // kısayolun kaydedilebildiğini de taşıyor.
+  const hotkeys = registerHotkeys(dictation)
+  if (hotkeys.conflicts.length > 0) {
+    console.warn(`[kısayol] çakışan kısayollar: ${hotkeys.conflicts.join(', ')}`)
+  }
+
+  registerIpc({ engine, dictation, hotkeys, getMainWindow })
   tray = createTray(getMainWindow, dictation)
-  registerHotkeys(dictation)
 
   // Başlık çubuğundaki X ve sistem kapatma isteği pencereyi gizler.
   mainWindow.on('close', (event) => {

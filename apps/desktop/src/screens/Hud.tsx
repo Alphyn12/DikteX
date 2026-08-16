@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { DictationResult, DictationState } from '@shared/ipc'
+import type { ModuleId } from '../mock/data'
 import { Badge, Waveform } from '../components/primitives'
 import { useI18n } from '../i18n/useI18n'
 import { useDictation } from '../hooks/useDictation'
@@ -18,7 +19,15 @@ import styles from './Hud.module.css'
 export function Hud(): React.JSX.Element | null {
   const { state, cancel, paste } = useDictation()
 
-  // Esc her durumda iptal eder; pre-flight'ta Enter yapıştırır.
+  /*
+   * Esc yalnız HUD odaktayken çalışır — yani pre-flight ve hata durumunda.
+   *
+   * Dinleme ve işleme sırasında HUD bilinçli olarak odak almaz: kullanıcı
+   * konuşurken kendi uygulamasında yazmaya devam edebilmeli. Odak almayan bir
+   * pencere klavye olayı da alamaz, bu yüzden o durumlarda iptal global
+   * kısayolla yapılır. Arayüzdeki ipucu da buna göre değişiyor — yanlış
+   * kısayol göstermek kullanıcıyı takılı bırakır.
+   */
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
@@ -57,13 +66,29 @@ export function Hud(): React.JSX.Element | null {
 
 // ── 01 · Dinliyor ──────────────────────────────────────────────────────────
 
+/** Mod → renk kimliği. Motor tarafındaki `Mode.module` ile aynı. */
+const MODE_MODULE: Record<string, ModuleId> = {
+  quick: 'audio',
+  code: 'prompt',
+  translate_en: 'system',
+  mega_prompt: 'prompt',
+  image_prompt: 'meeting',
+  sql: 'automation',
+  commit: 'automation',
+}
+
+function modeModule(mode: string): ModuleId {
+  return MODE_MODULE[mode] ?? 'audio'
+}
+
 function Listening({ state }: { state: DictationState }): React.JSX.Element {
   const { t, formatNumber } = useI18n()
+  const module = modeModule(state.mode)
 
   return (
     <>
       <div className={styles.head}>
-        <Waveform bars={16} seed={5} module="audio" variant="hud" height={34} />
+        <Waveform bars={16} seed={5} module={module} variant="hud" height={34} />
         <div className={styles.headText}>
           <div className={styles.title}>{t('hud.listening')}</div>
           <div className={styles.detail}>
@@ -76,11 +101,17 @@ function Listening({ state }: { state: DictationState }): React.JSX.Element {
       </div>
 
       <div className={styles.footer}>
-        <Badge module="audio" variant="filled" softTone="var(--mod-audio-soft)">
-          {t('hud.quickDictation')}
+        {/* Hangi modda olunduğu her an görünür — yanlış modda konuşmak
+            kullanıcının en sık yapacağı hata. */}
+        <Badge module={module} variant="filled">
+          {t(`mode.${state.mode}` as never)}
         </Badge>
         {state.appName && <Badge variant="neutral">{state.appName}</Badge>}
-        <span className={styles.meta}>{t('hud.escCancel')}</span>
+        {/*
+          Dinlerken HUD odakta değil, bu yüzden düz Esc buraya ulaşmaz.
+          Gösterilen kısayol gerçekten çalışan kısayol olmalı.
+        */}
+        <span className={styles.meta}>{t('hud.stopHint')}</span>
       </div>
     </>
   )
@@ -111,6 +142,15 @@ function Processing({ state }: { state: DictationState }): React.JSX.Element {
           active={sttDone}
           label={t('hud.step.fillers', { count: state.fillersRemoved })}
         />
+        {/* Seçili metin okunduysa kullanıcı bunu bilmeli: gizlice pano
+            üzerinden bir şey okunduğunu görmeden geçmemeli. */}
+        {state.selectionChars > 0 && (
+          <Step
+            done={sttDone}
+            active={false}
+            label={t('hud.step.selection', { count: state.selectionChars })}
+          />
+        )}
         <Step done={false} active={false} label={t('hud.step.polish')} />
       </div>
 
@@ -226,12 +266,23 @@ function Preflight({
       </div>
 
       <div className={styles.footer}>
+        <Badge module={modeModule(result.mode)} variant="filled">
+          {t(`mode.${result.mode}` as never)}
+        </Badge>
         {result.appName && <Badge variant="neutral">{result.appName}</Badge>}
         {result.fillersRemoved > 0 && (
           <Badge module="automation" variant="tone">
             {t('hud.fillersRemoved', { count: result.fillersRemoved })}
           </Badge>
         )}
+        {result.selectionChars > 0 && (
+          <Badge module="prompt" variant="tone">
+            {t('hud.selectionUsed', { count: result.selectionChars })}
+          </Badge>
+        )}
+        {result.variables.map((name) => (
+          <Badge key={name} variant="neutral">{`{${name}}`}</Badge>
+        ))}
         <span className={styles.meta}>
           {result.sttProvider} · {result.llmProvider ?? t('hud.localOnly')}
         </span>

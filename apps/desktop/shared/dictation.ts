@@ -12,6 +12,27 @@ export type DictationStatus =
   | 'preflight'
   | 'error'
 
+/** Dikte modları — motor tarafındaki `ModeId` ile birebir aynı. */
+export type ModeId =
+  | 'quick'
+  | 'code'
+  | 'translate_en'
+  | 'mega_prompt'
+  | 'image_prompt'
+  | 'sql'
+  | 'commit'
+
+/** Aktif uygulamanın çıktı profili — `context/apps.py` ile aynı. */
+export type OutputProfile =
+  | 'code'
+  | 'chat'
+  | 'document'
+  | 'terminal'
+  | 'spreadsheet'
+  | 'email'
+  | 'browser'
+  | 'plain'
+
 /** Pre-flight'ta gösterilen sonuç. Tüm ölçümler gerçek, tahmin yok. */
 export interface DictationResult {
   rawText: string
@@ -30,6 +51,49 @@ export interface DictationResult {
   appName: string | null
   windowTitle: string | null
   recordId: number | null
+  mode: ModeId
+  profile: OutputProfile
+  /** Seçili metnin uzunluğu; 0 ise seçim kullanılmadı. */
+  selectionChars: number
+  /** Doldurulan dinamik değişkenler ({SelectedText} gibi). */
+  variables: string[]
+}
+
+/** Bir dikte modunun tanımı. */
+export interface ModeInfo {
+  id: ModeId
+  /** Kısayolun mod harfi (K, E, M…). */
+  chordKey: string | null
+  /** Renk kimliği (bkz. DESIGN-TOKENS.md § 2). */
+  module: string
+  /** Bu moda özel model; `null` ise varsayılan kullanılır. */
+  model: string | null
+  requirePreflight: boolean
+  usesSelection: boolean
+  /** Electron tarafında kaydedilen global kısayol. */
+  accelerator?: string
+  /** Kısayol başka bir uygulama tarafından kapılmış mı? */
+  conflicted?: boolean
+}
+
+export interface ModeList {
+  modes: ModeInfo[]
+  defaultModel: string
+}
+
+// ── Sözlük ──────────────────────────────────────────────────────────────
+
+export interface VocabularyTerm {
+  text: string
+  misspelled: number
+  suggested: boolean
+}
+
+export interface VocabularyList {
+  path: string
+  terms: VocabularyTerm[]
+  confirmedCount: number
+  suggestionCount: number
 }
 
 /** HUD'un çizdiği tüm durum. */
@@ -49,6 +113,12 @@ export interface DictationState {
   /** Dikte başladığında odakta olan uygulama. */
   appName: string | null
   windowTitle: string | null
+  /** Hangi modda dikte edildiği. */
+  mode: ModeId
+  /** Aktif uygulamanın çıktı profili. */
+  profile: OutputProfile
+  /** Okunan seçili metnin uzunluğu. */
+  selectionChars: number
   result: DictationResult | null
   error: string | null
   /** LLM atlandı gibi ölümcül olmayan uyarılar. */
@@ -65,6 +135,9 @@ export const INITIAL_DICTATION_STATE: DictationState = {
   fillersRemoved: 0,
   appName: null,
   windowTitle: null,
+  mode: 'quick',
+  profile: 'plain',
+  selectionChars: 0,
   result: null,
   error: null,
   warning: null,

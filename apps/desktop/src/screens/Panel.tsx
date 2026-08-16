@@ -79,7 +79,9 @@ function StartButton(): React.JSX.Element {
     <button
       type="button"
       className={styles.primaryButton}
-      onClick={toggle}
+      // Doğrudan `toggle` geçmek fare olayını mod parametresi olarak
+      // gönderirdi; sarmalayıcı bunu engelliyor.
+      onClick={() => toggle()}
       aria-pressed={active}
     >
       {active ? t('panel.stopDictation') : t('panel.startDictation')}

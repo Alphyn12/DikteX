@@ -1,12 +1,7 @@
 import { useState } from 'react'
+import type { ModeInfo } from '@shared/ipc'
 import { useI18n } from '../i18n/useI18n'
-import {
-  MODE_ROWS,
-  PROVIDER_TRAINS_ON_DATA,
-  VAULT_KEYS,
-  type ModeRow,
-  type ProviderId,
-} from '../mock/data'
+import { VAULT_KEYS, type ModuleId } from '../mock/data'
 import {
   Badge,
   Card,
@@ -18,22 +13,18 @@ import {
   TrainingBadge,
 } from '../components/primitives'
 import { MicrophonePicker } from '../components/MicrophonePicker'
+import { VocabularyEditor } from '../components/VocabularyEditor'
+import { useModes } from '../hooks/useModes'
+import { useDictation } from '../hooks/useDictation'
+import { cx } from '../utils/cx'
 import type { MessageKey } from '../i18n/tr'
 import styles from './Settings.module.css'
-import { cx } from '../utils/cx'
-
-const PROVIDER_LABEL: Record<ProviderId, MessageKey> = {
-  groq: 'provider.groq',
-  openrouter: 'provider.openrouter',
-  gemini: 'provider.gemini',
-  hybrid: 'provider.hybrid',
-}
 
 /**
  * Ayarlar ekranı — mockup 1a (Ayarlar görünümü).
  *
- * Anahtarlar Faz 1'de yalnız görsel; durumları bileşen içinde tutuluyor.
- * Faz 2'de kalıcı ayar deposuna bağlanacak.
+ * Mod tablosu artık motordan gelen **gerçek** modları gösteriyor: hangi
+ * kısayola bağlı, hangi model kullanılıyor, kısayol çakışıyor mu.
  */
 export function Settings(): React.JSX.Element {
   const { t } = useI18n()
@@ -54,6 +45,7 @@ export function Settings(): React.JSX.Element {
 
         <aside className={styles.aside}>
           <MicrophonePicker />
+          <VocabularyEditor />
           <ChordedShortcut />
           <ApiVault />
           <LocalServer />
@@ -67,9 +59,15 @@ export function Settings(): React.JSX.Element {
 
 function ModeTable(): React.JSX.Element {
   const { t } = useI18n()
-  const [active, setActive] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(MODE_ROWS.map((row) => [row.id, row.active])),
-  )
+  const { modes, error } = useModes()
+
+  if (error) {
+    return (
+      <div className={styles.table}>
+        <p className={styles.tableEmpty}>{error}</p>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.table} role="table" aria-label={t('settings.title')}>
@@ -77,87 +75,83 @@ function ModeTable(): React.JSX.Element {
         <span role="columnheader">{t('table.mode')}</span>
         <span role="columnheader">{t('table.model')}</span>
         <span role="columnheader">{t('table.provider')}</span>
-        <span role="columnheader" className={styles.alignEnd}>
-          {t('table.latency')}
-        </span>
         <span role="columnheader">{t('table.shortcut')}</span>
         <span role="columnheader" className={styles.alignEnd}>
           {t('table.active')}
         </span>
       </div>
 
-      {MODE_ROWS.map((row) => (
+      {(modes?.modes ?? []).map((mode) => (
         <ModeTableRow
-          key={row.id}
-          row={row}
-          on={active[row.id] ?? false}
-          onToggle={(next) => setActive((prev) => ({ ...prev, [row.id]: next }))}
+          key={mode.id}
+          mode={mode}
+          defaultModel={modes?.defaultModel ?? ''}
         />
       ))}
+
+      {modes && modes.modes.length === 0 && (
+        <p className={styles.tableEmpty}>—</p>
+      )}
     </div>
   )
 }
 
 function ModeTableRow({
-  row,
-  on,
-  onToggle,
+  mode,
+  defaultModel,
 }: {
-  row: ModeRow
-  on: boolean
-  onToggle: (next: boolean) => void
+  mode: ModeInfo
+  defaultModel: string
 }): React.JSX.Element {
-  const { t, formatNumber } = useI18n()
-  const modeLabel = t(row.mode)
-
-  // Ondalık ayırıcı da dile göre değişir: 1.1 s / 1,1 sn
-  const latencyText =
-    row.latency === 'stream'
-      ? t('latency.stream')
-      : `${formatNumber(row.latency, {
-          minimumFractionDigits: 1,
-          maximumFractionDigits: 1,
-        })} ${t('unit.seconds')}`
-
-  const latencyClass =
-    row.latencyOk === null
-      ? styles.latencyNeutral
-      : row.latencyOk
-        ? styles.latencyOk
-        : styles.latencySlow
+  const { t } = useI18n()
+  const { toggle } = useDictation()
+  const label = t(`mode.${mode.id}` as MessageKey)
+  const model = mode.model ?? defaultModel
 
   return (
     <div className={cx(styles.row, styles.bodyRow)} role="row">
       <span className={styles.mode} role="cell">
-        <Dot module={row.module} />
-        <span className={styles.truncate}>{modeLabel}</span>
+        <Dot module={mode.module as ModuleId} />
+        <span className={styles.modeText}>
+          <span className={styles.truncate}>{label}</span>
+          <span className={styles.modeDesc}>{t(`mode.${mode.id}.desc` as MessageKey)}</span>
+        </span>
       </span>
 
-      <span className={cx(styles.model, styles.truncate)} role="cell" title={row.model}>
-        {row.model}
+      <span className={cx(styles.model, styles.truncate)} role="cell" title={model}>
+        {model}
       </span>
 
       <span className={styles.provider} role="cell">
-        <span className={styles.truncate}>{t(PROVIDER_LABEL[row.provider])}</span>
-        {/*
-          Eğitime açık sağlayıcı burada işaretlenir. Kullanıcı bu modu o
-          sağlayıcıya alabilir, ama riski görerek alır.
-        */}
-        {PROVIDER_TRAINS_ON_DATA[row.provider] && (
-          <TrainingBadge label={t('training.badge')} tooltip={t('training.tooltip')} />
-        )}
-      </span>
-
-      <span className={cx(styles.latency, latencyClass, styles.alignEnd, 'tabular')} role="cell">
-        {latencyText}
+        <span className={styles.truncate}>{t('provider.openrouter')}</span>
       </span>
 
       <span className={styles.shortcutCell} role="cell">
-        <Key>{row.shortcut}</Key>
+        {mode.accelerator ? (
+          <Key>{mode.accelerator.replace(/Control/g, 'Ctrl').replace(/\+/g, '+')}</Key>
+        ) : (
+          <span className={styles.noShortcut}>—</span>
+        )}
+        {/*
+          Kısayol başka bir uygulama tarafından kapılmışsa kullanıcı bunu
+          bilmeli; yoksa uygulamayı bozuk sanar.
+        */}
+        {mode.conflicted && (
+          <Badge module="automation" variant="tone">
+            {t('table.shortcutConflict')}
+          </Badge>
+        )}
       </span>
 
       <span className={styles.toggleCell} role="cell">
-        <Toggle on={on} module={row.module} label={modeLabel} onChange={onToggle} />
+        <button
+          type="button"
+          className={styles.runButton}
+          onClick={() => toggle(mode.id)}
+          title={label}
+        >
+          ▶
+        </button>
       </span>
     </div>
   )
@@ -243,6 +237,9 @@ function SwitchRow({
 
 function ChordedShortcut(): React.JSX.Element {
   const { t } = useI18n()
+  const { modes } = useModes()
+  const bound = (modes?.modes ?? []).filter((m) => m.accelerator && !m.conflicted)
+
   return (
     <Card>
       <CardLabel>{t('aside.chorded')}</CardLabel>
@@ -252,24 +249,23 @@ function ChordedShortcut(): React.JSX.Element {
         <KeyCap>Alt</KeyCap>
         <span className={styles.chordJoin}>+</span>
         <KeyCap accent>Space</KeyCap>
-        <span className={styles.chordJoin}>→</span>
-        <KeyCap>K</KeyCap>
       </div>
-      <p className={styles.chordDesc}>
-        {t('aside.chorded.desc')}{' '}
-        {t('aside.chorded.legend', { k: 'K', e: 'E', m: 'M' })
-          .split(/(\bK\b|\bE\b|\bM\b)/)
-          .map((part, i) =>
-            part === 'K' || part === 'E' || part === 'M' ? (
-              <b key={i} className={styles.chordKey}>
-                {part}
-              </b>
-            ) : (
-              part
-            ),
-          )}
-      </p>
-      <div className={styles.chordStatus}>{t('aside.chorded.status', { count: 6 })}</div>
+      <p className={styles.chordDesc}>{t('aside.chorded.desc')}</p>
+
+      <div className={styles.chordList}>
+        {(modes?.modes ?? [])
+          .filter((mode) => mode.chordKey && mode.chordKey !== 'Space')
+          .map((mode) => (
+            <div key={mode.id} className={styles.chordRow}>
+              <KeyCap>{mode.chordKey}</KeyCap>
+              <span className={styles.chordLabel}>{t(`mode.${mode.id}` as MessageKey)}</span>
+            </div>
+          ))}
+      </div>
+
+      <div className={styles.chordStatus}>
+        {t('aside.chorded.status', { count: bound.length })}
+      </div>
     </Card>
   )
 }

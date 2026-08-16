@@ -67,6 +67,7 @@ export class DictationController {
           step: (event['step'] as DictationState['step']) ?? null,
           rawText: event['rawText'] ? String(event['rawText']) : this.state.rawText,
           fillersRemoved: Number(event['fillersRemoved'] ?? this.state.fillersRemoved),
+          selectionChars: Number(event['selectionChars'] ?? this.state.selectionChars),
         })
         break
 
@@ -90,6 +91,8 @@ export class DictationController {
           preRollSeconds: Number(event['preRollSeconds'] ?? 0),
           appName: event['appName'] ? String(event['appName']) : null,
           windowTitle: event['windowTitle'] ? String(event['windowTitle']) : null,
+          mode: (event['mode'] as DictationState['mode']) ?? 'quick',
+          profile: (event['profile'] as DictationState['profile']) ?? 'plain',
         })
         break
 
@@ -124,8 +127,8 @@ export class DictationController {
 
   // ── Komutlar ──────────────────────────────────────────────────────────
 
-  toggle(): void {
-    this.engine.send({ type: 'dictation:toggle' })
+  toggle(mode = 'quick'): void {
+    this.engine.send({ type: 'dictation:toggle', mode })
   }
 
   cancel(): void {

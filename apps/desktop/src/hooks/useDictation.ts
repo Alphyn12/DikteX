@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { INITIAL_DICTATION_STATE, type DictationState } from '@shared/ipc'
+import { INITIAL_DICTATION_STATE, type DictationState, type ModeId } from '@shared/ipc'
 
 /**
  * Dikte durumunun canlı görünümü.
@@ -9,7 +9,8 @@ import { INITIAL_DICTATION_STATE, type DictationState } from '@shared/ipc'
  */
 export function useDictation(): {
   state: DictationState
-  toggle: () => void
+  /** Mod belirtilmezse hızlı dikte başlar. */
+  toggle: (mode?: ModeId) => void
   cancel: () => void
   paste: (text: string) => void
 } {
@@ -29,8 +30,8 @@ export function useDictation(): {
     }
   }, [])
 
-  const toggle = useCallback(() => {
-    void window.omnivoice.invoke('dictation:toggle')
+  const toggle = useCallback((mode?: ModeId) => {
+    void window.omnivoice.invoke('dictation:toggle', mode)
   }, [])
 
   const cancel = useCallback(() => {

@@ -1,16 +1,25 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
 import type { EngineSupervisor } from './engine'
 import type { DictationController } from './dictation'
-import type { AudioDeviceList, EngineStats, Locale, VaultEntry } from '@shared/ipc'
+import type { HotkeyRegistration } from './hotkeys'
+import type {
+  AudioDeviceList,
+  EngineStats,
+  Locale,
+  ModeList,
+  VaultEntry,
+  VocabularyList,
+} from '@shared/ipc'
 import { getLocaleStore } from './locale'
 
 interface IpcDeps {
   engine: EngineSupervisor
   dictation: DictationController
+  hotkeys: HotkeyRegistration
   getMainWindow: () => BrowserWindow
 }
 
-export function registerIpc({ engine, dictation, getMainWindow }: IpcDeps): void {
+export function registerIpc({ engine, dictation, hotkeys, getMainWindow }: IpcDeps): void {
   // ── Pencere ────────────────────────────────────────────────────────────
 
   ipcMain.handle('window:minimize', () => {
@@ -49,9 +58,40 @@ export function registerIpc({ engine, dictation, getMainWindow }: IpcDeps): void
   // ── Dikte ──────────────────────────────────────────────────────────────
 
   ipcMain.handle('dictation:get-state', () => dictation.getState())
-  ipcMain.handle('dictation:toggle', () => dictation.toggle())
+  ipcMain.handle('dictation:toggle', (_event, mode?: string) => dictation.toggle(mode))
   ipcMain.handle('dictation:cancel', () => dictation.cancel())
   ipcMain.handle('dictation:paste', (_event, text: string) => dictation.paste(text))
+
+  // ── Modlar ─────────────────────────────────────────────────────────────
+
+  ipcMain.handle('modes:list', async (): Promise<ModeList> => {
+    const response = await engine.request<ModeList>({ type: 'modes:list' })
+    // Kısayol bilgisi Electron tarafında; motor onu bilmiyor. İkisini burada
+    // birleştiriyoruz ki arayüz tek bir kaynaktan okusun.
+    const modes = (response.modes ?? []).map((mode) => {
+      const binding = hotkeys.modes.find((entry) => entry.mode === mode.id)
+      return {
+        ...mode,
+        accelerator: binding?.accelerator,
+        conflicted: binding ? !binding.registered : false,
+      }
+    })
+    return { modes, defaultModel: response.defaultModel ?? '' }
+  })
+
+  // ── Sözlük ─────────────────────────────────────────────────────────────
+
+  ipcMain.handle('vocabulary:list', () =>
+    engine.request<VocabularyList>({ type: 'vocabulary:list' }),
+  )
+
+  ipcMain.handle('vocabulary:add', (_event, text: string) =>
+    engine.request<VocabularyList>({ type: 'vocabulary:add', text }),
+  )
+
+  ipcMain.handle('vocabulary:remove', (_event, text: string) =>
+    engine.request<VocabularyList>({ type: 'vocabulary:remove', text }),
+  )
 
   // ── Mikrofon ───────────────────────────────────────────────────────────
 

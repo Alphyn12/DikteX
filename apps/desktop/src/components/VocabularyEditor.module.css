@@ -1,0 +1,123 @@
+/* Özel sözlük editörü — Ayarlar sağ sütunu. */
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.count {
+  font: var(--mono-tag);
+  color: var(--text-faint);
+}
+
+.form {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--space-3);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  font: 500 12px/1 var(--font-mono);
+  outline: none;
+}
+
+.input:focus {
+  border-color: color-mix(in srgb, var(--mod-audio) 60%, transparent);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.addButton {
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: rgba(43, 179, 163, 0.16);
+  color: var(--mod-audio-soft);
+  font: 600 12px/1 var(--font-ui);
+  cursor: default;
+  transition: background-color 120ms ease;
+}
+
+.addButton:hover:not(:disabled) {
+  background: rgba(43, 179, 163, 0.26);
+}
+
+.addButton:disabled {
+  opacity: 0.4;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-3);
+  /* Uzun sözlükte kart taşmasın. */
+  max-height: 168px;
+  overflow-y: auto;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 8px;
+  border-radius: var(--radius-badge);
+  background: rgba(43, 179, 163, 0.14);
+  color: var(--mod-audio-soft);
+  font: var(--mono-badge);
+}
+
+/* Sistemin önerdiği, kullanıcının henüz onaylamadığı terimler. */
+.chipSuggested {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-subtle);
+}
+
+.remove {
+  border: 0;
+  background: transparent;
+  padding: 0 2px;
+  color: inherit;
+  opacity: 0.5;
+  font-size: 13px;
+  line-height: 1;
+  cursor: default;
+}
+
+.remove:hover {
+  opacity: 1;
+}
+
+.empty {
+  margin-top: var(--space-3);
+  font: var(--text-caption);
+  color: var(--text-subtle);
+}
+
+.hint {
+  margin-top: var(--space-3);
+  padding-top: 11px;
+  border-top: 1px solid var(--border-card);
+  font: 400 11.5px/1.5 var(--font-ui);
+  color: var(--text-faint);
+}
+
+.error {
+  margin-top: var(--space-2);
+  font: var(--text-caption);
+  color: var(--mod-automation-soft);
+}
