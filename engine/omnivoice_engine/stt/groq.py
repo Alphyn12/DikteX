@@ -72,7 +72,10 @@ class GroqStt:
             # terimleri buraya koymak yazımlarının korunma olasılığını artırır.
             data["prompt"] = ", ".join(vocabulary[:100])
 
-        files = {"file": ("audio.wav", clip.to_wav_bytes(), "audio/wav")}
+        # FLAC kayıpsız ama WAV'ın yarısı kadar yer kaplıyor; 25 MB dosya
+        # sınırında bu kaydedilebilir süreyi iki katına çıkarıyor.
+        audio, filename, mime = clip.to_upload_bytes()
+        files = {"file": (filename, audio, mime)}
 
         started = time.perf_counter()
         try:

@@ -8,9 +8,11 @@ kalıcı sorunlarda o sağlayıcı zaten kullanılabilir sayılmaz.
 from __future__ import annotations
 
 import logging
+from collections.abc import Awaitable, Callable
 
 from omnivoice_engine.audio.capture import AudioClip
-from omnivoice_engine.providers import ProviderError, Transcript
+from omnivoice_engine.audio.chunking import Chunk, join_transcripts, split_for_upload
+from omnivoice_engine.providers import ProviderError, Transcript, Usage
 from omnivoice_engine.stt.base import SttProvider
 from omnivoice_engine.stt.groq import GroqStt
 from omnivoice_engine.stt.openrouter import OpenRouterStt
@@ -35,10 +37,79 @@ class SttRouter:
         *,
         language: str | None = None,
         vocabulary: list[str] | None = None,
+        on_progress: Callable[[int, int], Awaitable[None]] | None = None,
     ) -> Transcript:
+        """Sesi metne çevirir; gerekiyorsa parçalara bölerek.
+
+        `on_progress(tamamlanan, toplam)` uzun kayıtlarda arayüze ilerleme
+        bildirir — bir saatlik toplantıda kullanıcı donmuş bir ekrana bakmasın.
+        """
         if clip.duration_seconds < 0.2:
             raise ProviderError("stt", "kayıt çok kısa")
 
+        chunks = split_for_upload(clip)
+        if len(chunks) == 1:
+            return await self._transcribe_one(clip, language=language, vocabulary=vocabulary)
+
+        return await self._transcribe_chunks(
+            chunks, language=language, vocabulary=vocabulary, on_progress=on_progress
+        )
+
+    async def _transcribe_chunks(
+        self,
+        chunks: list[Chunk],
+        *,
+        language: str | None,
+        vocabulary: list[str] | None,
+        on_progress: Callable[[int, int], Awaitable[None]] | None,
+    ) -> Transcript:
+        """Parçaları sırayla çevirir ve tek bir transkripte birleştirir.
+
+        Sırayla, paralel değil: sağlayıcıların hız sınırı var ve paralel
+        istekler kotayı hızla tüketip 429 üretiyor.
+        """
+        texts: list[str] = []
+        total_latency = 0
+        total_cost = 0.0
+        provider = ""
+        model = ""
+        detected_language = language
+
+        for chunk in chunks:
+            transcript = await self._transcribe_one(
+                chunk.clip, language=detected_language, vocabulary=vocabulary
+            )
+            texts.append(transcript.text)
+            total_latency += transcript.usage.latency_ms
+            total_cost += transcript.usage.cost_usd or 0.0
+            provider = transcript.provider
+            model = transcript.model
+            # İlk parçada dil belirlendikten sonra kalanlara onu bildiriyoruz;
+            # aynı kaydın ortasında dil değiştirmesi hata olur.
+            detected_language = detected_language or transcript.language
+
+            if on_progress:
+                await on_progress(chunk.index + 1, chunk.total)
+
+        return Transcript(
+            text=join_transcripts(texts),
+            language=detected_language,
+            model=model,
+            provider=provider,
+            usage=Usage(
+                latency_ms=total_latency,
+                cost_usd=total_cost or None,
+                audio_seconds=sum(c.clip.duration_seconds for c in chunks),
+            ),
+        )
+
+    async def _transcribe_one(
+        self,
+        clip: AudioClip,
+        *,
+        language: str | None = None,
+        vocabulary: list[str] | None = None,
+    ) -> Transcript:
         errors: list[str] = []
 
         for provider in self.providers:

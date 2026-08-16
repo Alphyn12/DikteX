@@ -13,6 +13,13 @@ dependencies = [
     # Ses yakalama — PortAudio tekerlekleriyle gelir, ayrı kurulum gerekmez.
     "sounddevice>=0.5",
     "numpy>=2.0",
+    # FLAC kodlama: 16 kHz mono WAV dakikada 1,9 MB tutuyor ve sağlayıcı
+    # sınırı 25 MB; FLAC kayıpsız olarak bunu ikiye katlıyor.
+    "soundfile>=0.13",
+    # WASAPI loopback (sistem sesi kaydı). `sounddevice` loopback bayrağını
+    # dışarı açmıyor; `soundcard` kendi WASAPI bağlarını taşıdığı için
+    # PortAudio ile çakışmadan yan yana çalışıyor.
+    "soundcard>=0.4; sys_platform == 'win32'",
     # Windows tümleşikliği: pano, pencere odağı, süreç adı.
     "pywin32>=306; sys_platform == 'win32'",
     "psutil>=6.0",

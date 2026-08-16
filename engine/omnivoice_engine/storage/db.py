@@ -90,6 +90,22 @@ CREATE TABLE IF NOT EXISTS spend (
 
 CREATE INDEX IF NOT EXISTS idx_spend_created ON spend (created_at DESC);
 
+-- Toplantı kayıtları (Faz 4). Döküm, özet ve eylem maddeleri.
+CREATE TABLE IF NOT EXISTS meetings (
+    id               INTEGER PRIMARY KEY,
+    created_at       TEXT    NOT NULL,
+    transcript       TEXT    NOT NULL,
+    summary          TEXT    NOT NULL DEFAULT '',
+    -- Eylem maddeleri JSON dizisi olarak; sayıları değişken ve sorgu
+    -- gerektirmiyorlar, ayrı tablo fazla olurdu.
+    action_items     TEXT    NOT NULL DEFAULT '[]',
+    duration_seconds REAL    NOT NULL DEFAULT 0,
+    language         TEXT,
+    cost_usd         REAL    NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_meetings_created ON meetings (created_at DESC);
+
 CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -291,6 +307,61 @@ class Database:
                 (start, end),
             ).fetchone()
         return dict(row) if row else {}
+
+    # ── Toplantı ──────────────────────────────────────────────────────────
+
+    def add_meeting(
+        self,
+        *,
+        transcript: str,
+        summary: str,
+        action_items: list[dict[str, Any]],
+        duration_seconds: float,
+        language: str | None,
+        cost_usd: float,
+    ) -> int:
+        with self._lock:
+            cursor = self._conn.execute(
+                "INSERT INTO meetings (created_at, transcript, summary, action_items, "
+                "duration_seconds, language, cost_usd) VALUES (?,?,?,?,?,?,?)",
+                (
+                    datetime.now(UTC).isoformat(),
+                    transcript,
+                    summary,
+                    json.dumps(action_items, ensure_ascii=False),
+                    duration_seconds,
+                    language,
+                    cost_usd,
+                ),
+            )
+            self._conn.commit()
+            return int(cursor.lastrowid or 0)
+
+    def recent_meetings(self, limit: int = 20) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM meetings ORDER BY created_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+
+        meetings: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            # Eylem maddeleri JSON olarak saklanıyor; arayüze çözülmüş gitmeli.
+            try:
+                item["action_items"] = json.loads(item["action_items"])
+            except (json.JSONDecodeError, TypeError):
+                item["action_items"] = []
+            meetings.append(item)
+        return meetings
+
+    def meeting_count_today(self) -> int:
+        start, end = self._local_day_bounds()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT COUNT(*) AS n FROM meetings WHERE created_at >= ? AND created_at < ?",
+                (start, end),
+            ).fetchone()
+        return int(row["n"]) if row else 0
 
     # ── Harcama ───────────────────────────────────────────────────────────
 

@@ -17,6 +17,7 @@ from typing import Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from omnivoice_engine import __version__
+from omnivoice_engine.audio.loopback import list_loopback_devices, loopback_available
 from omnivoice_engine.audio.capture import (
     AudioDeviceError,
     MicrophoneCapture,
@@ -24,7 +25,8 @@ from omnivoice_engine.audio.capture import (
 )
 from omnivoice_engine.config import get_settings
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
-from omnivoice_engine.pipeline.dictation import DictationPipeline
+from omnivoice_engine.pipeline.dictation import DictationPipeline, DictationState
+from omnivoice_engine.pipeline.meeting import MeetingPipeline
 from omnivoice_engine.pipeline.modes import MODES
 from omnivoice_engine.storage.db import Database
 from omnivoice_engine.storage.vocabulary import Vocabulary
@@ -60,6 +62,16 @@ class EngineContext:
             db=self.db,
             emit=self.broadcast,
             vocabulary=self.vocabulary,
+        )
+
+        # Toplantı boru hattı aynı mikrofonu paylaşıyor; ikisi aynı anda
+        # çalışamaz ve bu `_handle_message` içinde engelleniyor.
+        self.meeting = MeetingPipeline(
+            mic=self.mic,
+            stt=self.stt,
+            llm=self.llm,
+            db=self.db,
+            emit=self.broadcast,
         )
 
     async def broadcast(self, message: dict[str, Any]) -> None:
@@ -228,6 +240,45 @@ async def _handle_message(
                     "error": error,
                 }
             )
+
+        # ── Toplantı ──────────────────────────────────────────────────────
+        case "meeting:toggle" | "meeting:start":
+            # Dikte ve toplantı aynı mikrofonu kullanıyor; ikisi aynı anda
+            # çalışırsa biri diğerinin kaydını çalar.
+            if context.pipeline.state is not DictationState.IDLE:
+                await reply(
+                    {
+                        "type": "meeting:state",
+                        "state": "error",
+                        "message": "Dikte sürerken toplantı kaydı başlatılamaz",
+                    }
+                )
+            elif kind == "meeting:start":
+                await context.meeting.start(system_device=message.get("device"))
+            else:
+                await context.meeting.toggle(system_device=message.get("device"))
+
+        case "meeting:stop":
+            await context.meeting.stop()
+
+        case "meeting:cancel":
+            await context.meeting.cancel()
+
+        case "meeting:dismiss":
+            await context.meeting.dismiss()
+
+        case "meeting:devices":
+            await reply(
+                {
+                    "type": "meeting:devices",
+                    "devices": await asyncio.to_thread(list_loopback_devices),
+                    "available": await asyncio.to_thread(loopback_available),
+                }
+            )
+
+        case "meeting:history":
+            rows = await asyncio.to_thread(context.db.recent_meetings, 20)
+            await reply({"type": "meeting:history", "items": rows})
 
         # ── Modlar ────────────────────────────────────────────────────────
         case "modes:list":

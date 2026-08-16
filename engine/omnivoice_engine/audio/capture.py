@@ -24,6 +24,7 @@ from io import BytesIO
 
 import numpy as np
 import sounddevice as sd
+import soundfile as sf
 
 log = logging.getLogger(__name__)
 
@@ -210,6 +211,38 @@ class AudioClip:
             wav.setframerate(self.sample_rate)
             wav.writeframes(self.samples.astype(np.int16).tobytes())
         return buffer.getvalue()
+
+    def to_flac_bytes(self) -> bytes:
+        """Kayıpsız sıkıştırılmış FLAC.
+
+        16 kHz mono WAV dakikada 1,92 MB yer kaplıyor; Groq'un dosya sınırı
+        25 MB. Yani WAV ile 13 dakikadan uzun bir kayıt gönderilemiyordu.
+
+        FLAC kayıpsızdır — ses kalitesi birebir aynı kalır, yalnız dosya küçülür.
+        Sağlayıcıların hepsi kabul ediyor. Konuşma kaydında tipik kazanç 2-3 kat,
+        yani sınır ~35 dakikaya çıkıyor.
+        """
+        buffer = BytesIO()
+        sf.write(
+            buffer,
+            self.samples.astype(np.int16),
+            self.sample_rate,
+            format="FLAC",
+            subtype="PCM_16",
+        )
+        return buffer.getvalue()
+
+    def to_upload_bytes(self) -> tuple[bytes, str, str]:
+        """Yüklenecek ses: (veri, dosya adı, MIME tipi).
+
+        FLAC tercih edilir; kodlama başarısız olursa WAV'a düşülür — dikteyi
+        bir kodlayıcı hatası yüzünden kaybetmek olmaz.
+        """
+        try:
+            return self.to_flac_bytes(), "audio.flac", "audio/flac"
+        except Exception:  # noqa: BLE001 - libsndfile hatası dikteyi düşürmemeli
+            log.warning("FLAC kodlaması başarısız, WAV'a düşülüyor", exc_info=True)
+            return self.to_wav_bytes(), "audio.wav", "audio/wav"
 
 
 class _RingBuffer:

@@ -69,18 +69,21 @@ class OpenRouterStt:
         if key is None:
             raise ProviderError("openrouter", "API anahtarı yok")
 
-        wav = clip.to_wav_bytes()
-        if len(wav) > MAX_UPLOAD_BYTES:
+        audio, _filename, _mime = clip.to_upload_bytes()
+        audio_format = "flac" if _filename.endswith(".flac") else "wav"
+
+        if len(audio) > MAX_UPLOAD_BYTES:
             raise ProviderError(
                 "openrouter",
-                f"ses {len(wav) // 1024 // 1024} MB — sınır {MAX_UPLOAD_BYTES // 1024 // 1024} MB",
+                f"ses {len(audio) // 1024 // 1024} MB — sınır "
+                f"{MAX_UPLOAD_BYTES // 1024 // 1024} MB",
             )
 
         body: dict[str, object] = {
             "model": self.model,
             "input_audio": {
-                "data": base64.b64encode(wav).decode("ascii"),
-                "format": "wav",
+                "data": base64.b64encode(audio).decode("ascii"),
+                "format": audio_format,
             },
         }
         if language:
