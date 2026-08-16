@@ -79,21 +79,56 @@ Kapatma düğmesi uygulamayı sonlandırmaz, tepsiye çeker — global kısayolu
 
 | # | Madde | Kaynak | Durum |
 |---|---|---|---|
-| 2.1 | API Kasası — anahtarlar Windows Credential Manager'da şifreli | VI | ⬜ |
-| 2.2 | Global kısayol yakalama (`Ctrl+Alt+Space`) | IV | ⬜ |
-| 2.3 | Mikrofon yakalama + **sıfır gecikmeli dairesel ön bellek** (1 sn pre-roll) | I | ⬜ |
-| 2.4 | STT sağlayıcı soyutlaması → Groq `whisper-large-v3-turbo` | I | ⬜ |
-| 2.5 | STT yedekleme zinciri (Groq kotası biterse OpenRouter STT) | I | ⬜ |
-| 2.6 | **Dolgu kelime temizleme** ("eee", "ımm", "şey", tekrarlar) | I | ⬜ |
-| 2.7 | LLM sağlayıcı soyutlaması → OpenRouter yönlendirici | II | ⬜ |
-| 2.8 | Canlı dikte HUD — 3 durum: dinliyor · işliyor · pre-flight (mockup 1c) | IV | ⬜ |
-| 2.9 | **Pre-flight önizleme** — düzenle / onayla / iptal | IV | ⬜ |
-| 2.10 | Yapıştırma motoru — hedef uygulamaya metin gönderme | V | ⬜ |
-| 2.11 | Yerel SQLite — dikte geçmişi ve arama | VI | ⬜ |
-| 2.12 | **Maliyet takibi** — istek başına `usage.cost`, panelde canlı harcama + bütçe freni | — | ⬜ |
-| 2.13 | Gerçek gecikme ölçümü (mockup'taki sahte "180 ms" yerine ölçülen değer) | — | ⬜ |
+| 2.1 | API Kasası — anahtarlar Windows Credential Manager'da şifreli | VI | ✅ |
+| 2.2 | Global kısayol yakalama (`Ctrl+Alt+Space`) | IV | ✅ |
+| 2.3 | Mikrofon yakalama + **sıfır gecikmeli dairesel ön bellek** (1 sn pre-roll) | I | ✅ |
+| 2.4 | STT sağlayıcı soyutlaması → Groq `whisper-large-v3-turbo` | I | ✅ |
+| 2.5 | STT yedekleme zinciri (Groq kotası biterse OpenRouter STT) | I | ✅ |
+| 2.6 | **Dolgu kelime temizleme** ("eee", "ımm", "şey", tekrarlar) | I | ✅ |
+| 2.7 | LLM sağlayıcı soyutlaması → OpenRouter yönlendirici | II | ✅ |
+| 2.8 | Canlı dikte HUD — 3 durum: dinliyor · işliyor · pre-flight (mockup 1c) | IV | ✅ |
+| 2.9 | **Pre-flight önizleme** — düzenle / onayla / iptal | IV | ✅ |
+| 2.10 | Yapıştırma motoru — hedef uygulamaya metin gönderme | V | ✅ |
+| 2.11 | Yerel SQLite — dikte geçmişi ve arama (FTS5) | VI | ✅ |
+| 2.12 | **Maliyet takibi** — istek başına `usage.cost`, panelde canlı harcama + bütçe | — | ✅ |
+| 2.13 | Gerçek gecikme ölçümü (mockup'taki sahte "180 ms" yerine ölçülen değer) | — | ✅ |
+| 2.14 | **Mikrofon kaynağı seçimi** (kullanıcı isteği) | — | ✅ |
 
-**Çıktı:** Kısayola bas → konuş → bırak → temizlenmiş metin imlecin olduğu yere yapışıyor.
+**Çıktı:** ✅ Kısayola bas → konuş → bırak → pre-flight'ta gör → Enter → metin
+imlecin olduğu yere yapışıyor. Panel gerçek veriyi gösteriyor: dikte sayısı,
+kaydedilen ses, ölçülen gecikme, gerçek harcama ve SQLite'tan gelen geçmiş.
+
+**Ölçülen gerçek değerler** (TTS ile üretilmiş Türkçe sesle):
+- Groq STT: 1.0–1.7 sn · Türkçe transkripsiyon neredeyse kusursuz
+- Gemini 2.5 Flash-Lite: 0.8–1.1 sn · dikte başına ~$0.00005
+- Uçtan uca: ~2.2 sn · **mockup'taki 180 ms bir yerel GPU rakamıydı**
+- Aylık tahmin (günde 50 dikte): **~$0.09**
+
+**Faz 2'de yakalanan hatalar** — hepsi sessizce başarısız oluyordu:
+
+| Hata | Nasıl bulundu | Sonucu ne olurdu |
+|---|---|---|
+| **Prompt'ta rol karışıklığı** | 5 modelden 4'ü, dikte edilen "şu terimleri sözlüğe ekle" cümlesini kendine talimat sanıp cevap yazdı | Kullanıcı "Ali'ye söyle" dediğinde ekrana "Tamam, söylüyorum" yapışırdı |
+| **Whisper sessizlikte halüsinasyon** | Canlı testte boş kayda "Thank you." uydurdu | Kısayola yanlışlıkla basınca ekrana "Teşekkürler." yapışırdı |
+| **`SendInput` yapı boyutu** | x64'te `INPUT` 40 bayt olmalıyken 32 üretiliyordu | **Yapıştırma hiç çalışmazdı**, hata da vermezdi |
+| **Odak çalma koruması** | `SetForegroundWindow` reddedildi | Pre-flight'ta Enter'a basmak hiçbir şey yapmazdı |
+| **Aygıt değişiminde çökme** | Geçersiz indeks `PortAudioError` → motor komple düştü | Yanlış mikrofon seçmek uygulamayı öldürürdü |
+| **WASAPI biçim uyumsuzluğu** | Realtek 16 kHz mono kabul etmiyor, 44.1 kHz stereo istiyor | Mikrofon seçicideki aygıtların çoğu açılamazdı |
+| **Dil çevirisi** | İngilizce girdi Türkçe'ye çevrildi (istem Türkçe olduğu için) | İngilizce dikte Türkçe çıkardı |
+| **"Gecikme" yanlış ölçülüyordu** | `total_ms` konuşma süresini de içeriyordu | 30 sn konuşma "32.000 ms gecikme" görünürdü |
+| **Zaman dilimi** | Kayıtlar UTC, "bugün" yerel tarih | Gece yarısı civarı yanlış sayım |
+
+**Faz 2'de alınan kararlar:**
+- **Kısayol aç-kapa çalışıyor**, bas-basılı-tut değil. Electron'un `globalShortcut`
+  API'si tuş bırakmayı bildirmiyor; basılı tutma düşük seviyeli klavye kancası
+  gerektiriyor. O kanca zaten Faz 3.5'teki chorded shortcut'lar için kurulacak.
+- **Mikrofon sürekli dinleniyor** — pre-roll'un bedeli bu. Ayarlar'daki mikrofon
+  kartında açıkça yazıyor: son 1 saniye yalnız bellekte, diske yazılmıyor,
+  kısayola basılmadıkça hiçbir yere gönderilmiyor.
+- **Sağ sütundaki action items / not defteri / sözlük** hâlâ örnek veri;
+  kaynakları Faz 4 ve Faz 6'da bağlanacak.
+
+**101 test geçiyor.**
 
 ---
 

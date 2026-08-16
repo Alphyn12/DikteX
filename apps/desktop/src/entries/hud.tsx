@@ -3,17 +3,17 @@ import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/jetbrains-mono'
 import '../design/tokens.css'
 import '../design/base.css'
+import { I18nProvider } from '../i18n/useI18n'
+import { Hud } from '../screens/Hud'
 
-/**
- * Canlı dikte HUD'u — dinliyor · işliyor · pre-flight (mockup 1c).
- * Faz 2.8'de doldurulacak. Giriş noktası şimdiden var ki pencere yönetimi ve
- * paketleme yapılandırması tek seferde oturmuş olsun.
- */
+/** Canlı dikte HUD'u — mockup 1c. Ayrı, saydam, her zaman üstte bir pencere. */
 const container = document.getElementById('root')
 if (!container) throw new Error('#root bulunamadı')
 
 createRoot(container).render(
   <StrictMode>
-    <div />
+    <I18nProvider>
+      <Hud />
+    </I18nProvider>
   </StrictMode>,
 )

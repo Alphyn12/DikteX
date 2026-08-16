@@ -49,12 +49,20 @@
   padding-inline-end: 2px;
 }
 
+/* Mikrofon kartı eklendikten sonra dört kart var; kısa pencerede taşmasın. */
 .aside {
   width: var(--aside-width);
   flex: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+  padding-inline-end: 2px;
+}
+
+.aside > * {
+  flex: none;
 }
 
 /* ── Mod / model tablosu ──────────────────────────────────────────────────── */

@@ -17,7 +17,11 @@ from typing import Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from omnivoice_engine import __version__
-from omnivoice_engine.audio.capture import MicrophoneCapture, list_input_devices
+from omnivoice_engine.audio.capture import (
+    AudioDeviceError,
+    MicrophoneCapture,
+    list_input_devices,
+)
 from omnivoice_engine.config import get_settings
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
 from omnivoice_engine.pipeline.dictation import DictationPipeline
@@ -87,8 +91,10 @@ def create_app() -> FastAPI:
         # basıldığı anda dolu olması gerekiyor (Properties I.3).
         try:
             context.mic.start_stream()
-        except Exception:  # noqa: BLE001 - mikrofonsuz da açılabilmeli
-            log.warning("Mikrofon akışı açılamadı; dikte devre dışı", exc_info=True)
+        except AudioDeviceError as exc:
+            # Mikrofonsuz da açılabilmeli: kullanıcı geçmişe bakmak veya
+            # ayarları değiştirmek için uygulamayı açmış olabilir.
+            log.warning("Mikrofon akışı açılamadı; dikte devre dışı — %s", exc)
         yield
         context.shutdown()
 
@@ -191,12 +197,21 @@ async def _handle_message(
         case "devices:set":
             device = message.get("device")
             index = None if device is None else int(device)
-            await asyncio.to_thread(context.mic.set_device, index)
+            try:
+                await asyncio.to_thread(context.mic.set_device, index)
+                error = None
+            except AudioDeviceError as exc:
+                # Aygıt açılamadı; mikrofon eskisine geri döndü. Hata arayüze
+                # taşınır, motor ayakta kalır.
+                log.warning("Mikrofon değiştirilemedi: %s", exc)
+                error = str(exc)
+
             await reply(
                 {
                     "type": "devices:set",
                     "current": context.mic.device,
                     "streaming": context.mic.is_streaming,
+                    "error": error,
                 }
             )
 

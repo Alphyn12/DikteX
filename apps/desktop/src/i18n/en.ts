@@ -29,6 +29,15 @@ export const en: Messages = {
   'panel.subtitle': '{dictations} dictations · {apps} apps · {meetings} meeting',
   'panel.startDictation': 'Start dictation',
   'panel.recordMeeting': 'Record meeting',
+  'panel.stopDictation': 'Stop dictation',
+  'stat.dictations': 'DICTATIONS',
+  'stat.dictations.unit': 'today',
+  'stat.audio': 'AUDIO CAPTURED',
+  'stat.audio.unit': 'seconds',
+  'engineStrip.ready': 'Ready · waiting for shortcut',
+  'engineStrip.detail': 'groq whisper-large-v3-turbo · pre-roll 1000 ms · gemini-2.5-flash-lite',
+  'feed.empty': 'No dictations yet. Press Ctrl+Alt+Space to start.',
+  'feed.pasted': 'pasted',
 
   'stat.words': 'WORDS DICTATED',
   'stat.words.unit': 'words',
@@ -116,6 +125,44 @@ export const en: Messages = {
   'tray.show': 'Show OmniVoice',
   'tray.startDictation': 'Start dictation',
   'tray.quit': 'Quit',
+
+  // ── HUD ──────────────────────────────────────────────────────────────────
+  'hud.listening': 'Listening',
+  'hud.preRoll': '{seconds} s taken from buffer',
+  'hud.quickDictation': 'QUICK DICTATION',
+  'hud.escCancel': 'Esc to cancel',
+  'hud.processing': 'Processing',
+  'hud.step.stt': 'transcribing speech',
+  'hud.step.llm': 'cleaning up text',
+  'hud.step.transcribe': 'Speech recognition',
+  'hud.step.fillers': 'Filler removal · {count} sounds',
+  'hud.step.polish': 'Punctuation and context',
+  'hud.readyToPaste': 'Ready to paste',
+  'hud.paste': 'Paste',
+  'hud.cancel': 'Cancel',
+  'hud.fillersRemoved': '{count} fillers removed',
+  'hud.localOnly': 'local only',
+  'hud.error': 'Dictation failed',
+  'hud.dismiss': 'Dismiss',
+
+  // ── Microphone ───────────────────────────────────────────────────────────
+  'mic.title': 'MICROPHONE',
+  'mic.systemDefault': 'System default',
+  'mic.systemDefaultHint': 'Uses the device selected in Windows',
+  'mic.refresh': 'Refresh',
+  'mic.streaming': 'stream open',
+  'mic.stopped': 'stream closed',
+  'mic.noDevices': 'No microphone found',
+  'mic.alwaysListening': 'Microphone listens continuously for zero latency',
+  'mic.alwaysListeningHint':
+    'The last second is kept in memory only, never written to disk, and never sent anywhere unless you press the shortcut.',
+
+  // ── Spend ────────────────────────────────────────────────────────────────
+  'spend.title': 'SPEND',
+  'spend.today': 'today',
+  'spend.month': 'this month',
+  'spend.budget': 'budget',
+  'spend.calls': '{count} calls',
 
   // ── Common ───────────────────────────────────────────────────────────────
   'lang.switch': 'Language',

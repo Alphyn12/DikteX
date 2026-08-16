@@ -34,6 +34,52 @@ DTYPE = np.int16
 BLOCK_SIZE = 1600  # 100 ms
 
 
+class AudioDeviceError(RuntimeError):
+    """Ses aygıtı açılamadı veya değiştirilemedi."""
+
+
+def _lowpass_kernel(cutoff_ratio: float, taps: int = 129) -> np.ndarray:
+    """Pencerelenmiş sinc alçak geçiren süzgeç.
+
+    Örnekleme hızını düşürmeden önce, hedef Nyquist frekansının üstündeki
+    içeriği süzmek gerekir; yoksa o içerik katlanarak (aliasing) konuşmanın
+    üstüne cızırtı olarak biner.
+    """
+    n = np.arange(taps) - (taps - 1) / 2
+    # sinc zaten normalize (sin(pi x)/(pi x)) olduğu için oran doğrudan geçer.
+    kernel = np.sinc(2 * cutoff_ratio * n) * np.hamming(taps)
+    return (kernel / np.sum(kernel)).astype(np.float32)
+
+
+def resample(samples: np.ndarray, source_rate: int, target_rate: int) -> np.ndarray:
+    """Sesi hedef örnekleme hızına indirir/çıkarır.
+
+    Neden gerekli: WASAPI paylaşımlı kipte aygıt yalnız kendi doğal hızında
+    açılır. Realtek mikrofonunu 16 kHz istemek `Invalid sample rate` hatası
+    veriyordu; aygıtı 44.1 kHz'de açıp burada 16 kHz'e indiriyoruz.
+    """
+    if source_rate == target_rate or len(samples) == 0:
+        return samples
+
+    signal = samples.astype(np.float32)
+
+    # Aşağı örnekleme: önce süz, sonra seyrelt.
+    if target_rate < source_rate:
+        kernel = _lowpass_kernel(0.5 * target_rate / source_rate)
+        signal = np.convolve(signal, kernel, mode="same")
+
+    duration = len(signal) / source_rate
+    target_length = int(round(duration * target_rate))
+    if target_length <= 0:
+        return np.zeros(0, dtype=DTYPE)
+
+    source_positions = np.arange(len(signal), dtype=np.float32)
+    target_positions = np.linspace(0, len(signal) - 1, target_length, dtype=np.float32)
+    resampled = np.interp(target_positions, source_positions, signal)
+
+    return np.clip(resampled, -32768, 32767).astype(DTYPE)
+
+
 @dataclass(frozen=True, slots=True)
 class AudioClip:
     """Kaydedilmiş ses. Sağlayıcılara bu biçimde verilir."""
@@ -44,6 +90,62 @@ class AudioClip:
     @property
     def duration_seconds(self) -> float:
         return len(self.samples) / self.sample_rate
+
+    @property
+    def peak(self) -> float:
+        """En yüksek genlik, 0.0–1.0."""
+        if len(self.samples) == 0:
+            return 0.0
+        return float(np.max(np.abs(self.samples.astype(np.float32))) / 32768.0)
+
+    @property
+    def rms(self) -> float:
+        """Ortalama enerji, 0.0–1.0."""
+        if len(self.samples) == 0:
+            return 0.0
+        return float(np.sqrt(np.mean(self.samples.astype(np.float32) ** 2)) / 32768.0)
+
+    def voiced_seconds(
+        self, *, frame_ms: int = 20, frame_threshold: float = 0.012
+    ) -> float:
+        """Kayıtta ses barındıran toplam süre.
+
+        Ses 20 ms'lik karelere bölünür ve eşiği aşan karelerin süresi
+        toplanır. Ortalama enerjiye bakmak yerine bunu ölçmemizin sebebi:
+        3 saniyelik sessizlik içindeki tek bir kapı çarpması ortalamayı
+        konuşma düzeyine çıkarır, ama yalnız birkaç kareyi doldurur.
+        """
+        if len(self.samples) == 0:
+            return 0.0
+
+        frame_size = int(self.sample_rate * frame_ms / 1000)
+        if frame_size <= 0:
+            return 0.0
+
+        usable = len(self.samples) - (len(self.samples) % frame_size)
+        if usable == 0:
+            return 0.0
+
+        frames = self.samples[:usable].astype(np.float32).reshape(-1, frame_size)
+        frame_rms = np.sqrt(np.mean(frames**2, axis=1)) / 32768.0
+        voiced_frames = int(np.count_nonzero(frame_rms > frame_threshold))
+        return voiced_frames * frame_ms / 1000.0
+
+    def is_silent(self, *, min_voiced_seconds: float = 0.25) -> bool:
+        """Kayıtta gerçekten konuşma var mı?
+
+        Whisper sessizliğe metin **uydurur**: boş bir kayda "Thank you." veya
+        "Altyazı M.K." gibi eğitim verisinden kalma cümleler döndürür. Ölçtük;
+        kısayola basıp hiç konuşmadan bırakınca ekrana "Teşekkürler." yapışıyordu.
+
+        Bu yüzden sessiz kayıtlar sağlayıcıya hiç gönderilmez — hem uydurma
+        metin engellenir hem de boşuna istek atılmaz.
+
+        Ölçüt süre tabanlı: en kısa anlamlı söz bile çeyrek saniye sürer.
+        Bu eşik, tek tıkırtıyı eleyip kısa bir "tamam"ı geçirecek şekilde
+        seçildi.
+        """
+        return self.voiced_seconds() < min_voiced_seconds
 
     def to_wav_bytes(self) -> bytes:
         """16-bit PCM WAV. STT sağlayıcılarının hepsi bu biçimi kabul eder."""
@@ -119,6 +221,11 @@ class MicrophoneCapture:
         self._ring = _RingBuffer(capacity)
 
         self._stream: sd.InputStream | None = None
+        #: Akışın gerçek hızı. Aygıt 16 kHz'i desteklemiyorsa doğal hızında
+        #: açılır ve klip üretilirken 16 kHz'e indirilir.
+        self._stream_rate = SAMPLE_RATE
+        #: Akışın gerçek kanal sayısı; çok kanallıysa mono'ya indiriliyor.
+        self._stream_channels = CHANNELS
         self._lock = threading.Lock()
         self._recording = False
         self._chunks: list[np.ndarray] = []
@@ -128,23 +235,101 @@ class MicrophoneCapture:
     # ── Akış yaşam döngüsü ────────────────────────────────────────────────
 
     def start_stream(self) -> None:
-        """Mikrofon akışını açar. Zaten açıksa bir şey yapmaz."""
+        """Mikrofon akışını açar. Zaten açıksa bir şey yapmaz.
+
+        Aygıt açılamazsa `AudioDeviceError` yükseltir — çağıran taraf ya geri
+        alır ya da kullanıcıya bildirir. Sessizce yutmak, kullanıcıyı mikrofonu
+        çalışıyor sanarak konuşurken bırakırdı.
+        """
         if self._stream is not None:
             return
-        self._stream = sd.InputStream(
-            samplerate=SAMPLE_RATE,
-            channels=CHANNELS,
-            dtype="int16",
-            blocksize=BLOCK_SIZE,
-            device=self._device,
-            callback=self._on_block,
+
+        # Önce hedef hızı deneriz — yeniden örnekleme gerektirmediği için en
+        # temizi. WASAPI paylaşımlı kipte aygıt yalnız kendi doğal hızında
+        # açılabildiği için burada `Invalid sample rate` alınabilir; o durumda
+        # aygıtın kendi hızına düşüp sesi biz indiriyoruz.
+        errors: list[str] = []
+        for rate, channels in self._candidate_configs():
+            try:
+                stream = sd.InputStream(
+                    samplerate=rate,
+                    channels=channels,
+                    dtype="int16",
+                    blocksize=int(BLOCK_SIZE * rate / SAMPLE_RATE),
+                    device=self._device,
+                    callback=self._on_block,
+                )
+                stream.start()
+            except Exception as exc:  # noqa: BLE001 - PortAudio çeşitli hata üretir
+                errors.append(f"{rate} Hz/{channels}ch: {exc}")
+                continue
+
+            self._stream = stream
+            self._stream_rate = rate
+            self._stream_channels = channels
+            self._resize_ring(rate)
+            log.info(
+                "Mikrofon akışı açıldı: %s (%d Hz, %d kanal%s, pre-roll %.1f sn)",
+                self._describe_device(),
+                rate,
+                channels,
+                "" if rate == SAMPLE_RATE else f" → {SAMPLE_RATE} Hz'e indiriliyor",
+                self.pre_roll_seconds,
+            )
+            return
+
+        raise AudioDeviceError(
+            f"Mikrofon açılamadı ({self._describe_device()}): {' | '.join(errors)}"
         )
-        self._stream.start()
-        log.info(
-            "Mikrofon akışı açıldı (%d Hz, pre-roll %.1f sn)",
-            SAMPLE_RATE,
-            self.pre_roll_seconds,
-        )
+
+    def _candidate_configs(self) -> list[tuple[int, int]]:
+        """Denenecek (hız, kanal) birleşimleri.
+
+        WASAPI paylaşımlı kipte aygıt yalnız kendi **karışım biçiminde**
+        açılabilir: hem örnekleme hızı hem kanal sayısı birebir uymalı.
+        Ölçtük — Realtek mikrofonu 16 kHz mono isteğine `Invalid sample rate`,
+        44.1 kHz mono isteğine `AUDCLNT_E_UNSUPPORTED_FORMAT` veriyor; doğru
+        birleşim kendi doğal hızı ve kanal sayısı.
+
+        Sıra: önce hiç dönüşüm gerektirmeyen hedef biçim, sonra aygıtın kendi
+        biçimi, sonra yaygın yedekler.
+        """
+        configs: list[tuple[int, int]] = [(SAMPLE_RATE, CHANNELS)]
+
+        native_rate: int | None = None
+        native_channels = CHANNELS
+        try:
+            info = sd.query_devices(self._device if self._device is not None else None, "input")
+            native_rate = int(info["default_samplerate"])
+            native_channels = max(1, int(info["max_input_channels"]))
+        except Exception:  # noqa: BLE001
+            pass
+
+        if native_rate:
+            configs.append((native_rate, native_channels))
+            if native_channels != CHANNELS:
+                configs.append((native_rate, CHANNELS))
+
+        for rate in (48_000, 44_100):
+            for channels in (CHANNELS, 2):
+                if (rate, channels) not in configs:
+                    configs.append((rate, channels))
+
+        return configs
+
+    def _resize_ring(self, rate: int) -> None:
+        """Ön belleği akışın hızına göre yeniden boyutlandırır."""
+        capacity = max(int(rate * (self.pre_roll_seconds + 0.5)), int(BLOCK_SIZE * rate / SAMPLE_RATE))
+        with self._lock:
+            self._ring = _RingBuffer(capacity)
+
+    def _describe_device(self) -> str:
+        if self._device is None:
+            return "sistem varsayılanı"
+        try:
+            return str(sd.query_devices(self._device)["name"])
+        except Exception:  # noqa: BLE001
+            return f"aygıt {self._device}"
 
     def stop_stream(self) -> None:
         if self._stream is None:
@@ -170,22 +355,50 @@ class MicrophoneCapture:
     def set_device(self, device: int | None) -> None:
         """Mikrofonu değiştirir.
 
-        Akış açıksa yeni aygıtla yeniden açılır. Kayıt sırasında aygıt
-        değiştirmek kaydı bozacağı için o durumda yok sayılır.
+        Yeni aygıt açılamazsa **eskisine geri dönülür** ve hata yükseltilir.
+        Ölçtük: geçersiz bir indeks vermek PortAudio'da `Error querying device`
+        üretiyor; bu yakalanmazsa motor süreci komple düşüyordu ve kullanıcı
+        mikrofonsuz kalıyordu.
         """
         if device == self._device:
             return
         if self._recording:
-            log.warning("Kayıt sürerken mikrofon değiştirilemez")
-            return
+            raise AudioDeviceError("Kayıt sürerken mikrofon değiştirilemez")
 
+        previous = self._device
         was_streaming = self.is_streaming
+
         if was_streaming:
             self.stop_stream()
+
         self._device = device
-        if was_streaming:
-            self.start_stream()
-        log.info("Mikrofon değiştirildi: %s", device if device is not None else "sistem varsayılanı")
+        try:
+            if was_streaming:
+                self.start_stream()
+        except AudioDeviceError:
+            # Geri al: kullanıcı yanlış aygıtı seçtiği için mikrofonsuz
+            # kalmamalı.
+            self._device = previous
+            if was_streaming:
+                try:
+                    self.start_stream()
+                except AudioDeviceError:
+                    log.error("Önceki mikrofon da açılamadı", exc_info=True)
+            raise
+
+        log.info("Mikrofon değiştirildi: %s", self._describe_device())
+
+    def resolve_device_by_name(self, name: str) -> int | None:
+        """Aygıt adından güncel indeksi bulur.
+
+        PortAudio indeksleri **kararlı değildir**: aynı mikrofon bir oturumda
+        20, diğerinde 15 olabilir. Bu yüzden seçim adla saklanır ve her
+        açılışta yeniden çözümlenir.
+        """
+        for device in list_input_devices():
+            if device["name"] == name:
+                return int(device["index"])  # type: ignore[arg-type]
+        return None
 
     # ── Ses geri çağrımı ──────────────────────────────────────────────────
 
@@ -194,7 +407,15 @@ class MicrophoneCapture:
         if status:
             log.debug("Ses akışı durumu: %s", status)
 
-        block = indata[:, 0].copy()
+        # Aygıt çok kanallı açılmış olabilir (WASAPI karışım biçimi stereo
+        # isteyebiliyor). Kanalların ortalamasını alarak mono'ya indiriyoruz;
+        # tek kanal seçmek, konuşmanın diğer kanalda olduğu aygıtlarda sesi
+        # kaybettirirdi.
+        block = (
+            indata[:, 0].copy()
+            if indata.shape[1] == 1
+            else indata.mean(axis=1).astype(DTYPE)
+        )
 
         with self._lock:
             self._ring.write(block)
@@ -208,19 +429,25 @@ class MicrophoneCapture:
     def start_recording(self) -> float:
         """Kaydı başlatır ve ön bellekten alınan pre-roll süresini döndürür."""
         with self._lock:
-            pre_roll = self._ring.read_last(int(SAMPLE_RATE * self.pre_roll_seconds))
+            rate = self._stream_rate
+            pre_roll = self._ring.read_last(int(rate * self.pre_roll_seconds))
             self._chunks = [pre_roll] if len(pre_roll) else []
             self._recording = True
-            return len(pre_roll) / SAMPLE_RATE
+            return len(pre_roll) / rate
 
     def stop_recording(self) -> AudioClip:
-        """Kaydı durdurur ve biriken sesi döndürür."""
+        """Kaydı durdurur ve biriken sesi 16 kHz olarak döndürür."""
         with self._lock:
             self._recording = False
             chunks = self._chunks
             self._chunks = []
+            rate = self._stream_rate
 
         samples = np.concatenate(chunks) if chunks else np.zeros(0, dtype=DTYPE)
+        # Yeniden örnekleme kayıt bitince bir kez yapılır: ses geri çağrımında
+        # yapmak gerçek zamanlı iş parçacığını gereksiz yere yorardı.
+        if rate != SAMPLE_RATE:
+            samples = resample(samples, rate, SAMPLE_RATE)
         return AudioClip(samples=samples, sample_rate=SAMPLE_RATE)
 
     def cancel_recording(self) -> None:
@@ -241,7 +468,12 @@ class MicrophoneCapture:
     @property
     def recorded_seconds(self) -> float:
         with self._lock:
-            return sum(len(c) for c in self._chunks) / SAMPLE_RATE
+            return sum(len(c) for c in self._chunks) / self._stream_rate
+
+    @property
+    def stream_rate(self) -> int:
+        """Akışın gerçek örnekleme hızı. 16 kHz değilse çıktı indiriliyor."""
+        return self._stream_rate
 
 
 #: Aynı fiziksel mikrofon her host API altında ayrı bir aygıt olarak görünür

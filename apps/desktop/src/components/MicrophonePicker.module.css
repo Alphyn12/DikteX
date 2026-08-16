@@ -1,0 +1,138 @@
+/* Mikrofon seçici — Ayarlar sağ sütunu. */
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.refresh {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: var(--text-caption);
+  color: var(--text-label);
+  cursor: default;
+}
+
+.refresh:hover {
+  color: var(--text-primary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--space-3);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-nav);
+  background: transparent;
+  text-align: start;
+  cursor: default;
+  transition: background-color 120ms ease;
+}
+
+.option:hover {
+  background: var(--surface-hover-soft);
+}
+
+.optionActive {
+  background: var(--surface-hover);
+}
+
+/* Seçili aygıt 3 px şeritle işaretlenir — DESIGN-TOKENS.md § 1. */
+.marker {
+  width: var(--nav-pill-width);
+  height: 22px;
+  flex: none;
+  border-radius: var(--radius-dot);
+  background: transparent;
+}
+
+.optionActive .marker {
+  background: var(--mod-audio);
+}
+
+.optionText {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font: 400 13px/1.3 var(--font-ui);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionActive .name {
+  font-weight: 600;
+}
+
+.sub {
+  margin-top: 2px;
+  font: var(--mono-tag);
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  margin-top: var(--space-3);
+  font: var(--text-caption);
+  color: var(--text-subtle);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-3);
+  padding-top: 11px;
+  border-top: 1px solid var(--border-card);
+  font: var(--mono-badge);
+  color: var(--text-dim);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--mod-audio);
+}
+
+.dotOff {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Sürekli dinleme uyarısı — gizlilik ödünü görünür olmalı. */
+.privacy {
+  margin-top: var(--space-3);
+  padding: 10px 11px;
+  border-radius: var(--radius-nav);
+  background: rgba(43, 179, 163, 0.08);
+  border: 1px solid rgba(43, 179, 163, 0.24);
+}
+
+.privacyTitle {
+  font: 600 12px/1.4 var(--font-ui);
+  color: var(--text-list);
+}
+
+.privacyBody {
+  margin-top: 4px;
+  font: 400 11.5px/1.5 var(--font-ui);
+  color: var(--text-subtle);
+}

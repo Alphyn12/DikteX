@@ -17,6 +17,7 @@ import {
   Toggle,
   TrainingBadge,
 } from '../components/primitives'
+import { MicrophonePicker } from '../components/MicrophonePicker'
 import type { MessageKey } from '../i18n/tr'
 import styles from './Settings.module.css'
 import { cx } from '../utils/cx'
@@ -52,6 +53,7 @@ export function Settings(): React.JSX.Element {
         </div>
 
         <aside className={styles.aside}>
+          <MicrophonePicker />
           <ChordedShortcut />
           <ApiVault />
           <LocalServer />

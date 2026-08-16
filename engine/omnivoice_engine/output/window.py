@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
+import win32api
 import win32con
 import win32gui
 import win32process
@@ -87,9 +88,16 @@ def get_foreground_window() -> WindowInfo | None:
 def focus_window(handle: int) -> bool:
     """Verilen pencereyi öne getirir.
 
-    Windows, arka plandaki bir sürecin odak çalmasını engeller. Pencere simge
-    durumundaysa önce geri yükleriz; `SetForegroundWindow` yine de reddedilirse
-    yapıştırma yapılmamalı — bu yüzden sonuç döndürüyoruz.
+    Windows "odak çalma" korumasına sahiptir: ön planda olmayan bir sürecin
+    `SetForegroundWindow` çağrısı sessizce reddedilir. Bu bizim tam olarak
+    içinde bulunduğumuz durum — pre-flight sırasında ön planda HUD vardır,
+    yapıştırmayı isteyense motor sürecidir. Ölçtük: düz çağrı
+    `SetForegroundWindow` hatası veriyor ve yapıştırma hiç çalışmıyordu.
+
+    Çözüm, ön plandaki pencerenin giriş kuyruğuna geçici olarak bağlanmak
+    (`AttachThreadInput`). Böylece Windows çağrıyı kullanıcının kendi
+    eylemiymiş gibi görür. Bağlantı her durumda geri sökülür; sökülmezse iki
+    süreç birbirinin klavye durumunu paylaşmaya devam eder.
     """
     if not handle:
         return False
@@ -97,10 +105,59 @@ def focus_window(handle: int) -> bool:
     try:
         if not win32gui.IsWindow(handle):
             return False
+    except Exception:  # noqa: BLE001
+        return False
+
+    try:
         if win32gui.IsIconic(handle):
             win32gui.ShowWindow(handle, win32con.SW_RESTORE)
-        win32gui.SetForegroundWindow(handle)
-        return win32gui.GetForegroundWindow() == handle
     except Exception:  # noqa: BLE001
-        log.warning("Pencere öne getirilemedi: %s", handle, exc_info=True)
+        pass
+
+    # Önce düz yol: pencere zaten öndeyse veya izin varsa fazlası gerekmez.
+    if _try_set_foreground(handle):
+        return True
+
+    foreground = win32gui.GetForegroundWindow()
+    if not foreground or foreground == handle:
+        return win32gui.GetForegroundWindow() == handle
+
+    try:
+        target_thread, _ = win32process.GetWindowThreadProcessId(handle)
+        foreground_thread, _ = win32process.GetWindowThreadProcessId(foreground)
+        current_thread = win32api.GetCurrentThreadId()
+    except Exception:  # noqa: BLE001
+        log.warning("Pencere iş parçacığı bilgisi alınamadı", exc_info=True)
         return False
+
+    attached: list[int] = []
+    try:
+        for thread in {foreground_thread, target_thread}:
+            if thread and thread != current_thread:
+                try:
+                    win32process.AttachThreadInput(current_thread, thread, True)
+                    attached.append(thread)
+                except Exception:  # noqa: BLE001
+                    pass
+
+        try:
+            win32gui.BringWindowToTop(handle)
+        except Exception:  # noqa: BLE001
+            pass
+        _try_set_foreground(handle)
+    finally:
+        for thread in attached:
+            try:
+                win32process.AttachThreadInput(current_thread, thread, False)
+            except Exception:  # noqa: BLE001
+                pass
+
+    return win32gui.GetForegroundWindow() == handle
+
+
+def _try_set_foreground(handle: int) -> bool:
+    try:
+        win32gui.SetForegroundWindow(handle)
+    except Exception:  # noqa: BLE001 - reddedilmesi beklenen bir durum
+        return False
+    return win32gui.GetForegroundWindow() == handle

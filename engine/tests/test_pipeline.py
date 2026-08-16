@@ -10,97 +10,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pytest
 
-from omnivoice_engine.audio.capture import AudioClip
-from omnivoice_engine.llm.base import Prompt
+from fakes import FakeLlm, FakeMic, FakeStt
 from omnivoice_engine.pipeline.dictation import DictationPipeline, DictationState
-from omnivoice_engine.providers import (
-    Completion,
-    PrivacyClass,
-    ProviderError,
-    ProviderInfo,
-    Transcript,
-    Usage,
-)
 from omnivoice_engine.storage.db import Database
-
-
-class FakeMic:
-    """Sabit bir klip döndüren mikrofon."""
-
-    def __init__(self, seconds: float = 2.0) -> None:
-        self.clip = AudioClip(
-            samples=np.zeros(int(16_000 * seconds), dtype=np.int16), sample_rate=16_000
-        )
-        self.cancelled = False
-
-    def start_stream(self) -> None: ...
-    def stop_stream(self) -> None: ...
-
-    @property
-    def is_streaming(self) -> bool:
-        return True
-
-    def start_recording(self) -> float:
-        return 1.0
-
-    def stop_recording(self) -> AudioClip:
-        return self.clip
-
-    def cancel_recording(self) -> None:
-        self.cancelled = True
-
-    @property
-    def level(self) -> float:
-        return 0.5
-
-    @property
-    def recorded_seconds(self) -> float:
-        return self.clip.duration_seconds
-
-
-class FakeStt:
-    def __init__(self, text: str = "eee bu bir test", fail: bool = False) -> None:
-        self.text = text
-        self.fail = fail
-
-    async def transcribe(self, clip: AudioClip, **_: Any) -> Transcript:
-        if self.fail:
-            raise ProviderError("faketts", "sağlayıcı düştü")
-        return Transcript(
-            text=self.text,
-            language="tr",
-            model="fake-whisper",
-            provider="fake",
-            usage=Usage(latency_ms=100, cost_usd=None, audio_seconds=clip.duration_seconds),
-        )
-
-
-class FakeLlm:
-    def __init__(self, *, available: bool = True, fail: bool = False) -> None:
-        self.available = available
-        self.fail = fail
-        self.last_prompt: Prompt | None = None
-
-    @property
-    def info(self) -> ProviderInfo:
-        return ProviderInfo(name="fake", privacy=PrivacyClass.PRIVATE)
-
-    def is_available(self) -> bool:
-        return self.available
-
-    async def complete(self, prompt: Prompt, *, model: str | None = None) -> Completion:
-        self.last_prompt = prompt
-        if self.fail:
-            raise ProviderError("fakellm", "kota doldu", retryable=True)
-        return Completion(
-            text="Bu bir test.",
-            model=model or "fake-llm",
-            provider="fake",
-            usage=Usage(latency_ms=200, cost_usd=0.000123, input_tokens=10, output_tokens=5),
-        )
 
 
 @pytest.fixture

@@ -104,7 +104,6 @@ function StatusBar(): React.JSX.Element {
 
       <span className={styles.statusSpacer} />
 
-      <span className={styles.statusItem}>{t('common.mockNotice')}</span>
       <LocaleSwitch locale={locale} onChange={setLocale} />
     </footer>
   )

@@ -1,14 +1,18 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
 import type { EngineSupervisor } from './engine'
-import type { Locale } from '@shared/ipc'
+import type { DictationController } from './dictation'
+import type { AudioDeviceList, EngineStats, Locale, VaultEntry } from '@shared/ipc'
 import { getLocaleStore } from './locale'
 
 interface IpcDeps {
   engine: EngineSupervisor
+  dictation: DictationController
   getMainWindow: () => BrowserWindow
 }
 
-export function registerIpc({ engine, getMainWindow }: IpcDeps): void {
+export function registerIpc({ engine, dictation, getMainWindow }: IpcDeps): void {
+  // ── Pencere ────────────────────────────────────────────────────────────
+
   ipcMain.handle('window:minimize', () => {
     getMainWindow().minimize()
   })
@@ -28,8 +32,12 @@ export function registerIpc({ engine, getMainWindow }: IpcDeps): void {
 
   ipcMain.handle('window:is-maximized', () => getMainWindow().isMaximized())
 
+  // ── Motor ──────────────────────────────────────────────────────────────
+
   ipcMain.handle('engine:get-state', () => engine.getState())
   ipcMain.handle('engine:restart', () => engine.restart())
+
+  // ── Uygulama ───────────────────────────────────────────────────────────
 
   ipcMain.handle('app:get-version', () => app.getVersion())
   ipcMain.handle('app:get-locale', () => getLocaleStore().get())
@@ -37,6 +45,61 @@ export function registerIpc({ engine, getMainWindow }: IpcDeps): void {
   ipcMain.handle('app:set-locale', (_event, next: Locale) => {
     getLocaleStore().set(next)
   })
+
+  // ── Dikte ──────────────────────────────────────────────────────────────
+
+  ipcMain.handle('dictation:get-state', () => dictation.getState())
+  ipcMain.handle('dictation:toggle', () => dictation.toggle())
+  ipcMain.handle('dictation:cancel', () => dictation.cancel())
+  ipcMain.handle('dictation:paste', (_event, text: string) => dictation.paste(text))
+
+  // ── Mikrofon ───────────────────────────────────────────────────────────
+
+  ipcMain.handle('audio:list-devices', async (): Promise<AudioDeviceList> => {
+    const response = await engine.request<AudioDeviceList>({ type: 'devices:list' })
+    return {
+      devices: response.devices ?? [],
+      current: response.current ?? null,
+      streaming: response.streaming ?? false,
+    }
+  })
+
+  ipcMain.handle(
+    'audio:set-device',
+    async (_event, device: number | null): Promise<AudioDeviceList> => {
+      const response = await engine.request<AudioDeviceList>({
+        type: 'devices:set',
+        device,
+      })
+      // Motor `devices:set` yanıtında listeyi geri göndermiyor; seçimi
+      // uyguladıktan sonra güncel listeyi ayrıca istiyoruz.
+      const list = await engine.request<AudioDeviceList>({ type: 'devices:list' })
+      return {
+        devices: list.devices ?? [],
+        current: response.current ?? list.current ?? null,
+        streaming: response.streaming ?? list.streaming ?? false,
+      }
+    },
+  )
+
+  // ── Veri ───────────────────────────────────────────────────────────────
+
+  ipcMain.handle('stats:get', () => engine.request<EngineStats>({ type: 'stats:get' }))
+
+  ipcMain.handle('vault:list', async (): Promise<VaultEntry[]> => {
+    const response = await engine.request<{ entries: VaultEntry[] }>({ type: 'vault:list' })
+    return response.entries ?? []
+  })
+
+  ipcMain.handle('history:search', async (_event, query: string) => {
+    const response = await engine.request<{ items: Record<string, unknown>[] }>({
+      type: 'history:search',
+      query,
+    })
+    return response.items ?? []
+  })
+
+  // ── Olay yayınları ─────────────────────────────────────────────────────
 
   // Dil main process'te de değişebilir (ileride sistem menülerinden);
   // renderer'ı tek bir yerden haberdar ediyoruz.

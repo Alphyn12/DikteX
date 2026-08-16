@@ -56,14 +56,32 @@ YAPACAKLARIN:
 {_FORBIDDEN}"""
 
 
-def dictation_prompt(text: str, *, vocabulary: list[str] | None = None) -> Prompt:
+def dictation_prompt(
+    text: str,
+    *,
+    vocabulary: list[str] | None = None,
+    language: str | None = None,
+) -> Prompt:
     """Ham transkripti temizleyen istem.
 
     `vocabulary` verilirse bu terimlerin yazımının korunması istenir; STT
     katmanı yanlış duymuş olabilir ama LLM'in onları "düzeltmeye" çalışıp
     bozmaması gerekir (Properties I.4).
+
+    `language` STT'nin tespit ettiği dildir. Açıkça bildirmek gerekiyor:
+    sistem istemi Türkçe yazıldığı için model, İngilizce bir girdiyi Türkçe'ye
+    **çeviriyordu**. Ölçtük — "Thank you." girdisi "Teşekkürler." çıktı.
     """
     system = _DICTATION_SYSTEM
+
+    if language:
+        system += (
+            f"\n\nBU METNİN DİLİ: {language}\n"
+            f"Çıktıyı da {language} dilinde ver. Başka bir dile ÇEVİRME. "
+            "Bu talimatın Türkçe yazılmış olması çıktının Türkçe olacağı "
+            "anlamına gelmez."
+        )
+
     if vocabulary:
         terms = ", ".join(vocabulary[:100])
         system += (

@@ -16,6 +16,13 @@ const MAX_RETRIES = 5
 const BASE_BACKOFF_MS = 500
 const MAX_BACKOFF_MS = 8_000
 const HANDSHAKE_TIMEOUT_MS = 15_000
+/** İstek/yanıt zaman aşımı. STT + LLM zinciri birkaç saniye sürebilir. */
+const REQUEST_TIMEOUT_MS = 30_000
+
+interface PendingRequest {
+  resolve: (value: unknown) => void
+  timer: NodeJS.Timeout
+}
 
 export interface EngineOptions {
   port: number
@@ -26,6 +33,8 @@ export class EngineSupervisor extends EventEmitter {
   private socket: WebSocket | null = null
   private retryTimer: NodeJS.Timeout | null = null
   private handshakeTimer: NodeJS.Timeout | null = null
+  private readonly pending = new Map<string, PendingRequest>()
+  private requestCounter = 0
   /** Uygulama kapanırken yeniden başlatmayı bastırır. */
   private shuttingDown = false
 
@@ -187,16 +196,70 @@ export class EngineSupervisor extends EventEmitter {
 
   private handleMessage(msg: unknown): void {
     if (typeof msg !== 'object' || msg === null || !('type' in msg)) return
-    const { type } = msg as { type: unknown }
+    const message = msg as { type: unknown; id?: unknown }
 
-    if (type === 'ready') {
+    if (message.type === 'ready') {
       const version = 'version' in msg ? String((msg as { version: unknown }).version) : null
       this.clearHandshakeTimer()
       this.setState({ status: 'connected', version, error: null, retries: 0 })
       return
     }
 
+    // İstek/yanıt: `id` taşıyan bir kare bekleyen çağrıyı çözer.
+    if (typeof message.id === 'string') {
+      const pending = this.pending.get(message.id)
+      if (pending) {
+        this.pending.delete(message.id)
+        clearTimeout(pending.timer)
+        pending.resolve(msg)
+        return
+      }
+    }
+
     this.emit('message', msg)
+  }
+
+  /**
+   * Motora tek yönlü komut gönderir.
+   *
+   * Bağlantı yoksa sessizce düşer: kısayola motor kapalıyken basmak hata
+   * penceresi açmamalı, arayüzdeki durum çubuğu zaten sorunu gösteriyor.
+   */
+  send(message: Record<string, unknown>): boolean {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      log(`komut gönderilemedi (motor bağlı değil): ${String(message['type'])}`)
+      return false
+    }
+    this.socket.send(JSON.stringify(message))
+    return true
+  }
+
+  /**
+   * Motora istek gönderir ve yanıtını bekler.
+   *
+   * Her istek benzersiz bir `id` taşır; motor yanıtta aynı `id`'yi geri
+   * yansıtır. Zaman aşımına uğrayan istekler reddedilir ki arayüz sonsuza
+   * kadar beklemesin.
+   */
+  request<T = unknown>(
+    message: Record<string, unknown>,
+    { timeoutMs = REQUEST_TIMEOUT_MS }: { timeoutMs?: number } = {},
+  ): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        reject(new Error('Motor bağlı değil'))
+        return
+      }
+
+      const id = `r${++this.requestCounter}`
+      const timer = setTimeout(() => {
+        this.pending.delete(id)
+        reject(new Error(`Motor yanıt vermedi: ${String(message['type'])}`))
+      }, timeoutMs)
+
+      this.pending.set(id, { resolve: resolve as (value: unknown) => void, timer })
+      this.socket.send(JSON.stringify({ ...message, id }))
+    })
   }
 
   private scheduleRetry(reason: string): void {
@@ -245,6 +308,13 @@ export class EngineSupervisor extends EventEmitter {
   }
 
   private closeSocket(): void {
+    // Bekleyen istekler bağlantıyla birlikte düşer; yoksa çağıranlar
+    // zaman aşımına kadar asılı kalır.
+    for (const [, pending] of this.pending) {
+      clearTimeout(pending.timer)
+    }
+    this.pending.clear()
+
     if (!this.socket) return
     const socket = this.socket
     this.socket = null
@@ -273,4 +343,8 @@ export class EngineSupervisor extends EventEmitter {
 function forwardLog(tag: string, data: Buffer): void {
   const text = data.toString('utf8').trimEnd()
   if (text) console.log(`[${tag}] ${text}`)
+}
+
+function log(message: string): void {
+  console.log(`[motor] ${message}`)
 }

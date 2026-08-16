@@ -1,9 +1,12 @@
 import { app, BrowserWindow, type Tray } from 'electron'
 import { EngineSupervisor } from './engine'
 import { createMainWindow } from './windows/mainWindow'
+import { createHudWindow, syncHud } from './windows/hudWindow'
 import { createTray } from './tray'
 import { registerIpc } from './ipc'
 import { loadEnv } from './env'
+import { DictationController, broadcastDictation } from './dictation'
+import { registerHotkeys, unregisterHotkeys } from './hotkeys'
 
 /** Motorun dinlediği port. `.env.local` ile değiştirilebilir. */
 const DEFAULT_ENGINE_PORT = 8756
@@ -26,16 +29,16 @@ async function main(): Promise<void> {
   let quitting = false
 
   app.on('second-instance', () => {
-    const window = mainWindow
-    if (!window || window.isDestroyed()) return
-    if (!window.isVisible()) window.show()
-    if (window.isMinimized()) window.restore()
-    window.focus()
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    if (!mainWindow.isVisible()) mainWindow.show()
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
   })
 
   await app.whenReady()
 
   let mainWindow = createMainWindow()
+  let hudWindow = createHudWindow()
   // Tepsi referansı tutulmazsa çöp toplayıcı ikonu yok eder.
   let tray: Tray | null = null
 
@@ -44,8 +47,19 @@ async function main(): Promise<void> {
     return mainWindow
   }
 
-  registerIpc({ engine, getMainWindow })
-  tray = createTray(getMainWindow)
+  const getHudWindow = (): BrowserWindow => {
+    if (hudWindow.isDestroyed()) hudWindow = createHudWindow()
+    return hudWindow
+  }
+
+  const dictation = new DictationController(engine, (state) => {
+    broadcastDictation(state)
+    syncHud(getHudWindow(), state)
+  })
+
+  registerIpc({ engine, dictation, getMainWindow })
+  tray = createTray(getMainWindow, dictation)
+  registerHotkeys(dictation)
 
   // Başlık çubuğundaki X ve sistem kapatma isteği pencereyi gizler.
   mainWindow.on('close', (event) => {
@@ -74,6 +88,7 @@ async function main(): Promise<void> {
 
   app.on('before-quit', () => {
     quitting = true
+    unregisterHotkeys()
     engine.stop()
     tray?.destroy()
     tray = null

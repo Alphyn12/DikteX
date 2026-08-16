@@ -35,6 +35,15 @@ export const tr = {
   'panel.subtitle': '{dictations} dikte · {apps} uygulama · {meetings} toplantı',
   'panel.startDictation': 'Dikte başlat',
   'panel.recordMeeting': 'Toplantı kaydı',
+  'panel.stopDictation': 'Dikteyi bitir',
+  'stat.dictations': 'DİKTE',
+  'stat.dictations.unit': 'bugün',
+  'stat.audio': 'KAYDEDİLEN SES',
+  'stat.audio.unit': 'saniye',
+  'engineStrip.ready': 'Hazır · kısayolu bekliyor',
+  'engineStrip.detail': 'groq whisper-large-v3-turbo · pre-roll 1000 ms · gemini-2.5-flash-lite',
+  'feed.empty': 'Henüz dikte yok. Ctrl+Alt+Space ile başla.',
+  'feed.pasted': 'yapıştırıldı',
 
   'stat.words': 'DİKTE EDİLEN',
   'stat.words.unit': 'kelime',
@@ -123,6 +132,44 @@ export const tr = {
   'tray.show': 'OmniVoice’u göster',
   'tray.startDictation': 'Dikte başlat',
   'tray.quit': 'Çıkış',
+
+  // ── HUD ──────────────────────────────────────────────────────────────────
+  'hud.listening': 'Dinliyor',
+  'hud.preRoll': 'ön bellekten {seconds} sn alındı',
+  'hud.quickDictation': 'HIZLI DİKTE',
+  'hud.escCancel': 'Esc iptal',
+  'hud.processing': 'İşleniyor',
+  'hud.step.stt': 'konuşma metne çevriliyor',
+  'hud.step.llm': 'metin temizleniyor',
+  'hud.step.transcribe': 'Konuşma tanıma',
+  'hud.step.fillers': 'Dolgu ayıklama · {count} ses',
+  'hud.step.polish': 'Noktalama ve bağlam',
+  'hud.readyToPaste': 'Yapıştırmaya hazır',
+  'hud.paste': 'Yapıştır',
+  'hud.cancel': 'İptal',
+  'hud.fillersRemoved': '{count} dolgu ayıklandı',
+  'hud.localOnly': 'yalnız yerel',
+  'hud.error': 'Dikte tamamlanamadı',
+  'hud.dismiss': 'Kapat',
+
+  // ── Mikrofon ─────────────────────────────────────────────────────────────
+  'mic.title': 'MİKROFON',
+  'mic.systemDefault': 'Sistem varsayılanı',
+  'mic.systemDefaultHint': 'Windows’ta seçili aygıt kullanılır',
+  'mic.refresh': 'Yenile',
+  'mic.streaming': 'akış açık',
+  'mic.stopped': 'akış kapalı',
+  'mic.noDevices': 'Mikrofon bulunamadı',
+  'mic.alwaysListening': 'Sıfır gecikme için mikrofon sürekli dinlenir',
+  'mic.alwaysListeningHint':
+    'Son 1 saniye yalnız bellekte tutulur, diske yazılmaz ve kısayola basılmadıkça hiçbir yere gönderilmez.',
+
+  // ── Harcama ──────────────────────────────────────────────────────────────
+  'spend.title': 'HARCAMA',
+  'spend.today': 'bugün',
+  'spend.month': 'bu ay',
+  'spend.budget': 'bütçe',
+  'spend.calls': '{count} çağrı',
 
   // ── Genel ────────────────────────────────────────────────────────────────
   'lang.switch': 'Dil',

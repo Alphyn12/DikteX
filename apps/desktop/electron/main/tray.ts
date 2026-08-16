@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { app, Menu, Tray, nativeImage, type BrowserWindow } from 'electron'
 import { getLocaleStore } from './locale'
+import type { DictationController } from './dictation'
 
 /**
  * Sistem tepsisi ikonu.
@@ -9,7 +10,10 @@ import { getLocaleStore } from './locale'
  * gerekir, bu yüzden pencere kapatıldığında uygulama sonlanmaz, tepsiye
  * çekilir. Gerçek çıkış yalnız tepsi menüsünden yapılır.
  */
-export function createTray(getWindow: () => BrowserWindow): Tray {
+export function createTray(
+  getWindow: () => BrowserWindow,
+  dictation: DictationController,
+): Tray {
   const iconPath = app.isPackaged
     ? join(process.resourcesPath, 'tray.png')
     : join(app.getAppPath(), 'resources', 'tray.png')
@@ -31,9 +35,8 @@ export function createTray(getWindow: () => BrowserWindow): Tray {
       Menu.buildFromTemplate([
         { label: t.show, click: show },
         {
-          label: t.startDictation,
-          // Faz 2.2'de global kısayolla aynı boru hattına bağlanacak.
-          enabled: false,
+          label: `${t.startDictation}\tCtrl+Alt+Space`,
+          click: () => dictation.toggle(),
         },
         { type: 'separator' },
         { label: t.quit, click: () => app.quit() },

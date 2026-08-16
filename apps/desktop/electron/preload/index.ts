@@ -24,12 +24,22 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'app:get-version',
   'app:get-locale',
   'app:set-locale',
+  'dictation:get-state',
+  'dictation:toggle',
+  'dictation:cancel',
+  'dictation:paste',
+  'audio:list-devices',
+  'audio:set-device',
+  'stats:get',
+  'vault:list',
+  'history:search',
 ])
 
 const EVENT_CHANNELS = new Set<IpcEventChannel>([
   'engine:state-changed',
   'window:maximize-changed',
   'app:locale-changed',
+  'dictation:changed',
 ])
 
 /** Hangi pencerede olduğumuzu HTML dosya adından çıkarıyoruz. */

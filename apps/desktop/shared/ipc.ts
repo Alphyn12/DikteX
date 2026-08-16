@@ -6,6 +6,26 @@
  * tipi yakalanır.
  */
 
+import type {
+  AudioDeviceList,
+  DictationState,
+  EngineStats,
+  VaultEntry,
+} from './dictation'
+
+export type {
+  AudioDevice,
+  AudioDeviceList,
+  DictationResult,
+  DictationState,
+  DictationStatus,
+  EngineStats,
+  SpendStats,
+  TodayStats,
+  VaultEntry,
+} from './dictation'
+export { INITIAL_DICTATION_STATE } from './dictation'
+
 /** Python motorunun yaşam döngüsü durumu. */
 export type EngineStatus =
   | 'starting' // süreç başlatıldı, henüz el sıkışılmadı
@@ -44,6 +64,22 @@ export interface IpcInvokeMap {
   'app:get-version': { args: []; result: string }
   'app:get-locale': { args: []; result: Locale }
   'app:set-locale': { args: [locale: Locale]; result: void }
+
+  // ── Dikte ──────────────────────────────────────────────────────────────
+  'dictation:get-state': { args: []; result: DictationState }
+  'dictation:toggle': { args: []; result: void }
+  'dictation:cancel': { args: []; result: void }
+  /** Pre-flight'taki metni yapıştırır. Kullanıcı düzenlemişse düzenlenmiş hâli. */
+  'dictation:paste': { args: [text: string]; result: void }
+
+  // ── Mikrofon ───────────────────────────────────────────────────────────
+  'audio:list-devices': { args: []; result: AudioDeviceList }
+  'audio:set-device': { args: [device: number | null]; result: AudioDeviceList }
+
+  // ── Veri ───────────────────────────────────────────────────────────────
+  'stats:get': { args: []; result: EngineStats }
+  'vault:list': { args: []; result: VaultEntry[] }
+  'history:search': { args: [query: string]; result: Record<string, unknown>[] }
 }
 
 /**
@@ -53,6 +89,7 @@ export interface IpcEventMap {
   'engine:state-changed': EngineState
   'window:maximize-changed': boolean
   'app:locale-changed': Locale
+  'dictation:changed': DictationState
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap

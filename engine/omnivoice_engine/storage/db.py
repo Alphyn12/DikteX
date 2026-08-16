@@ -13,7 +13,7 @@ import logging
 import sqlite3
 import threading
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -254,22 +254,41 @@ class Database:
                 return []
         return [dict(row) for row in rows]
 
+    @staticmethod
+    def _local_day_bounds() -> tuple[str, str]:
+        """Kullanıcının bugününün UTC karşılığı.
+
+        Kayıtlar UTC olarak saklanır (sıralama için doğrusu bu), ama "bugün"
+        kullanıcının yerel günüdür. İkisini doğrudan karşılaştırmak, saat
+        farkı yüzünden gece yarısı civarında yanlış sayım verirdi: Türkiye'de
+        yerel 01:00, UTC'de hâlâ bir önceki gün.
+        """
+        now = datetime.now().astimezone()
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1)
+        return start.astimezone(UTC).isoformat(), end.astimezone(UTC).isoformat()
+
     def today_stats(self) -> dict[str, Any]:
         """Panelin "Bugün" başlığı için sayılar."""
-        today = datetime.now().strftime("%Y-%m-%d")
+        start, end = self._local_day_bounds()
         with self._lock:
             row = self._conn.execute(
                 """
                 SELECT
-                    COUNT(*)                       AS dictations,
-                    COUNT(DISTINCT app_name)       AS apps,
+                    COUNT(*)                          AS dictations,
+                    COUNT(DISTINCT app_name)          AS apps,
                     COALESCE(SUM(fillers_removed), 0) AS fillers,
                     COALESCE(SUM(audio_seconds), 0)   AS audio_seconds,
-                    COALESCE(AVG(total_ms), 0)        AS avg_ms
+                    -- "Gecikme" kullanıcı için konuşmayı bitirdikten sonra
+                    -- beklediği süredir. `total_ms` kaydın başından ölçtüğü
+                    -- için konuşma süresini de içerir ve gecikmeyi olduğundan
+                    -- kat kat yüksek gösterirdi.
+                    COALESCE(AVG(stt_ms + llm_ms), 0)  AS avg_ms,
+                    COALESCE(AVG(total_ms), 0)         AS avg_total_ms
                 FROM dictations
-                WHERE substr(created_at, 1, 10) = ?
+                WHERE created_at >= ? AND created_at < ?
                 """,
-                (today,),
+                (start, end),
             ).fetchone()
         return dict(row) if row else {}
 
@@ -307,19 +326,25 @@ class Database:
             self._conn.commit()
 
     def spend_summary(self) -> SpendSummary:
-        today = datetime.now(UTC).strftime("%Y-%m-%d")
-        month = datetime.now(UTC).strftime("%Y-%m")
+        # Harcama da kullanıcının yerel gününe/ayına göre özetlenir; bütçe
+        # uyarısı onun takvimine göre anlam taşır.
+        day_start, day_end = self._local_day_bounds()
+        now = datetime.now().astimezone()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_start_utc = month_start.astimezone(UTC).isoformat()
+
         with self._lock:
             row = self._conn.execute(
                 """
                 SELECT
-                    COALESCE(SUM(CASE WHEN substr(created_at,1,10) = ? THEN cost_usd END), 0) AS today,
-                    COALESCE(SUM(CASE WHEN substr(created_at,1,7)  = ? THEN cost_usd END), 0) AS month,
+                    COALESCE(SUM(CASE WHEN created_at >= ? AND created_at < ?
+                                      THEN cost_usd END), 0) AS today,
+                    COALESCE(SUM(CASE WHEN created_at >= ? THEN cost_usd END), 0) AS month,
                     COALESCE(SUM(cost_usd), 0) AS total,
                     COUNT(*) AS calls
                 FROM spend
                 """,
-                (today, month),
+                (day_start, day_end, month_start_utc),
             ).fetchone()
         return SpendSummary(
             today_usd=float(row["today"]),

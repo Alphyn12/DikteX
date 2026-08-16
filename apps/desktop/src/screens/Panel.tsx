@@ -1,18 +1,23 @@
+import type { EngineStats } from '@shared/ipc'
 import { useI18n } from '../i18n/useI18n'
-import { getContent, STATS, type ActionItem, type FeedItem } from '../mock/data'
-import { Badge, Card, CardLabel, Dot, Sparkline, Waveform, tone } from '../components/primitives'
-import styles from './Panel.module.css'
+import { getContent, type ModuleId } from '../mock/data'
+import { Badge, Card, CardLabel, Sparkline, Waveform, tone } from '../components/primitives'
+import { useDictation } from '../hooks/useDictation'
+import { useEngineData, type HistoryItem } from '../hooks/useEngineData'
 import { cx } from '../utils/cx'
+import styles from './Panel.module.css'
 
 /**
  * Panel ekranı — mockup 1a.
  *
- * Faz 1'de örnek veriyle çalışır. Faz 2'de `getContent` yerine motordan gelen
- * gerçek veri bağlanacak; bu dosyadaki yerleşim değişmeyecek.
+ * İstatistikler, harcama ve dikte akışı motordan gelen **gerçek** veridir.
+ * Sağ sütundaki action items / not defteri / sözlük kartları hâlâ örnek
+ * veriyle çalışıyor; onların kaynağı Faz 4 ve Faz 6'da bağlanacak.
  */
 export function Panel(): React.JSX.Element {
   const { t, locale, formatDate } = useI18n()
   const content = getContent(locale)
+  const { stats, history, error } = useEngineData()
 
   const today = formatDate(new Date(), {
     day: 'numeric',
@@ -21,6 +26,9 @@ export function Panel(): React.JSX.Element {
     weekday: 'long',
   })
 
+  const dictations = stats?.today.dictations ?? 0
+  const apps = stats?.today.apps ?? 0
+
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
@@ -28,19 +36,12 @@ export function Panel(): React.JSX.Element {
           <h1 className={styles.title}>{t('panel.title')}</h1>
           <p className={styles.subtitle}>
             {today} ·{' '}
-            {t('panel.subtitle', {
-              dictations: 27,
-              apps: 4,
-              meetings: content.meetingCount,
-            })}
+            {t('panel.subtitle', { dictations, apps, meetings: content.meetingCount })}
           </p>
         </div>
 
         <div className={styles.headerActions}>
-          <button type="button" className={styles.primaryButton}>
-            {t('panel.startDictation')}
-            <span className={styles.primaryShortcut}>Ctrl+Alt+Space</span>
-          </button>
+          <StartButton />
           <button type="button" className={styles.secondaryButton}>
             {t('panel.recordMeeting')}
           </button>
@@ -49,64 +50,127 @@ export function Panel(): React.JSX.Element {
 
       <div className={styles.body}>
         <div className={styles.main}>
-          <Stats />
-          <EngineStrip detail={content.engineDetail} />
-          <Feed items={content.feed} />
+          <Stats stats={stats} />
+          <EngineStrip stats={stats} />
+          <Feed items={history} error={error} />
         </div>
 
         <aside className={styles.aside}>
           <div className={styles.asideScroll}>
+            <SpendCard stats={stats} />
             <ActionItems items={content.actionItems} source={content.actionItemsSource} />
             <Scratchpad notes={content.scratchpad} />
             <Vocabulary terms={content.vocabulary} extra={content.vocabularyExtra} />
           </div>
-          <BatteryNotice model={content.batteryModel} />
         </aside>
       </div>
     </div>
   )
 }
 
+// ── Dikte başlat ───────────────────────────────────────────────────────────
+
+function StartButton(): React.JSX.Element {
+  const { t } = useI18n()
+  const { state, toggle } = useDictation()
+  const active = state.status !== 'idle'
+
+  return (
+    <button
+      type="button"
+      className={styles.primaryButton}
+      onClick={toggle}
+      aria-pressed={active}
+    >
+      {active ? t('panel.stopDictation') : t('panel.startDictation')}
+      <span className={styles.primaryShortcut}>Ctrl+Alt+Space</span>
+    </button>
+  )
+}
+
 // ── İstatistikler ──────────────────────────────────────────────────────────
 
-function Stats(): React.JSX.Element {
+/** Her istatistik kartının hangi modül rengini taşıdığı. */
+const STAT_TONES: ModuleId[] = ['audio', 'prompt', 'automation', 'system']
+
+function Stats({ stats }: { stats: EngineStats | null }): React.JSX.Element {
   const { t, formatNumber } = useI18n()
+  const today = stats?.today
+
+  // Kelime sayısı henüz ayrı tutulmuyor; final metinlerin uzunluğundan
+  // türetmek yanıltıcı olurdu, bu yüzden dikte sayısını gösteriyoruz.
+  const cards = [
+    {
+      label: 'stat.dictations' as const,
+      unit: 'stat.dictations.unit' as const,
+      value: today?.dictations ?? 0,
+    },
+    {
+      label: 'stat.audio' as const,
+      unit: 'stat.audio.unit' as const,
+      value: Math.round(today?.audio_seconds ?? 0),
+    },
+    {
+      label: 'stat.fillers' as const,
+      unit: 'stat.fillers.unit' as const,
+      value: today?.fillers ?? 0,
+    },
+    {
+      label: 'stat.latency' as const,
+      unit: 'stat.latency.unit' as const,
+      value: Math.round(today?.avg_ms ?? 0),
+    },
+  ]
+
   return (
     <div className={styles.stats}>
-      {STATS.map((stat) => (
-        <Card key={stat.label} module={stat.module} className={styles.stat}>
-          <CardLabel>{t(stat.label)}</CardLabel>
-          <div className={styles.statValue}>
-            <span className={cx(styles.statNumber, 'tabular')}>{formatNumber(stat.value)}</span>
-            <span className={styles.statUnit}>{t(stat.unit)}</span>
-          </div>
-          <Sparkline values={stat.spark} module={stat.module} />
-        </Card>
-      ))}
+      {cards.map((card, index) => {
+        const module = STAT_TONES[index] ?? 'audio'
+        return (
+          <Card key={card.label} module={module} className={styles.stat}>
+            <CardLabel>{t(card.label)}</CardLabel>
+            <div className={styles.statValue}>
+              <span className={cx(styles.statNumber, 'tabular')}>
+                {formatNumber(card.value)}
+              </span>
+              <span className={styles.statUnit}>{t(card.unit)}</span>
+            </div>
+            {/*
+              Sparkline günlük dağılımı gösterecek; o veri henüz toplanmıyor.
+              Uydurma bir eğri çizmektense boş bir şerit bırakıyoruz.
+            */}
+            <Sparkline values={[]} module={module} />
+          </Card>
+        )
+      })}
     </div>
   )
 }
 
 // ── Motor durum şeridi ─────────────────────────────────────────────────────
 
-function EngineStrip({ detail }: { detail: string }): React.JSX.Element {
+function EngineStrip({ stats }: { stats: EngineStats | null }): React.JSX.Element {
   const { t, formatNumber } = useI18n()
+  const { state } = useDictation()
+  const avgMs = Math.round(stats?.today.avg_ms ?? 0)
+
   return (
     <div className={styles.engineStrip}>
       <Waveform bars={22} seed={3} module="audio" variant="panel" height={28} />
       <div className={styles.engineText}>
-        <div className={styles.engineTitle}>{t('engineStrip.title')}</div>
-        <div className={styles.engineDetail} title={detail}>
-          {detail}
+        <div className={styles.engineTitle}>
+          {state.status === 'idle' ? t('engineStrip.ready') : t(`hud.${state.status}` as never)}
         </div>
+        <div className={styles.engineDetail}>{t('engineStrip.detail')}</div>
       </div>
       <div className={styles.engineMetric}>
         {/*
-          Mockup'ta burada sabit "180 ms" yazıyordu — o bir yerel GPU rakamıydı.
-          Faz 2'de bu alan gerçek ölçülen gecikmeyle dolacak; sahte performans
-          sayısı gösterilmiyor.
+          Mockup'ta sabit "180 ms" yazıyordu — o bir yerel GPU rakamıydı.
+          Burada gösterilen, bugünkü diktelerin gerçek ortalama süresi.
         */}
-        <div className={cx(styles.engineLatency, 'tabular')}>{formatNumber(1240)} ms</div>
+        <div className={cx(styles.engineLatency, 'tabular')}>
+          {avgMs > 0 ? `${formatNumber(avgMs)} ms` : '—'}
+        </div>
         <div className={styles.engineNote}>{t('engineStrip.note')}</div>
       </div>
     </div>
@@ -115,55 +179,109 @@ function EngineStrip({ detail }: { detail: string }): React.JSX.Element {
 
 // ── Dikte akışı ────────────────────────────────────────────────────────────
 
-function Feed({ items }: { items: readonly FeedItem[] }): React.JSX.Element {
-  const { t } = useI18n()
+function Feed({
+  items,
+  error,
+}: {
+  items: HistoryItem[]
+  error: string | null
+}): React.JSX.Element {
+  const { t, formatNumber } = useI18n()
+
   return (
     <section className={styles.feed}>
       <div className={styles.feedHeader}>
         <h2 className={styles.feedTitle}>{t('feed.title')}</h2>
         <span className={styles.rule} />
-        <button type="button" className={styles.feedAll}>
-          {t('feed.viewAll')}
-        </button>
+        <span className={styles.feedAll}>{t('feed.viewAll')}</span>
       </div>
 
       <div className={styles.feedList}>
+        {error && <p className={styles.feedEmpty}>{error}</p>}
+
+        {!error && items.length === 0 && (
+          <p className={styles.feedEmpty}>{t('feed.empty')}</p>
+        )}
+
         {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={styles.feedItem}
-            style={tone(item.module)}
-          >
+          <article key={item.id} className={styles.feedItem} style={tone('audio')}>
             <div className={styles.feedMain}>
               <div className={styles.feedTags}>
-                <span className={styles.feedApp}>{item.app}</span>
-                <Badge module={item.module} variant="tone">
-                  {item.tag}
-                </Badge>
-                <Badge variant="neutral">{item.tag2}</Badge>
+                <span className={styles.feedApp}>{item.app_name ?? '—'}</span>
+                {item.fillers_removed > 0 && (
+                  <Badge module="automation" variant="tone">
+                    {t('hud.fillersRemoved', { count: item.fillers_removed })}
+                  </Badge>
+                )}
+                {item.language && <Badge variant="neutral">{item.language}</Badge>}
+                {item.pasted === 1 && <Badge variant="neutral">{t('feed.pasted')}</Badge>}
               </div>
-              <p className={styles.feedBody}>{item.body}</p>
+              <p className={cx(styles.feedBody, 'selectable')}>{item.final_text}</p>
             </div>
             <div className={cx(styles.feedMeta, 'tabular')}>
-              {item.time}
+              {formatTime(item.created_at)}
               <br />
-              {item.meta}
+              {formatNumber(item.total_ms)} ms
+              {item.cost_usd > 0 && (
+                <>
+                  <br />${item.cost_usd.toFixed(5)}
+                </>
+              )}
             </div>
-          </button>
+          </article>
         ))}
       </div>
     </section>
   )
 }
 
-// ── Sağ sütun ──────────────────────────────────────────────────────────────
+// ── Harcama ────────────────────────────────────────────────────────────────
+
+function SpendCard({ stats }: { stats: EngineStats | null }): React.JSX.Element {
+  const { t } = useI18n()
+  const spend = stats?.spend
+
+  const month = spend?.monthUsd ?? 0
+  const budget = spend?.budgetUsd ?? 0
+  const ratio = budget > 0 ? Math.min(1, month / budget) : 0
+
+  return (
+    <Card module="vault">
+      <CardLabel>{t('spend.title')}</CardLabel>
+
+      <div className={styles.spendRow}>
+        <span className={styles.spendLabel}>{t('spend.today')}</span>
+        <span className={cx(styles.spendValue, 'tabular')}>
+          ${(spend?.todayUsd ?? 0).toFixed(4)}
+        </span>
+      </div>
+      <div className={styles.spendRow}>
+        <span className={styles.spendLabel}>{t('spend.month')}</span>
+        <span className={cx(styles.spendValue, 'tabular')}>${month.toFixed(4)}</span>
+      </div>
+
+      {budget > 0 && (
+        <>
+          <div className={styles.spendBar}>
+            <span className={styles.spendFill} style={{ width: `${ratio * 100}%` }} />
+          </div>
+          <div className={styles.spendFooter}>
+            <span>{t('spend.budget')} ${budget.toFixed(2)}</span>
+            <span>{t('spend.calls', { count: spend?.callCount ?? 0 })}</span>
+          </div>
+        </>
+      )}
+    </Card>
+  )
+}
+
+// ── Sağ sütun (örnek veri — Faz 4/6'da bağlanacak) ─────────────────────────
 
 function ActionItems({
   items,
   source,
 }: {
-  items: readonly ActionItem[]
+  items: readonly { id: string; text: string; due: string; done: boolean }[]
   source: string
 }): React.JSX.Element {
   const { t } = useI18n()
@@ -175,18 +293,18 @@ function ActionItems({
       </div>
       <div className={styles.list}>
         {items.map((item) => (
-          <button key={item.id} type="button" className={styles.action}>
+          <div key={item.id} className={styles.action}>
             <span
-              className={cx(styles.checkbox, item.done ? styles.checkboxDone : '')}
+              className={cx(styles.checkbox, item.done && styles.checkboxDone)}
               aria-hidden="true"
             >
               {item.done ? '✓' : ''}
             </span>
-            <span className={cx(styles.actionText, item.done ? styles.actionTextDone : '')}>
+            <span className={cx(styles.actionText, item.done && styles.actionTextDone)}>
               {item.text}
               {item.due && <span className={styles.actionOwner}> · {item.due}</span>}
             </span>
-          </button>
+          </div>
         ))}
       </div>
     </Card>
@@ -207,9 +325,7 @@ function Scratchpad({ notes }: { notes: readonly string[] }): React.JSX.Element 
       </div>
       <div className={styles.cardFooter}>
         <span className={styles.footerMeta}>{t('aside.rawIdeas', { count: notes.length })}</span>
-        <button type="button" className={styles.footerAction}>
-          {t('aside.compile')}
-        </button>
+        <span className={styles.footerAction}>{t('aside.compile')}</span>
       </div>
     </Card>
   )
@@ -239,19 +355,10 @@ function Vocabulary({
   )
 }
 
-function BatteryNotice({ model }: { model: string }): React.JSX.Element {
-  const { t } = useI18n()
-  return (
-    <div className={styles.notice}>
-      <span className={styles.noticeDot}>
-        <Dot module="automation" />
-      </span>
-      <p className={styles.noticeText}>
-        {t('aside.batteryNotice', { model })}{' '}
-        <button type="button" className={styles.noticeAction}>
-          {t('aside.undo')}
-        </button>
-      </p>
-    </div>
-  )
+// ── Yardımcı ───────────────────────────────────────────────────────────────
+
+function formatTime(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }

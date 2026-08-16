@@ -189,6 +189,21 @@ class DictationPipeline:
                 session.level_task.cancel()
 
             clip = self._mic.stop_recording()
+
+            # Sessiz kaydı sağlayıcıya göndermiyoruz: Whisper boş sese metin
+            # uydurur ("Thank you.", "Altyazı M.K."). Kullanıcı kısayola yanlışlıkla
+            # basmış olabilir; ona uydurma bir cümle yapıştırmak yerine sessizce
+            # boşa dönüyoruz.
+            if clip.is_silent():
+                log.info(
+                    "Kayıt sessiz (tepe %.4f, rms %.4f) — sağlayıcıya gönderilmedi",
+                    clip.peak,
+                    clip.rms,
+                )
+                self._session = None
+                await self._set_state(DictationState.IDLE, silent=True)
+                return
+
             await self._set_state(DictationState.PROCESSING, step="stt")
 
         # Ağ işleri kilidin dışında; kullanıcı bu sırada iptal edebilmeli.
@@ -247,7 +262,9 @@ class DictationPipeline:
 
         if self._llm.is_available() and local.text:
             try:
-                completion = await self._llm.complete(dictation_prompt(local.text))
+                completion = await self._llm.complete(
+                    dictation_prompt(local.text, language=transcript.language)
+                )
                 final_text = sanitize_output(completion.text) or local.text
                 llm_provider = completion.provider
                 llm_model = completion.model

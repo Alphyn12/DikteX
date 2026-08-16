@@ -44,37 +44,73 @@ VK_CONTROL = 0x11
 VK_V = 0x56
 
 
+#: `ULONG_PTR` mimariye göre 4 veya 8 bayt. `WPARAM` bu tipin ctypes karşılığı.
+_ULONG_PTR = wintypes.WPARAM
+
+
 class _KEYBDINPUT(ctypes.Structure):
     _fields_ = [
         ("wVk", wintypes.WORD),
         ("wScan", wintypes.WORD),
         ("dwFlags", wintypes.DWORD),
         ("time", wintypes.DWORD),
-        ("dwExtraInfo", ctypes.POINTER(wintypes.ULONG)),
+        ("dwExtraInfo", _ULONG_PTR),
+    ]
+
+
+class _MOUSEINPUT(ctypes.Structure):
+    """Kullanılmıyor ama birlik boyutunu belirleyen en büyük üye bu."""
+
+    _fields_ = [
+        ("dx", wintypes.LONG),
+        ("dy", wintypes.LONG),
+        ("mouseData", wintypes.DWORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", _ULONG_PTR),
+    ]
+
+
+class _HARDWAREINPUT(ctypes.Structure):
+    _fields_ = [
+        ("uMsg", wintypes.DWORD),
+        ("wParamL", wintypes.WORD),
+        ("wParamH", wintypes.WORD),
     ]
 
 
 class _INPUTUNION(ctypes.Union):
-    _fields_ = [("ki", _KEYBDINPUT), ("padding", ctypes.c_byte * 24)]
+    _fields_ = [("mi", _MOUSEINPUT), ("ki", _KEYBDINPUT), ("hi", _HARDWAREINPUT)]
 
 
 class _INPUT(ctypes.Structure):
+    """Win32 `INPUT`.
+
+    Birliğin üç üyesi de tanımlı olmalı: `SendInput`'a geçilen `cbSize`
+    yapının boyutundan hesaplanır ve Windows bunu birebir bekler. Yalnız
+    `KEYBDINPUT` tanımlanırsa yapı x64'te 40 yerine 32 bayt olur; Windows o
+    zaman hiçbir olay göndermeden **sessizce 0 döndürür**. Ölçtük — yapıştırma
+    hiç çalışmıyordu ve hiçbir hata görünmüyordu.
+    """
+
+    _anonymous_ = ("union",)
     _fields_ = [("type", wintypes.DWORD), ("union", _INPUTUNION)]
 
 
+_user32.SendInput.argtypes = (wintypes.UINT, ctypes.POINTER(_INPUT), ctypes.c_int)
+_user32.SendInput.restype = wintypes.UINT
+
+
 def _key_event(vk: int, *, up: bool) -> _INPUT:
-    return _INPUT(
-        type=INPUT_KEYBOARD,
-        union=_INPUTUNION(
-            ki=_KEYBDINPUT(
-                wVk=vk,
-                wScan=0,
-                dwFlags=KEYEVENTF_KEYUP if up else 0,
-                time=0,
-                dwExtraInfo=None,
-            )
-        ),
+    event = _INPUT(type=INPUT_KEYBOARD)
+    event.ki = _KEYBDINPUT(
+        wVk=vk,
+        wScan=0,
+        dwFlags=KEYEVENTF_KEYUP if up else 0,
+        time=0,
+        dwExtraInfo=0,
     )
+    return event
 
 
 def _send_ctrl_v() -> bool:
@@ -88,7 +124,13 @@ def _send_ctrl_v() -> bool:
     array = (_INPUT * len(events))(*events)
     sent = _user32.SendInput(len(events), array, ctypes.sizeof(_INPUT))
     if sent != len(events):
-        log.error("SendInput eksik gönderdi: %d/%d", sent, len(events))
+        log.error(
+            "SendInput eksik gönderdi: %d/%d (hata %d, yapı %d bayt)",
+            sent,
+            len(events),
+            ctypes.get_last_error(),
+            ctypes.sizeof(_INPUT),
+        )
         return False
     return True
 
