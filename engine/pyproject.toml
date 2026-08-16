@@ -10,6 +10,14 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "python-dotenv>=1.0",
+    # Ses yakalama — PortAudio tekerlekleriyle gelir, ayrı kurulum gerekmez.
+    "sounddevice>=0.5",
+    "numpy>=2.0",
+    # Windows tümleşikliği: pano, pencere odağı, süreç adı.
+    "pywin32>=306; sys_platform == 'win32'",
+    "psutil>=6.0",
+    # API Kasası — Windows Credential Manager arka ucu.
+    "keyring>=25.0",
 ]
 
 [project.optional-dependencies]

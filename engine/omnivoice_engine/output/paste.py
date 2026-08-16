@@ -1,0 +1,180 @@
+"""Yapıştırma motoru (Properties V.7, Faz 2.10).
+
+Metni hedef uygulamaya göndermenin iki yolu var:
+
+- **Tuş tuş yazmak** (`SendInput` ile her karakter): yavaş, Türkçe karakterlerde
+  klavye düzenine bağımlı, uzun metinde saniyeler sürer.
+- **Pano + Ctrl+V**: anlık, düzenden bağımsız, biçimlendirmeyi korur.
+
+İkincisini kullanıyoruz. Panonun kullanıcıya ait olduğunu unutmuyoruz: eski
+içerik yapıştırmadan önce saklanır, sonra geri konur.
+"""
+
+from __future__ import annotations
+
+import ctypes
+import logging
+import time
+from ctypes import wintypes
+
+import win32clipboard
+import win32con
+
+from omnivoice_engine.output.window import focus_window
+
+log = logging.getLogger(__name__)
+
+#: Odak değişimi ile tuş gönderimi arasında hedef pencereye nefes payı.
+_FOCUS_SETTLE_SECONDS = 0.06
+#: Ctrl+V sonrası panoyu geri koymadan önce beklenen süre. Hedef uygulama
+#: panoyu okumadan geri koyarsak eski içerik yapışır.
+_PASTE_SETTLE_SECONDS = 0.25
+
+_CLIPBOARD_RETRIES = 5
+_CLIPBOARD_RETRY_DELAY = 0.02
+
+
+# ── SendInput yapıları ────────────────────────────────────────────────────
+
+_user32 = ctypes.WinDLL("user32", use_last_error=True)
+
+KEYEVENTF_KEYUP = 0x0002
+INPUT_KEYBOARD = 1
+VK_CONTROL = 0x11
+VK_V = 0x56
+
+
+class _KEYBDINPUT(ctypes.Structure):
+    _fields_ = [
+        ("wVk", wintypes.WORD),
+        ("wScan", wintypes.WORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ctypes.POINTER(wintypes.ULONG)),
+    ]
+
+
+class _INPUTUNION(ctypes.Union):
+    _fields_ = [("ki", _KEYBDINPUT), ("padding", ctypes.c_byte * 24)]
+
+
+class _INPUT(ctypes.Structure):
+    _fields_ = [("type", wintypes.DWORD), ("union", _INPUTUNION)]
+
+
+def _key_event(vk: int, *, up: bool) -> _INPUT:
+    return _INPUT(
+        type=INPUT_KEYBOARD,
+        union=_INPUTUNION(
+            ki=_KEYBDINPUT(
+                wVk=vk,
+                wScan=0,
+                dwFlags=KEYEVENTF_KEYUP if up else 0,
+                time=0,
+                dwExtraInfo=None,
+            )
+        ),
+    )
+
+
+def _send_ctrl_v() -> bool:
+    """Ctrl+V tuş dizisini gönderir."""
+    events = [
+        _key_event(VK_CONTROL, up=False),
+        _key_event(VK_V, up=False),
+        _key_event(VK_V, up=True),
+        _key_event(VK_CONTROL, up=True),
+    ]
+    array = (_INPUT * len(events))(*events)
+    sent = _user32.SendInput(len(events), array, ctypes.sizeof(_INPUT))
+    if sent != len(events):
+        log.error("SendInput eksik gönderdi: %d/%d", sent, len(events))
+        return False
+    return True
+
+
+# ── Pano ──────────────────────────────────────────────────────────────────
+
+
+def _open_clipboard() -> bool:
+    """Panoyu açar.
+
+    Pano tek seferde tek süreç tarafından açılabilir; başka bir uygulama o an
+    kullanıyorsa kısa bir süre yeniden deneriz.
+    """
+    for _ in range(_CLIPBOARD_RETRIES):
+        try:
+            win32clipboard.OpenClipboard()
+            return True
+        except Exception:  # noqa: BLE001 - pano meşgul
+            time.sleep(_CLIPBOARD_RETRY_DELAY)
+    return False
+
+
+def read_clipboard_text() -> str | None:
+    """Panodaki metni okur. Metin yoksa `None`."""
+    if not _open_clipboard():
+        return None
+    try:
+        if win32clipboard.IsClipboardFormatAvailable(win32con.CF_UNICODETEXT):
+            return str(win32clipboard.GetClipboardData(win32con.CF_UNICODETEXT))
+        return None
+    except Exception:  # noqa: BLE001
+        return None
+    finally:
+        win32clipboard.CloseClipboard()
+
+
+def write_clipboard_text(text: str) -> bool:
+    if not _open_clipboard():
+        return False
+    try:
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32con.CF_UNICODETEXT, text)
+        return True
+    except Exception:  # noqa: BLE001
+        log.error("Panoya yazılamadı", exc_info=True)
+        return False
+    finally:
+        win32clipboard.CloseClipboard()
+
+
+# ── Yapıştırma ────────────────────────────────────────────────────────────
+
+
+class PasteError(RuntimeError):
+    """Metin hedef pencereye gönderilemedi."""
+
+
+def paste_text(text: str, *, window_handle: int | None = None, restore_clipboard: bool = True) -> None:
+    """Metni hedef pencereye yapıştırır.
+
+    `window_handle` verilirse önce o pencere öne getirilir — dikte başladığında
+    kullanıcının bulunduğu uygulama. Odak alınamazsa **yapıştırma yapılmaz**;
+    metni yanlış pencereye göndermektense hata vermek yeğdir.
+    """
+    if not text:
+        return
+
+    previous = read_clipboard_text() if restore_clipboard else None
+
+    if not write_clipboard_text(text):
+        raise PasteError("Pano kilitli — başka bir uygulama kullanıyor olabilir")
+
+    if window_handle and not focus_window(window_handle):
+        # Panoda metin duruyor; kullanıcı elle Ctrl+V yapabilir.
+        raise PasteError(
+            "Hedef pencere öne getirilemedi. Metin panoya kopyalandı, "
+            "elle yapıştırabilirsiniz."
+        )
+
+    time.sleep(_FOCUS_SETTLE_SECONDS)
+
+    if not _send_ctrl_v():
+        raise PasteError("Tuş dizisi gönderilemedi")
+
+    if restore_clipboard and previous is not None:
+        # Hedef uygulama panoyu okuyana kadar bekliyoruz; erken geri koyarsak
+        # kullanıcının eski içeriği yapışır.
+        time.sleep(_PASTE_SETTLE_SECONDS)
+        write_clipboard_text(previous)
