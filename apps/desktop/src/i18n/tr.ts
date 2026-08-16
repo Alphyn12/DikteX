@@ -97,7 +97,10 @@ export const tr = {
   'toggle.preflight.desc': 'Çıktı yapıştırılmadan önce düzenleme penceresi açılır',
   'toggle.preflight.meta': 'mega-prompt’ta zorunlu',
   'toggle.pii': 'PII maskeleme',
-  'toggle.pii.desc': 'TC kimlik, kart no ve API anahtarı buluta gitmeden sansürlenir',
+  'toggle.pii.desc':
+    'TC kimlik, kart no, IBAN ve API anahtarı metin işlemeye gitmeden sansürlenir',
+  'toggle.pii.limit':
+    'Ses kaydı konuşma tanımaya maskelenmeden gider — maskelenecek metin oradan geliyor. Bir parolayı sesli okursan o ses sağlayıcıya ulaşır.',
   'toggle.pii.badge': 'YEREL',
 
   'aside.chorded': 'CHORDED SHORTCUT',
@@ -226,6 +229,8 @@ export const tr = {
   'hud.format.json_string': 'JSON dizesi',
   'hud.format.html': 'HTML',
   'hud.format.code_block': 'kod bloğu',
+
+  'hud.piiMasked': '{count} hassas değer gizlendi',
 
   'vocab.title': 'ÖZEL SÖZLÜK',
   'vocab.add': 'Terim ekle',

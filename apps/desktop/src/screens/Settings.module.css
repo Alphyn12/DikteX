@@ -364,3 +364,11 @@
   line-height: 1.5;
   color: var(--text-subtle);
 }
+
+/* Maskelemenin kapsamadığı ayağı anlatan not. */
+.privacyLimit {
+  margin-top: -4px;
+  padding: 0 2px;
+  font: 400 11.5px/1.5 var(--font-ui);
+  color: var(--text-faint);
+}

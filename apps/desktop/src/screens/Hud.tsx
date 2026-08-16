@@ -358,6 +358,11 @@ function Preflight({
             {result.snippet}
           </Badge>
         )}
+        {result.piiMasked > 0 && (
+          <Badge module="vault" variant="tone">
+            {t('hud.piiMasked', { count: result.piiMasked })}
+          </Badge>
+        )}
         {result.pasteFormat && (
           <Badge module="system" variant="tone">
             {t(`hud.format.${result.pasteFormat}` as never)}

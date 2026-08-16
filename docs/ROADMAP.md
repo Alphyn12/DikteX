@@ -155,7 +155,7 @@ kaydedilen ses, ölçülen gecikme, gerçek harcama ve SQLite'tan gelen geçmiş
 | 3.13 | Öğrenen kişisel stil (Style Refiner) | II | ⬜ |
 | 3.13b | Gemini sağlayıcısı — yalnız düşük riskli arka plan işleri + STT yedeği | — | ⬜ |
 | 3.14 | Floating Command Bar (mockup 1b) | IV | ❌ kapsam dışı |
-| 3.15 | Dinamik model seçici (pil/GPU durumuna göre) | I | ❌ kapsam dışı |
+| 3.15 | **Model seçici** — rol başına (STT / LLM / görsel) elle seçim + ayar kalıcılığı | I | ⬜ |
 
 **Faz 3'te alınan kararlar:**
 
@@ -269,7 +269,7 @@ Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
 
 | # | Madde | Kaynak | Durum |
 |---|---|---|---|
-| 6.1 | Hassas veri maskeleme (PII: TC kimlik, kart no, API anahtarı) | VI | ⬜ |
+| 6.1 | Hassas veri maskeleme (PII: TC kimlik, kart, IBAN, API anahtarı) | VI | ✅ |
 | 6.2 | Prompt geçmişi arama motoru (tam metin arama) | VI | ⬜ |
 | 6.3 | Sesli not defteri (Daily Scratchpad) + gün sonu derleme | VI | ❌ kapsam dışı |
 | 6.4 | Yerel REST / Webhook sunucusu (`localhost:8756`) | VI | ❌ kapsam dışı |
@@ -322,15 +322,40 @@ API maliyeti ne, (3) mevcut bir şey aynı işi zaten yapıyor mu.
 | 3.9 | A/B model karşılaştırıcı | **Her kullanımda maliyeti ikiye katlıyor**, buna karşılık hayat boyu birkaç kez kullanılıp bir modele karar verilen türden bir araç. Karşılaştırma zaten yapıldı: üç Gemini kuşağı ölçülüp sonuç `config.py`'ye yazıldı. |
 | 3.11 | Kritik prompt denetçisi | Denetim için **istem başına ikinci bir LLM çağrısı** gerekiyor, yani mega-prompt maliyeti iki katına çıkıyor. Kullanıcının mega-prompt kullanım sıklığı bunu haklı çıkaracak düzeyde değil. |
 | 3.14 | Floating Command Bar | Mockup 1b'de var, ama **HUD + global kısayollar işlevsel olarak aynı işi görüyor**; eklediği tek şey klavyeyle mod seçmek. Kullanıcı tasarım sadakati yerine işlevi tercih etti. |
-| 3.15 | Dinamik model seçici | **Gerekçesi çürüdü.** Madde, yerel GPU çıkarımı varsayımıyla yazılmıştı (pil azalınca küçük modele geç). Yerel GPU kapsam dışı bırakıldığı için pil durumu hiçbir şeyi değiştirmiyor; istek her hâlükârda buluta gidiyor ve varsayılan model ayda ~$0.30. |
+| 3.15 | Dinamik model seçicinin **otomatik** yarısı | Madde, yerel GPU çıkarımı varsayımıyla yazılmıştı (pil azalınca küçük modele geç). Yerel GPU kapsam dışı bırakıldığı için pil durumu hiçbir şeyi değiştirmiyor; istek her hâlükârda buluta gidiyor. **Elle seçim yarısı kapsamda kaldı** — bkz. Faz 3 tablosu. |
 | 5.4 | Sesli dosya & kod oluşturucu | İki sebep: (1) **konuşma tanıma belirsiz, dosya yazma geri alınamaz** — "test.py" ile "text.py" karışması gerçek bir üzerine-yazma riski; (2) kullanıcı zaten Claude Code kullanıyor ve dosya oluşturmayı orası daha güvenilir yapıyor. |
 | 5.6 | Otomatik makro & API tetikleyici | Kullanıcı Notion / Zapier / n8n kullanmıyor. Dinleyeni olmayan bir webhook yazmak ölü kod. |
 | 5.7 | Görsel prompt akış editörü | Sürükle-bırak node canvas + graf yürütme motoru **tek başına küçük bir uygulama**. Tek kullanıcı için bir şablon yazmaya kıyasla kazancı yok; **5.2 şablon kütüphanesi bu ihtiyacın büyük kısmını zaten karşılıyor**. |
 | 6.3 | Sesli not defteri (Scratchpad) | Değeri tamamen çalışma alışkanlığına bağlı ve kullanıcının böyle bir alışkanlığı yok. Altyapı (SQLite) duruyor; sonradan istenirse eklenebilir. |
 | 6.4 | Yerel REST / Webhook sunucusu | Kullanıcının tetikleyecek betiği yok. Ayrıca **yapıştırma tetikleyebilen açık bir localhost portu gerçek bir saldırı yüzeyi**: tarayıcıda açık kötü niyetli bir sayfa `localhost:8756`'ya istek atıp aktif pencereye metin yapıştırabilir. Yapılacak olsaydı token + `Origin` doğrulaması zorunlu olurdu; ihtiyaç olmadığı için port kapalı kalıyor. |
 
-**Kalan 6 madde** (öncelik sırasıyla): 6.1 PII maskeleme · 3.13 Style Refiner ·
-6.2 geçmiş arama · 3.13b Gemini yedeği · 6.5 otomatik başlatma · 6.6 installer.
+**Kalan 7 madde** (öncelik sırasıyla): 6.1 PII maskeleme · **3.15 model seçici**
+· 3.13 Style Refiner · 6.2 geçmiş arama · 3.13b Gemini yedeği ·
+6.5 otomatik başlatma · 6.6 installer.
+
+### 3.15 neden geri alındı
+
+İlk değerlendirmede 3.15 tümüyle silinmişti; kullanıcı itiraz etti ve haklıydı.
+Madde iki ayrı şeyi tek numara altında topluyordu:
+
+* **Otomatik seçim** (pil/GPU durumuna göre) — gerekçesi yerel GPU'ydu, öldü.
+* **Elle seçim** (hangi rol hangi modeli kullanacak) — bu ayrı bir ihtiyaç ve
+  gerekli.
+
+Gerekçe bu projenin kendi geçmişinde: geliştirme sırasında `claude-3.5-haiku`
+**ortadan kalktı**, sonra `gemini-3.5-flash-lite` çıktı ve modeli değiştirmek
+için her iki seferde de `config.py` elle düzenlenip motor yeniden başlatıldı.
+Bir kullanıcının model değiştirmek için Python kaynağını düzenlemesi kabul
+edilebilir değil.
+
+İki tasarım notu:
+
+1. **Model listesi canlı çekilecek** (OpenRouter `/api/v1/models`). Koda gömülü
+   liste yukarıdaki sorunu birebir tekrar üretirdi: bir model kalkınca liste
+   yalan söylerdi.
+2. **Ayar kalıcılığı bu maddeyle geliyor** ve bilinen bir hatayı da kapatıyor:
+   mikrofon seçimi şu an her motor yeniden başlatmasında sistem varsayılanına
+   dönüyor.
 
 6.5'in "güncelleme kontrolü" yarısı da kapsam dışı: dağıtım kanalı yok,
 güncelleme `git pull` ile alınıyor.

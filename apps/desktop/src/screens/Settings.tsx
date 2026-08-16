@@ -13,6 +13,7 @@ import {
   TrainingBadge,
 } from '../components/primitives'
 import { MicrophonePicker } from '../components/MicrophonePicker'
+import { usePrivacy } from '../hooks/useModes'
 import { SnippetEditor } from '../components/SnippetEditor'
 import { VocabularyEditor } from '../components/VocabularyEditor'
 import { useModes } from '../hooks/useModes'
@@ -165,7 +166,9 @@ function Switches(): React.JSX.Element {
   const { t } = useI18n()
   const [dynamicModel, setDynamicModel] = useState(true)
   const [preflight, setPreflight] = useState(true)
-  const [pii, setPii] = useState(true)
+  // PII anahtarı artık motordaki gerçek bayrağa bağlı. Diğer ikisi hâlâ
+  // yerel durum — karşılıkları henüz yok (3.15 ve mod başına pre-flight).
+  const { privacy, setMasking } = usePrivacy()
 
   return (
     <div className={styles.switches}>
@@ -190,9 +193,17 @@ function Switches(): React.JSX.Element {
         description={t('toggle.pii.desc')}
         module="vault"
         badge={t('toggle.pii.badge')}
-        on={pii}
-        onChange={setPii}
+        on={privacy?.maskPii ?? true}
+        onChange={(next) => void setMasking(next)}
       />
+      {/*
+        Maskelemenin sınırı burada yazıyor. Bunu gizlemek kullanıcıya
+        korunduğundan fazlasını vaat etmek olurdu: ses kaydı konuşma tanıma
+        sağlayıcısına maskelenmeden gidiyor.
+      */}
+      {privacy && !privacy.sttCovered && (
+        <p className={styles.privacyLimit}>{t('toggle.pii.limit')}</p>
+      )}
     </div>
   )
 }

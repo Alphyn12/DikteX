@@ -36,6 +36,7 @@ from omnivoice_engine.pipeline.prompts import build_prompt, sanitize_output
 from omnivoice_engine.pipeline.vision_prompts import screen_question_prompt
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database, DictationRecord
+from omnivoice_engine.privacy.masking import MaskResult, mask_all
 from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
@@ -87,6 +88,8 @@ class DictationResult:
     variables: tuple[str, ...] = ()
     #: Kullanıcının sesle istediği yapıştırma biçimi (Properties V.7).
     paste_format: PasteFormat | None = None
+    #: Buluta gitmeden önce maskelenen hassas değer sayısı.
+    pii_masked: int = 0
     #: Tetiklenen snippet'in adı — arayüzde rozet olarak gösterilir.
     #:
     #: Göstermek şart: eşleşme bulanık olduğu için yanlış şablon tetiklenebilir
@@ -119,6 +122,7 @@ class DictationResult:
             "variables": list(self.variables),
             "pasteFormat": self.paste_format.value if self.paste_format else None,
             "snippet": self.snippet,
+            "piiMasked": self.pii_masked,
         }
 
 
@@ -153,6 +157,7 @@ class DictationPipeline:
         emit: EventSink,
         vocabulary: Vocabulary | None = None,
         snippets: SnippetLibrary | None = None,
+        mask_pii: bool = True,
     ) -> None:
         self._mic = mic
         self._stt = stt
@@ -161,12 +166,25 @@ class DictationPipeline:
         self._emit = emit
         self._vocabulary = vocabulary
         self._snippets = snippets
+        #: PII maskeleme varsayılan olarak AÇIK. Kapatmak bilinçli bir karar
+        #: olmalı, unutulan bir ayar değil.
+        self._mask_pii = mask_pii
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
         self._result: DictationResult | None = None
         #: Aynı anda tek dikte; kısayola iki kez basılırsa yarış olmasın.
         self._lock = asyncio.Lock()
+
+    # ── Gizlilik ──────────────────────────────────────────────────────────
+
+    @property
+    def pii_masking(self) -> bool:
+        """Hassas veri maskeleme açık mı (Properties VI.1)."""
+        return self._mask_pii
+
+    def set_pii_masking(self, enabled: bool) -> None:
+        self._mask_pii = enabled
 
     # ── Durum yayını ──────────────────────────────────────────────────────
 
@@ -391,6 +409,36 @@ class DictationPipeline:
         )
         injected = inject(local.text, variables)
 
+        # PII maskeleme (Properties VI.1) — buluta çıkmadan HEMEN önce.
+        #
+        # Dört parça birlikte maskeleniyor, çünkü ortak bir yer tutucu
+        # haritası gerekiyor: aynı anahtar hem seçili metinde hem git diff'te
+        # geçebilir ve ona iki farklı numara vermek geri çevirmeyi bozardı.
+        #
+        # En değerli hedef dikte metni DEĞİL: kullanıcı bir API anahtarını
+        # sesli okumaz, ama `{ClipboardContent}` ve `{SelectedText}` gerçek
+        # anahtar taşır, git diff'inde `.env` satırı çıkabilir.
+        pii = MaskResult(text="")
+        if self._mask_pii:
+            (masked_text, masked_selection, masked_diff), pii = mask_all(
+                injected.text, selection or None, git_diff
+            )
+            if pii.masked_count:
+                log.info("PII maskelendi: %d değer", pii.masked_count)
+                await self._emit(
+                    {
+                        "type": "dictation:pii",
+                        "count": pii.masked_count,
+                        "kinds": [kind.value for kind in pii.kinds],
+                    }
+                )
+        else:
+            masked_text, masked_selection, masked_diff = (
+                injected.text,
+                selection or None,
+                git_diff,
+            )
+
         await self._emit(
             {
                 "type": "dictation:progress",
@@ -417,25 +465,27 @@ class DictationPipeline:
                     # Ekran modunun istemi ayrı: burada iş metni temizlemek
                     # değil, görüntüyü okuyup soruyu yanıtlamak.
                     prompt = screen_question_prompt(
-                        injected.text,
+                        masked_text,
                         session.screen_image,
                         language=transcript.language,
                     )
                 else:
                     prompt = build_prompt(
-                        injected.text,
+                        masked_text,
                         mode=mode,
                         profile=session.profile.profile,
                         app_name=session.profile.display_name or None,
                         vocabulary=self._vocabulary.llm_terms() if self._vocabulary else None,
                         language=transcript.language,
-                        selection=selection,
-                        git_diff=git_diff,
+                        selection=masked_selection,
+                        git_diff=masked_diff,
                         git_summary=git_summary,
                         snippet=snippet.body if snippet else None,
                     )
                 completion = await self._llm.complete(prompt, model=mode.model)
-                final_text = sanitize_output(completion.text) or injected.text
+                # Yer tutucular gerçek değerlere geri çevriliyor: değer buluta
+                # gitmedi ama kullanıcının metninde eksiksiz duruyor.
+                final_text = pii.unmask(sanitize_output(completion.text)) or injected.text
                 llm_provider = completion.provider
                 llm_model = completion.model
                 llm_ms = completion.usage.latency_ms
@@ -481,6 +531,7 @@ class DictationPipeline:
             # ifadesini çıkarmış olabilir ama kullanıcı onu söylemişti.
             paste_format=detect_format(transcript.text),
             snippet=snippet.name if snippet else None,
+            pii_masked=pii.masked_count,
             mode=mode.id.value,
             profile=session.profile.profile.value,
             app_display_name=session.profile.display_name or None,

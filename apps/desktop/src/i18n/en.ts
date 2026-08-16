@@ -90,7 +90,10 @@ export const en: Messages = {
   'toggle.preflight.desc': 'Opens an edit window before the output is pasted',
   'toggle.preflight.meta': 'required for mega-prompt',
   'toggle.pii': 'PII masking',
-  'toggle.pii.desc': 'National ID, card and API key redacted before leaving the device',
+  'toggle.pii.desc':
+    'National ID, card, IBAN and API keys are redacted before text processing',
+  'toggle.pii.limit':
+    'Audio still reaches the speech provider unmasked — the text to mask comes from there. Reading a password aloud sends that audio to the provider.',
   'toggle.pii.badge': 'LOCAL',
 
   'aside.chorded': 'CHORDED SHORTCUT',
@@ -219,6 +222,8 @@ export const en: Messages = {
   'hud.format.json_string': 'JSON string',
   'hud.format.html': 'HTML',
   'hud.format.code_block': 'code block',
+
+  'hud.piiMasked': '{count} sensitive values hidden',
 
   'vocab.title': 'CUSTOM VOCABULARY',
   'vocab.add': 'Add term',

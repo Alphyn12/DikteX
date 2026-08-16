@@ -45,6 +45,8 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'snippets:add',
   'snippets:remove',
   'snippets:test',
+  'privacy:get',
+  'privacy:set-masking',
   'stats:get',
   'vault:list',
   'history:search',

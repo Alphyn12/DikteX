@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { ModeList, Snippet, SnippetList, VocabularyList } from '@shared/ipc'
+import type {
+  ModeList,
+  PrivacyState,
+  Snippet,
+  SnippetList,
+  VocabularyList,
+} from '@shared/ipc'
 import { useEngine } from './useEngine'
 
 /**
@@ -149,4 +155,43 @@ export function useSnippets(): {
   }, [])
 
   return { snippets, error, add, remove, test }
+}
+
+/**
+ * Gizlilik ayarları (Properties VI.1).
+ *
+ * `sttCovered` da taşınıyor çünkü arayüzün maskelemenin **sınırını** söylemesi
+ * gerekiyor: ses kaydı konuşma tanımaya maskelenmeden gidiyor.
+ */
+export function usePrivacy(): {
+  privacy: PrivacyState | null
+  error: string | null
+  setMasking: (enabled: boolean) => Promise<void>
+} {
+  const [privacy, setPrivacy] = useState<PrivacyState | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const { state: engine } = useEngine()
+
+  useEffect(() => {
+    if (engine.status !== 'connected') return
+    void (async () => {
+      try {
+        setPrivacy(await window.omnivoice.invoke('privacy:get'))
+        setError(null)
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : String(cause))
+      }
+    })()
+  }, [engine.status])
+
+  const setMasking = useCallback(async (enabled: boolean) => {
+    try {
+      setPrivacy(await window.omnivoice.invoke('privacy:set-masking', enabled))
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [])
+
+  return { privacy, error, setMasking }
 }

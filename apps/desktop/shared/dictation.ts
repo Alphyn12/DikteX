@@ -68,6 +68,13 @@ export interface DictationResult {
    * şablon tetiklenebilir ve kullanıcı bunu yalnız çıktıya bakarak anlar.
    */
   snippet: string | null
+  /**
+   * Buluta gitmeden önce maskelenen hassas değer sayısı.
+   *
+   * Sıfırdan büyükse pre-flight'ta rozet çıkıyor: kullanıcı neyin
+   * gizlendiğini yapıştırmadan önce bilmeli.
+   */
+  piiMasked: number
 }
 
 /** Yapıştırma biçimi — motordaki `PasteFormat` ile birebir. */
@@ -114,6 +121,23 @@ export interface VocabularyList {
   terms: VocabularyTerm[]
   confirmedCount: number
   suggestionCount: number
+}
+
+// ── Gizlilik ────────────────────────────────────────────────────────────
+
+export interface PrivacyState {
+  /** Hassas veri maskeleme açık mı. */
+  maskPii: boolean
+  /**
+   * Konuşma tanıma ayağı korunuyor mu — **her zaman `false`**.
+   *
+   * Maskeleme metin üzerinde çalışıyor, ama STT'ye giden şey ses. Metin
+   * oradan geliyor, yani maskelenecek bir şey henüz yok. Arayüz bunu
+   * kullanıcıya söylemek zorunda: "korunuyorsun" demek yanlış olurdu.
+   */
+  sttCovered: boolean
+  /** LLM ayağı korunuyor mu — asıl sızıntı yolu burası. */
+  llmCovered: boolean
 }
 
 // ── Snippet kütüphanesi ─────────────────────────────────────────────────

@@ -31,6 +31,7 @@ from omnivoice_engine.pipeline.meeting_prompts import (
     summary_prompt,
 )
 from omnivoice_engine.pipeline.prompts import sanitize_output
+from omnivoice_engine.privacy.masking import MaskResult, mask
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database
 from omnivoice_engine.stt.router import SttRouter
@@ -113,18 +114,30 @@ class MeetingPipeline:
         llm: OpenRouterLlm,
         db: Database,
         emit: EventSink,
+        mask_pii: bool = True,
     ) -> None:
         self._mic = mic
         self._stt = stt
         self._llm = llm
         self._db = db
         self._emit = emit
+        self._mask_pii = mask_pii
 
         self._recorder = MeetingRecorder()
         self.state = MeetingState.IDLE
         self._session: _Session | None = None
         self._result: MeetingResult | None = None
         self._lock = asyncio.Lock()
+
+    # ── Gizlilik ──────────────────────────────────────────────────────────
+
+    @property
+    def pii_masking(self) -> bool:
+        """Hassas veri maskeleme açık mı (Properties VI.1)."""
+        return self._mask_pii
+
+    def set_pii_masking(self, enabled: bool) -> None:
+        self._mask_pii = enabled
 
     # ── Durum ─────────────────────────────────────────────────────────────
 
@@ -299,9 +312,19 @@ class MeetingPipeline:
         summary = ""
         items: list[ActionItem] = []
 
+        # PII maskeleme (Properties VI.1). Toplantı dökümü dikte metninden
+        # daha riskli: uzun, kullanıcının denetlemediği ve karşı taraf da
+        # konuşuyor. Birinin sesli okuduğu bir IBAN veya hesap numarası
+        # buradan geçer.
+        masked = mask(transcript) if self._mask_pii else MaskResult(text=transcript)
+        if masked.masked_count:
+            log.info("Toplantı dökümünde PII maskelendi: %d değer", masked.masked_count)
+
         try:
-            completion = await self._llm.complete(summary_prompt(transcript, language=language))
-            summary = sanitize_output(completion.text)
+            completion = await self._llm.complete(
+                summary_prompt(masked.text, language=language)
+            )
+            summary = masked.unmask(sanitize_output(completion.text))
             llm_ms += completion.usage.latency_ms
             cost += completion.usage.cost_usd or 0.0
             self._db.add_spend(
@@ -318,9 +341,9 @@ class MeetingPipeline:
 
         try:
             completion = await self._llm.complete(
-                action_items_prompt(transcript, language=language)
+                action_items_prompt(masked.text, language=language)
             )
-            items = _parse_action_items(completion.text)
+            items = _parse_action_items(masked.unmask(completion.text))
             llm_ms += completion.usage.latency_ms
             cost += completion.usage.cost_usd or 0.0
             self._db.add_spend(

@@ -376,6 +376,19 @@ async def _handle_message(
                 }
             )
 
+        # ── Gizlilik ──────────────────────────────────────────────────────
+        case "privacy:get":
+            await reply(_privacy_payload(context))
+
+        case "privacy:set-masking":
+            enabled = bool(message.get("enabled", True))
+            # Aynı bayrak iki boru hattında da var; ikisi ayrışırsa toplantı
+            # dökümü sessizce korumasız kalırdı.
+            context.pipeline.set_pii_masking(enabled)
+            context.meeting.set_pii_masking(enabled)
+            log.info("PII maskeleme %s", "açık" if enabled else "KAPALI")
+            await reply(_privacy_payload(context))
+
         # ── Kasa ──────────────────────────────────────────────────────────
         case "vault:list":
             entries = await asyncio.to_thread(list_entries)
@@ -419,3 +432,19 @@ async def _handle_message(
 
         case unknown:
             log.warning("Bilinmeyen mesaj tipi: %r", unknown)
+
+
+def _privacy_payload(context: EngineContext) -> dict[str, Any]:
+    """Gizlilik ayarları ve **sınırları**.
+
+    `sttCovered: False` bilinçli olarak yayınlanıyor. Maskeleme yalnız LLM
+    ayağını koruyor; ses kaydı konuşma tanıma sağlayıcısına maskelenmeden
+    gidiyor, çünkü maskelenecek metin oradan geliyor. Arayüzün bunu
+    kullanıcıya söylemesi gerekiyor — "korunuyorsun" demek yanlış olurdu.
+    """
+    return {
+        "type": "privacy:get",
+        "maskPii": context.pipeline.pii_masking,
+        "sttCovered": False,
+        "llmCovered": context.pipeline.pii_masking,
+    }

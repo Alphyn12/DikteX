@@ -11,6 +11,7 @@ import type {
   MeetingHistoryItem,
   ModeList,
   VaultEntry,
+  PrivacyState,
   Snippet,
   SnippetList,
   VocabularyList,
@@ -147,6 +148,14 @@ export function registerIpc({
 
   ipcMain.handle('snippets:test', (_event, text: string) =>
     engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
+  )
+
+  ipcMain.handle('privacy:get', () =>
+    engine.request<PrivacyState>({ type: 'privacy:get' }),
+  )
+
+  ipcMain.handle('privacy:set-masking', (_event, enabled: boolean) =>
+    engine.request<PrivacyState>({ type: 'privacy:set-masking', enabled }),
   )
 
   // ── Mikrofon ───────────────────────────────────────────────────────────

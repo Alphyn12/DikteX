@@ -12,6 +12,7 @@ import type {
   EngineStats,
   ModeId,
   ModeList,
+  PrivacyState,
   Snippet,
   SnippetList,
   VaultEntry,
@@ -45,6 +46,7 @@ export type {
   ModeInfo,
   ModeList,
   OutputProfile,
+  PrivacyState,
   Snippet,
   SnippetList,
   SpendStats,
@@ -143,6 +145,10 @@ export interface IpcInvokeMap {
    * canlı dikte sırasında sınayabilir.
    */
   'snippets:test': { args: [text: string]; result: { match: Snippet | null } }
+
+  // ── Gizlilik ───────────────────────────────────────────────────────────
+  'privacy:get': { args: []; result: PrivacyState }
+  'privacy:set-masking': { args: [enabled: boolean]; result: PrivacyState }
 
   // ── Mikrofon ───────────────────────────────────────────────────────────
   'audio:list-devices': { args: []; result: AudioDeviceList }
