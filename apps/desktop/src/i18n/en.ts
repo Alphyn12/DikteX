@@ -139,6 +139,11 @@ export const en: Messages = {
   'hud.localOnly': 'local only',
   'hud.error': 'Dictation failed',
   'hud.dismiss': 'Dismiss',
+  'hud.noSignal': 'No sound from the microphone',
+  'hud.silent': 'No speech detected',
+  'hud.silent.hint': 'The recording contained no speech, so nothing was sent. Try speaking louder or closer to the microphone.',
+  'hud.deadMic': 'Microphone produces no sound',
+  'hud.deadMic.hint': 'The selected microphone sends no signal at all. Pick a working device under Settings → MICROPHONE. (Virtual microphones such as NVIDIA Broadcast output silence when their own app is closed.)',
 
   // ── Microphone ───────────────────────────────────────────────────────────
   'mic.title': 'MICROPHONE',

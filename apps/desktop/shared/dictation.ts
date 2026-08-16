@@ -10,6 +10,8 @@ export type DictationStatus =
   | 'listening'
   | 'processing'
   | 'preflight'
+  /** Kayıtta konuşma yoktu. Hata değil ama kullanıcıya söylenmeli. */
+  | 'silent'
   | 'error'
 
 /** Dikte modları — motor tarafındaki `ModeId` ile birebir aynı. */
@@ -123,6 +125,11 @@ export interface DictationState {
   error: string | null
   /** LLM atlandı gibi ölümcül olmayan uyarılar. */
   warning: string | null
+  /**
+   * `silent` durumunda mikrofonun tamamen ölü olup olmadığı.
+   * Kısık ses ile hiç sinyal olmaması farklı sorunlar, farklı çözümler.
+   */
+  deadMicrophone: boolean
 }
 
 export const INITIAL_DICTATION_STATE: DictationState = {
@@ -141,6 +148,7 @@ export const INITIAL_DICTATION_STATE: DictationState = {
   result: null,
   error: null,
   warning: null,
+  deadMicrophone: false,
 }
 
 // ── Mikrofon ────────────────────────────────────────────────────────────

@@ -49,6 +49,8 @@ class DictationState(Enum):
     LISTENING = "listening"
     PROCESSING = "processing"
     PREFLIGHT = "preflight"
+    SILENT = "silent"
+    """Kayıtta konuşma yoktu. Hata değil ama sessizce geçilmemeli."""
     ERROR = "error"
 
 
@@ -154,7 +156,11 @@ class DictationPipeline:
     async def start(self, mode: ModeId | str = ModeId.QUICK) -> None:
         """Kaydı başlatır. Zaten kayıttaysa yok sayar."""
         async with self._lock:
-            if self.state is not DictationState.IDLE:
+            if self.state in {
+                DictationState.LISTENING,
+                DictationState.PROCESSING,
+                DictationState.PREFLIGHT,
+            }:
                 log.debug("start() yok sayıldı, durum: %s", self.state)
                 return
 
@@ -226,12 +232,21 @@ class DictationPipeline:
             # boşa dönüyoruz.
             if clip.is_silent():
                 log.info(
-                    "Kayıt sessiz (tepe %.4f, rms %.4f) — sağlayıcıya gönderilmedi",
+                    "Kayıt sessiz (tepe %.6f, rms %.6f) — sağlayıcıya gönderilmedi",
                     clip.peak,
                     clip.rms,
                 )
                 self._session = None
-                await self._set_state(DictationState.IDLE, silent=True)
+                # Sessizce boşa dönmek kullanıcıya uygulamanın çöktüğünü
+                # düşündürüyordu. Mutlak sessizlik (tepe ≈ 0) mikrofonun ölü
+                # olduğunu gösterir; sadece kısık olmasından ayırıyoruz ki
+                # doğru çözümü söyleyebilelim.
+                await self._set_state(
+                    DictationState.SILENT,
+                    peak=round(clip.peak, 6),
+                    deadMicrophone=clip.peak < 0.0005,
+                    seconds=round(clip.duration_seconds, 1),
+                )
                 return
 
             await self._set_state(DictationState.PROCESSING, step="stt")
@@ -439,7 +454,9 @@ class DictationPipeline:
 
     async def toggle(self, mode: ModeId | str = ModeId.QUICK) -> None:
         """Kısayolun davranışı: boştaysa başlat, dinliyorsa bitir."""
-        if self.state is DictationState.IDLE:
+        # SILENT ve ERROR birer bilgilendirme durumu; kısayola tekrar basmak
+        # yeni bir dikte başlatmalı, kullanıcıyı önce kapatmaya zorlamamalı.
+        if self.state in {DictationState.IDLE, DictationState.SILENT, DictationState.ERROR}:
             await self.start(mode)
         elif self.state is DictationState.LISTENING:
             await self.stop()

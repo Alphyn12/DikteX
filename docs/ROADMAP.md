@@ -136,36 +136,80 @@ kaydedilen ses, ölçülen gecikme, gerçek harcama ve SQLite'tan gelen geçmiş
 
 | # | Madde | Kaynak | Durum |
 |---|---|---|---|
-| 3.1 | Aktif pencere / uygulama farkındalığı (VS Code, Excel, Slack, Discord…) | II | ⬜ |
-| 3.2 | Bağlama göre çıktı biçimi profilleri | II | ⬜ |
-| 3.3 | Seçili metni referans alma (`{SelectedText}` — Highlight & Transform) | V | ⬜ |
-| 3.4 | Dinamik değişken enjeksiyonu (`{CurrentDate}`, `{AppTitle}`, `{ClipboardContent}`) | II | ⬜ |
-| 3.5 | Chorded shortcuts — mod seçimi (K kod · E İngilizce · M mega-prompt) | IV | ⬜ |
+| 3.1 | Aktif pencere / uygulama farkındalığı (VS Code, Excel, Slack, Discord…) | II | ✅ |
+| 3.2 | Bağlama göre çıktı biçimi profilleri | II | ✅ |
+| 3.3 | Seçili metni referans alma (`{SelectedText}` — Highlight & Transform) | V | ✅ |
+| 3.4 | Dinamik değişken enjeksiyonu (`{CurrentDate}`, `{AppTitle}`, `{ClipboardContent}`) | II | ✅ |
+| 3.5 | Mod kısayolları — K kod · E İngilizce · M mega-prompt (chord değil, bkz. not) | IV | ✅ |
 | 3.6 | Chain-of-Thought / akıl yürütme modu | II | ⬜ |
-| 3.7 | Özel terim & sözlük katmanı (`.json`, STT + LLM'e enjekte) | I | ⬜ |
-| 3.8 | Çoklu model orkestrasyonu (mod başına model/sağlayıcı) | II | ⬜ |
+| 3.7 | Özel terim & sözlük katmanı (`.json`, STT + LLM'e enjekte) | I | ✅ |
+| 3.8 | Çoklu model orkestrasyonu (mod başına model/sağlayıcı) | II | 🟨 |
 | 3.9 | A/B model karşılaştırıcı (yan yana) | II | ⬜ |
-| 3.10 | Negative prompting & yasaklı kalıplar | II | ⬜ |
+| 3.10 | Negative prompting & yasaklı kalıplar | II | ✅ |
 | 3.11 | Kritik prompt denetçisi (Prompt Linter) | II | ⬜ |
-| 3.12 | Meta-prompt & çoklu format çevirici (Midjourney, SQL, regex…) | II | ⬜ |
+| 3.12 | Meta-prompt & çoklu format çevirici (Midjourney, SQL, regex…) | II | ✅ |
 | 3.13 | Öğrenen kişisel stil (Style Refiner) | II | ⬜ |
 | 3.13b | Gemini sağlayıcısı — yalnız düşük riskli arka plan işleri + STT yedeği | — | ⬜ |
 | 3.14 | Floating Command Bar (mockup 1b) | IV | ⬜ |
 | 3.15 | Dinamik model seçici (pil/GPU durumuna göre) | I | ⬜ |
 
+**Faz 3'te alınan kararlar:**
+
+- **Chord yerine ayrı hızlandırıcılar (3.5).** Mockup "Ctrl+Alt+Space → K"
+  biçiminde bir chord gösteriyor. Gerçek chord, Electron tuş bırakmayı
+  bildirmediği için düşük seviyeli klavye kancası (`WH_KEYBOARD_LL`) gerektirir;
+  o kanca antivirüs yanlış pozitifi üretiyor ve ayrı bir mesaj döngüsü istiyor.
+  Ayrı hızlandırıcılar (`Ctrl+Alt+K`, `Ctrl+Alt+E` …) aynı yeteneği güvenilir
+  biçimde veriyor. Kaydedilemeyen kısayol arayüzde uyarıyla gösteriliyor.
+- **Yedi mod tanımlandı** (3.12'nin çoğunu kapsıyor): hızlı dikte, kod,
+  İngilizce çeviri, mega-prompt, görsel istem, SQL, commit mesajı.
+- **Negative prompting (3.10)** ayrı bir özellik değil, her modun istemine
+  giren ortak yasak listesi olarak uygulandı.
+
+**Faz 3'te yakalanan hatalar:**
+
+| Hata | Nasıl bulundu | Sonucu ne olurdu |
+|---|---|---|
+| **Türkçe ek eşleşmesi** | Test: `mentions_selection("şu kodu refactor et")` | "şu **kodu**" dendiğinde seçili metin okunmuyordu — desen "kod" ile eşleşip "kodu" ile eşleşmiyordu |
+| **HUD'da yanlış kısayol ipucu** | Kullanıcının canlı testi | HUD "Esc iptal" yazıyordu ama dinlerken odak almadığı için Esc ona hiç ulaşmıyordu; kullanıcı takılı kaldı |
+| **Mikrofon hatası yutuluyordu** | Kullanıcı "değiştiremiyorum" dedi | Motor hatayı üretiyordu, IPC katmanı `error` alanını düşürüyordu; kullanıcı tıklıyor, hiçbir şey olmuyor, sebebini bilemiyordu |
+| **`onClick={toggle}`** | TypeScript | Fare olayı mod parametresi olarak gönderiliyordu |
+
 ---
 
-## Faz 4 — Toplantı, sistem sesi ve medya
+## Faz 4 — Toplantı, sistem sesi ve medya (küçültüldü)
+
+**Kullanıcı kararı (16 Ağustos 2026):** faz küçültüldü. Konuşmacı ayrımı ve
+toplantı koçu kapsam dışı. Gerekçeler aşağıda.
 
 | # | Madde | Kaynak | Durum |
 |---|---|---|---|
 | 4.1 | İki yönlü sistem sesi kaydı (WASAPI loopback) | III | ⬜ |
-| 4.2 | Uzun kayıt parçalama (25 MB / 60 sn API limitleri için) | — | ⬜ |
-| 4.3 | Konuşmacı ayrımı (speaker diarization) | III | ⬜ |
-| 4.4 | Canlı eylem maddesi çıkarıcı (action items + sorumlular) | III | ⬜ |
+| 4.2 | Uzun kayıt: önce FLAC sıkıştırma, sonra parçalama | — | ⬜ |
+| 4.4 | Eylem maddesi çıkarıcı (action items + sorumlular) | III | ⬜ |
 | 4.5 | Toplantı özeti ve dışa aktarma | III | ⬜ |
 | 4.6 | Video & podcast özetleyici | III | ⬜ |
-| 4.7 | Gerçek zamanlı toplantı koçu (sessiz HUD bildirimleri) | III | ⬜ |
+
+### Kapsam dışı bırakılanlar
+
+| # | Madde | Gerekçe |
+|---|---|---|
+| 4.3 | Konuşmacı ayrımı (diarization) | **Üçüncü bir sağlayıcı hesabı ve ayrı ödeme gerektiriyor.** Doğrulandı: ne Groq ne OpenAI Whisper diarization yapmıyor. Seçenekler: `pyannote` (yerel, ~1 GB model + HuggingFace token + GPU — kullanıcı yerel istemiyor, donanım 4 GB VRAM) ya da AssemblyAI/Deepgram/Google (saatlik ~$0.26–0.37, yeni hesap). Fazın geri kalanının tamamından pahalı. |
+| 4.7 | Gerçek zamanlı toplantı koçu | Mevcut toplu (batch) mimariden farklı bir **akış** mimarisi gerektiriyor. Ayrıca değeri şüpheli: konuşma hızı uyarısı veren bir HUD, pratikte kapatılan türden bir özellik. |
+
+### 4.2 neden öncelikli — bu bir düzeltme, özellik değil
+
+16 kHz mono WAV **1,92 MB/dakika** yer kaplıyor, Groq'un dosya sınırı 25 MB.
+Yani **bugün 13 dakikadan uzun bir dikte sessizce başarısız oluyor** — bu
+toplantı özelliği değil, mevcut bir hata.
+
+Çözüm iki aşamalı: önce **FLAC** (kayıpsız, Groq kabul ediyor, dosyayı 2–3 kat
+küçültüyor → sınır ~35 dakikaya çıkıyor), gerekirse sonra parçalama.
+
+### Maliyet
+
+Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
+**toplantı başına ~9 sent.**
 
 ---
 

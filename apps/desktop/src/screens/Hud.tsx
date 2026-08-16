@@ -48,7 +48,9 @@ export function Hud(): React.JSX.Element | null {
         ? styles.processing
         : state.status === 'error'
           ? styles.errored
-          : styles.preflight
+          : state.status === 'silent'
+            ? styles.warned
+            : styles.preflight
 
   return (
     <div className={styles.root}>
@@ -58,9 +60,51 @@ export function Hud(): React.JSX.Element | null {
         {state.status === 'preflight' && state.result && (
           <Preflight result={state.result} warning={state.warning} onPaste={paste} onCancel={cancel} />
         )}
+        {state.status === 'silent' && (
+          <Silent deadMicrophone={state.deadMicrophone} onDismiss={cancel} />
+        )}
         {state.status === 'error' && <Errored message={state.error} onDismiss={cancel} />}
       </div>
     </div>
+  )
+}
+
+// ── Sessiz kayıt ───────────────────────────────────────────────────────────
+
+/**
+ * Kayıtta konuşma çıkmadı.
+ *
+ * Eskiden bu durumda HUD sessizce kayboluyordu ve kullanıcı uygulamanın
+ * çöktüğünü sanıyordu. Sebep söylenmeli — ve mikrofon büsbütün ölüyse çözüm
+ * de söylenmeli, çünkü o başka bir sorun.
+ */
+function Silent({
+  deadMicrophone,
+  onDismiss,
+}: {
+  deadMicrophone: boolean
+  onDismiss: () => void
+}): React.JSX.Element {
+  const { t } = useI18n()
+  return (
+    <>
+      <div className={styles.head}>
+        <span className={styles.title}>
+          {deadMicrophone ? t('hud.deadMic') : t('hud.silent')}
+        </span>
+      </div>
+      <p className={styles.errorText}>
+        {deadMicrophone ? t('hud.deadMic.hint') : t('hud.silent.hint')}
+      </p>
+      <div className={styles.actions}>
+        <button type="button" className={styles.secondary} onClick={onDismiss}>
+          {t('hud.dismiss')}
+          <span className={styles.shortcut} style={{ marginInlineStart: 6 }}>
+            Esc
+          </span>
+        </button>
+      </div>
+    </>
   )
 }
 
@@ -81,20 +125,40 @@ function modeModule(mode: string): ModuleId {
   return MODE_MODULE[mode] ?? 'audio'
 }
 
+/** Mikrofonun sinyal üretmediğini anlamak için gereken sessiz süre. */
+const NO_SIGNAL_AFTER_SECONDS = 1.5
+
 function Listening({ state }: { state: DictationState }): React.JSX.Element {
   const { t, formatNumber } = useI18n()
   const module = modeModule(state.mode)
 
+  // İlk saniyede seviye doğal olarak düşük olabilir; kullanıcı henüz
+  // konuşmaya başlamamıştır. Uyarıyı biraz bekletiyoruz.
+  const noSignal = state.seconds > NO_SIGNAL_AFTER_SECONDS && state.level <= 0.0008
+
   return (
     <>
       <div className={styles.head}>
-        <Waveform bars={16} seed={5} module={module} variant="hud" height={34} />
+        <Waveform
+          bars={16}
+          seed={5}
+          module={module}
+          variant="hud"
+          height={34}
+          level={state.level}
+        />
         <div className={styles.headText}>
           <div className={styles.title}>{t('hud.listening')}</div>
           <div className={styles.detail}>
-            {t('hud.preRoll', {
-              seconds: formatNumber(state.preRollSeconds, { minimumFractionDigits: 1 }),
-            })}
+            {/*
+              Mikrofon sinyal üretmiyorsa bunu konuşurken söylemek gerekir;
+              kullanıcı kaydın boş olduğunu ancak sonunda öğrenmemeli.
+            */}
+            {noSignal
+              ? t('hud.noSignal')
+              : t('hud.preRoll', {
+                  seconds: formatNumber(state.preRollSeconds, { minimumFractionDigits: 1 }),
+                })}
           </div>
         </div>
         <span className={cx(styles.timer, 'tabular')}>{formatDuration(state.seconds)}</span>

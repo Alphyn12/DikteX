@@ -199,9 +199,19 @@ async def _handle_message(
             )
 
         case "devices:set":
+            # Arayüz indeksi listeden aldı; ama liste alındıktan sonra aygıtlar
+            # değişmiş olabilir. Adla yeniden çözümlemek, kullanıcının seçtiği
+            # aygıtın açılmasını garanti eder — indeks kaymışsa bile.
             device = message.get("device")
+            name = message.get("name")
             index = None if device is None else int(device)
             try:
+                if name and index is not None:
+                    resolved = await asyncio.to_thread(
+                        context.mic.resolve_device_by_name, str(name)
+                    )
+                    if resolved is not None:
+                        index = resolved
                 await asyncio.to_thread(context.mic.set_device, index)
                 error = None
             except AudioDeviceError as exc:

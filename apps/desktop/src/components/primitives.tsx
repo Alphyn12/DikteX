@@ -162,24 +162,46 @@ const WAVE_CLASS: Record<WaveVariant, string | undefined> = {
   hud: styles.waveHud,
 }
 
+/**
+ * Ham RMS'i göze uygun bir genliğe çevirir.
+ *
+ * Konuşma sesi RMS olarak 0.02–0.2 aralığında gezinir; bunu doğrusal
+ * kullanmak dalgayı hep düz gösterirdi. Karekök eğrisi düşük sesleri
+ * yükselterek insan kulağının algısına yaklaştırıyor.
+ */
+function levelToAmplitude(level: number | undefined): number {
+  if (level === undefined) return 1 // seviye bilgisi yoksa (statik gösterim)
+  if (level <= 0.0008) return 0.06 // sinyal yok — ince bir çizgi kalsın
+  return Math.min(1, 0.15 + Math.sqrt(Math.min(level, 0.25) / 0.25) * 0.85)
+}
+
 export function Waveform({
   bars,
   seed,
   module,
   variant,
   height,
+  level,
 }: {
   bars: number
   seed: number
   module: ModuleId
   variant: WaveVariant
   height: number
+  /**
+   * Anlık ses seviyesi 0–1. Verilmezse dalga sabit genlikle oynar (panel
+   * gibi dekoratif kullanımlar için).
+   */
+  level?: number
 }): React.JSX.Element {
   const delays = waveDelays(bars, seed)
+  const amplitude = levelToAmplitude(level)
+  const silent = level !== undefined && level <= 0.0008
+
   return (
     <div
-      className={cx(styles.wave, WAVE_CLASS[variant])}
-      style={{ ...tone(module), height } as CSSProperties}
+      className={cx(styles.wave, WAVE_CLASS[variant], silent && styles.waveSilent)}
+      style={{ ...tone(module), height, '--amp': amplitude } as CSSProperties}
       aria-hidden="true"
     >
       {delays.map((delay, i) => (

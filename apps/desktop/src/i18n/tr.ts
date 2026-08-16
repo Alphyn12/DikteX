@@ -146,6 +146,11 @@ export const tr = {
   'hud.localOnly': 'yalnız yerel',
   'hud.error': 'Dikte tamamlanamadı',
   'hud.dismiss': 'Kapat',
+  'hud.noSignal': 'Mikrofondan ses gelmiyor',
+  'hud.silent': 'Konuşma algılanmadı',
+  'hud.silent.hint': 'Kayıtta konuşma çıkmadı, bu yüzden hiçbir şey gönderilmedi. Daha yüksek sesle veya mikrofona daha yakın konuşmayı deneyin.',
+  'hud.deadMic': 'Mikrofon ses üretmiyor',
+  'hud.deadMic.hint': 'Seçili mikrofon hiç sinyal göndermiyor. Ayarlar → MİKROFON bölümünden çalışan bir aygıt seçin. (NVIDIA Broadcast gibi sanal mikrofonlar, kendi uygulamaları kapalıyken sessizlik üretir.)',
 
   // ── Mikrofon ─────────────────────────────────────────────────────────────
   'mic.title': 'MİKROFON',

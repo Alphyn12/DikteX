@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 import wave
 from dataclasses import dataclass
 from io import BytesIO
@@ -33,9 +34,34 @@ CHANNELS = 1
 DTYPE = np.int16
 BLOCK_SIZE = 1600  # 100 ms
 
+#: Ses sürücüsünün bir aygıtı serbest bırakması için beklenen süre.
+_DEVICE_RELEASE_SECONDS = 0.25
+
 
 class AudioDeviceError(RuntimeError):
     """Ses aygıtı açılamadı veya değiştirilemedi."""
+
+
+def refresh_devices() -> None:
+    """PortAudio'nun aygıt listesini tazeler.
+
+    PortAudio aygıtları yalnız kütüphane başlatılırken tarar ve sonuçları
+    önbelleğe alır. Uygulama saatlerce açık kaldığında bu liste bayatlar:
+    kullanıcı bir mikrofon takar/çıkarır, sanal bir aygıt (NVIDIA Broadcast
+    gibi) açılıp kapanır ve indeksler kayar.
+
+    Ölçtük: motor açıkken Realtek'i seçmek her denemede
+    `AUDCLNT_E_UNSUPPORTED_FORMAT` veriyordu, ama aynı aygıt yeni bir süreçte
+    sorunsuz açılıyordu. Sebep buydu — indeks bayat listeden geliyordu.
+
+    Yeniden başlatma açık akışları geçersiz kılar; bu yüzden yalnız akış
+    kapalıyken çağrılmalı.
+    """
+    try:
+        sd._terminate()  # noqa: SLF001 - sounddevice'in tazeleme yolu bu
+        sd._initialize()  # noqa: SLF001
+    except Exception:  # noqa: BLE001 - tazeleme başarısızsa eski liste kullanılır
+        log.warning("Ses aygıtı listesi tazelenemedi", exc_info=True)
 
 
 def _friendly_open_error(device_name: str, errors: list[str]) -> str:
@@ -308,6 +334,25 @@ class MicrophoneCapture:
 
         raise AudioDeviceError(_friendly_open_error(self._describe_device(), errors))
 
+    def _start_stream_with_retry(self, attempts: int = 3) -> None:
+        """Akışı açar; aygıt hâlâ serbest bırakılmadıysa kısa aralıklarla yeniden dener.
+
+        Ölçtük: bir aygıttan diğerine geçerken ilk deneme sıklıkla
+        `AUDCLNT_E_UNSUPPORTED_FORMAT` veriyor, ikinci deneme başarılı oluyor.
+        Sebebi ses sürücüsünün kaynağı geç bırakması.
+        """
+        last: AudioDeviceError | None = None
+        for attempt in range(attempts):
+            try:
+                self.start_stream()
+                return
+            except AudioDeviceError as exc:
+                last = exc
+                if attempt < attempts - 1:
+                    time.sleep(_DEVICE_RELEASE_SECONDS * (attempt + 2))
+        assert last is not None
+        raise last
+
     def _candidate_configs(self) -> list[tuple[int, int]]:
         """Denenecek (hız, kanal) birleşimleri.
 
@@ -396,11 +441,20 @@ class MicrophoneCapture:
 
         if was_streaming:
             self.stop_stream()
+            # Sürücü aygıtı hemen bırakmıyor. Bu özellikle sanal aygıtlarda
+            # belirgin: NVIDIA Broadcast'in sanal mikrofonu açıkken arkada
+            # fiziksel Realtek'i de tutuyor, kapanınca serbest bırakması bir
+            # an sürüyor. Beklemeden denersek kendi kendimizi engelliyoruz.
+            time.sleep(_DEVICE_RELEASE_SECONDS)
+
+        # Aygıt listesi bayat olabilir; indeksin hâlâ doğru aygıta işaret
+        # ettiğinden emin olmak için tazeliyoruz. Akış zaten kapalı.
+        refresh_devices()
 
         self._device = device
         try:
             if was_streaming:
-                self.start_stream()
+                self._start_stream_with_retry()
         except AudioDeviceError:
             # Geri al: kullanıcı yanlış aygıtı seçtiği için mikrofonsuz
             # kalmamalı.

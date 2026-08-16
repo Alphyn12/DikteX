@@ -173,14 +173,29 @@
   gap: 2px;
 }
 
+/**
+ * Çubuk yüksekliği iki şeyin çarpımı: animasyon fazı ve **gerçek ses seviyesi**.
+ *
+ * Seviyeyi yok sayıp sabit genlikle oynatmak, mikrofon ölüyken bile canlı bir
+ * dalga gösteriyordu — kullanıcı konuştuğunun kaydedildiğini sanıyordu.
+ * `--amp` 0'a yaklaştığında dalga düzleşir ve sorun görünür olur.
+ */
 .waveBar {
   width: 2px;
   height: 100%;
   border-radius: 1px;
   background: var(--tone);
   transform-origin: center;
+  scale: 1 var(--amp, 1);
   animation: om-bar var(--wave-duration) ease-in-out infinite;
   animation-delay: var(--delay);
+  transition: scale 120ms ease-out;
+}
+
+/* Sinyal yokken çubuklar ince bir çizgiye iner ve durur. */
+.waveSilent .waveBar {
+  animation-play-state: paused;
+  opacity: 0.45;
 }
 
 /* Bağlama göre tempo — süreler token'lardan gelir. */

@@ -53,6 +53,13 @@
   --tone: var(--danger);
 }
 
+/* Sessiz kayıt bir hata değil, bir uyarı — rengi de öyle. */
+.warned {
+  --hud-shadow: 0 22px 48px -18px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(229, 154, 43, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --tone: var(--mod-automation);
+}
+
 /* ── Üst satır ────────────────────────────────────────────────────────────── */
 
 .head {

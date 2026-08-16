@@ -112,6 +112,15 @@ export class DictationController {
         })
         break
 
+      case 'silent':
+        this.patch({
+          status,
+          level: 0,
+          deadMicrophone: Boolean(event['deadMicrophone']),
+          seconds: Number(event['seconds'] ?? this.state.seconds),
+        })
+        break
+
       case 'error':
         this.patch({ status, error: String(event['message'] ?? 'Bilinmeyen hata') })
         break

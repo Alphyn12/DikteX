@@ -95,14 +95,55 @@ class TestBoruHatti:
         await pipeline.start()
         await pipeline.stop()
 
-        # Boşa dönülmeli, hiçbir kayıt ve hiçbir harcama olmamalı.
-        assert pipeline.state is DictationState.IDLE
+        # Hiçbir kayıt ve hiçbir harcama olmamalı.
         assert db.recent_dictations() == []
         assert db.spend_summary().call_count == 0
 
+        # Ama sessizce boşa DÖNMEMELİ: kullanıcı canlı testte HUD'un sessizce
+        # kaybolmasını "uygulama çöktü" diye bildirdi. Durum ayrı ve görünür.
+        assert pipeline.state is DictationState.SILENT
         last = [e for e in events if e["type"] == "dictation:state"][-1]
-        assert last["state"] == "idle"
-        assert last.get("silent") is True
+        assert last["state"] == "silent"
+        assert last["deadMicrophone"] is True  # tam sessizlik = ölü mikrofon
+
+    async def test_kisik_ses_olu_mikrofondan_ayrilir(self, db: Database) -> None:
+        """Kısık konuşma ile hiç sinyal olmaması farklı sorunlar.
+
+        Biri "daha yüksek konuş", diğeri "başka mikrofon seç" demek.
+        """
+        events: list[dict] = []
+
+        async def emit(message: dict) -> None:
+            events.append(message)
+
+        mic = FakeMic()
+        # Duyulabilir ama konuşma sayılmayacak kadar kısa/zayıf bir sinyal.
+        mic.clip = speech(seconds=3.0, amplitude=300)
+        pipeline = DictationPipeline(mic=mic, stt=FakeStt(), llm=FakeLlm(), db=db, emit=emit)
+
+        await pipeline.start()
+        await pipeline.stop()
+
+        last = [e for e in events if e["type"] == "dictation:state"][-1]
+        assert last["state"] == "silent"
+        assert last["deadMicrophone"] is False  # sinyal var, sadece yetersiz
+
+    async def test_sessiz_sonrasi_kisayol_yeni_dikte_baslatir(self, db: Database) -> None:
+        """SILENT bir çıkmaz sokak olmamalı; kısayol yine çalışmalı."""
+
+        async def emit(_message: dict) -> None: ...
+
+        mic = FakeMic()
+        mic.clip = silence()
+        pipeline = DictationPipeline(mic=mic, stt=FakeStt(), llm=FakeLlm(), db=db, emit=emit)
+
+        await pipeline.start()
+        await pipeline.stop()
+        assert pipeline.state is DictationState.SILENT
+
+        mic.clip = speech()
+        await pipeline.toggle()
+        assert pipeline.state is DictationState.LISTENING
 
     async def test_konusma_iceren_kayit_islenir(self, db: Database) -> None:
         async def emit(_message: dict) -> None: ...
