@@ -1,0 +1,1 @@
+"""Bağlam katmanı — aktif uygulama, seçili metin, dinamik değişkenler."""

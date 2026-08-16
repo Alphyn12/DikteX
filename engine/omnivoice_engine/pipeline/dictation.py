@@ -21,13 +21,18 @@ from enum import Enum
 from typing import Any
 
 from omnivoice_engine.audio.capture import MicrophoneCapture
+from omnivoice_engine.context.apps import AppProfile, profile_for
+from omnivoice_engine.context.selection import read_selection, truncate_selection
+from omnivoice_engine.context.variables import VariableContext, inject, mentions_selection
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
-from omnivoice_engine.output.paste import PasteError, paste_text
+from omnivoice_engine.output.paste import PasteError, paste_text, read_clipboard_text
 from omnivoice_engine.output.window import WindowInfo, get_foreground_window
 from omnivoice_engine.pipeline.fillers import strip_fillers
-from omnivoice_engine.pipeline.prompts import dictation_prompt, sanitize_output
+from omnivoice_engine.pipeline.modes import Mode, ModeId, get_mode
+from omnivoice_engine.pipeline.prompts import build_prompt, sanitize_output
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database, DictationRecord
+from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
 
 log = logging.getLogger(__name__)
@@ -66,6 +71,13 @@ class DictationResult:
     audio_seconds: float
     target: WindowInfo | None = None
     record_id: int | None = None
+    mode: str = "quick"
+    profile: str = "plain"
+    app_display_name: str | None = None
+    #: Seçili metnin uzunluğu — arayüzde rozet olarak gösterilir.
+    selection_chars: int = 0
+    #: Doldurulan dinamik değişkenler.
+    variables: tuple[str, ...] = ()
 
     def to_payload(self) -> dict[str, Any]:
         return {
@@ -82,9 +94,14 @@ class DictationResult:
             "totalMs": self.total_ms,
             "costUsd": self.cost_usd,
             "audioSeconds": round(self.audio_seconds, 2),
-            "appName": self.target.app_name if self.target else None,
+            "appName": self.app_display_name
+            or (self.target.app_name if self.target else None),
             "windowTitle": self.target.title if self.target else None,
             "recordId": self.record_id,
+            "mode": self.mode,
+            "profile": self.profile,
+            "selectionChars": self.selection_chars,
+            "variables": list(self.variables),
         }
 
 
@@ -95,6 +112,8 @@ class _Session:
     started_at: float
     target: WindowInfo | None
     pre_roll_seconds: float
+    mode: Mode
+    profile: AppProfile
     level_task: asyncio.Task[None] | None = field(default=None, repr=False)
 
 
@@ -109,12 +128,14 @@ class DictationPipeline:
         llm: OpenRouterLlm,
         db: Database,
         emit: EventSink,
+        vocabulary: Vocabulary | None = None,
     ) -> None:
         self._mic = mic
         self._stt = stt
         self._llm = llm
         self._db = db
         self._emit = emit
+        self._vocabulary = vocabulary
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
@@ -130,7 +151,7 @@ class DictationPipeline:
 
     # ── Akış ──────────────────────────────────────────────────────────────
 
-    async def start(self) -> None:
+    async def start(self, mode: ModeId | str = ModeId.QUICK) -> None:
         """Kaydı başlatır. Zaten kayıttaysa yok sayar."""
         async with self._lock:
             if self.state is not DictationState.IDLE:
@@ -140,6 +161,9 @@ class DictationPipeline:
             # Hedef pencereyi kayıt başlarken yakalıyoruz: kullanıcı konuşurken
             # başka bir pencereye geçerse metin yine doğru yere gitmeli.
             target = get_foreground_window()
+            resolved_mode = get_mode(mode)
+            profile = profile_for(target.process_name if target else "")
+
             if not self._mic.is_streaming:
                 self._mic.start_stream()
 
@@ -148,20 +172,26 @@ class DictationPipeline:
                 started_at=time.perf_counter(),
                 target=target,
                 pre_roll_seconds=pre_roll,
+                mode=resolved_mode,
+                profile=profile,
             )
             self._result = None
 
             await self._set_state(
                 DictationState.LISTENING,
                 preRollSeconds=round(pre_roll, 2),
-                appName=target.app_name if target else None,
+                appName=profile.display_name or (target.app_name if target else None),
                 windowTitle=target.title if target else None,
+                mode=resolved_mode.id.value,
+                profile=profile.profile.value,
             )
             self._session.level_task = asyncio.create_task(self._stream_level())
             log.info(
-                "Dikte başladı (pre-roll %.2f sn, hedef: %s)",
+                "Dikte başladı (mod: %s, pre-roll %.2f sn, hedef: %s / %s)",
+                resolved_mode.id.value,
                 pre_roll,
-                target.app_name if target else "bilinmiyor",
+                profile.display_name or "bilinmiyor",
+                profile.profile.value,
             )
 
     async def _stream_level(self) -> None:
@@ -228,9 +258,12 @@ class DictationPipeline:
         self, *, clip_seconds: float, clip: Any, session: _Session
     ) -> DictationResult:
         started = session.started_at
+        mode = session.mode
 
-        # 1) Konuşma → metin
-        transcript = await self._stt.transcribe(clip, language=None)
+        # 1) Konuşma → metin. Sözlük STT'ye bağlam ipucu olarak gider;
+        #    ölçtük, tireli terimlerin yazımı böyle korunuyor.
+        stt_terms = self._vocabulary.stt_terms() if self._vocabulary else None
+        transcript = await self._stt.transcribe(clip, language=None, vocabulary=stt_terms)
         self._db.add_spend(
             provider=transcript.provider,
             model=transcript.model,
@@ -243,6 +276,25 @@ class DictationPipeline:
         # 2) Yerel dolgu temizliği — anlık ve bedava
         local = strip_fillers(transcript.text)
 
+        # 3) Bağlam: seçili metin ve dinamik değişkenler
+        selection = ""
+        wants_selection = mode.uses_selection or mentions_selection(local.text)
+        if wants_selection and session.target:
+            # Ctrl+C göndermek bloklayıcı Win32 çağrıları içeriyor.
+            selection = await asyncio.to_thread(read_selection, session.target.handle)
+            selection = truncate_selection(selection)
+            if selection:
+                log.info("Seçili metin okundu: %d karakter", len(selection))
+
+        variables = VariableContext(
+            app_name=session.profile.display_name
+            or (session.target.app_name if session.target else ""),
+            window_title=session.target.title if session.target else "",
+            selected_text=selection,
+            clipboard=await asyncio.to_thread(read_clipboard_text) or "",
+        )
+        injected = inject(local.text, variables)
+
         await self._emit(
             {
                 "type": "dictation:progress",
@@ -250,22 +302,31 @@ class DictationPipeline:
                 "rawText": transcript.text,
                 "fillersRemoved": local.removed_count,
                 "sttMs": transcript.usage.latency_ms,
+                "selectionChars": len(selection),
+                "variables": list(injected.used),
             }
         )
 
-        # 3) LLM ile bağlama duyarlı temizlik
+        # 4) LLM ile moda ve ortama duyarlı işleme
         llm_provider: str | None = None
         llm_model: str | None = None
         llm_ms = 0
         llm_cost = 0.0
-        final_text = local.text
+        final_text = injected.text
 
-        if self._llm.is_available() and local.text:
+        if self._llm.is_available() and injected.text:
             try:
-                completion = await self._llm.complete(
-                    dictation_prompt(local.text, language=transcript.language)
+                prompt = build_prompt(
+                    injected.text,
+                    mode=mode,
+                    profile=session.profile.profile,
+                    app_name=session.profile.display_name or None,
+                    vocabulary=self._vocabulary.llm_terms() if self._vocabulary else None,
+                    language=transcript.language,
+                    selection=selection,
                 )
-                final_text = sanitize_output(completion.text) or local.text
+                completion = await self._llm.complete(prompt, model=mode.model)
+                final_text = sanitize_output(completion.text) or injected.text
                 llm_provider = completion.provider
                 llm_model = completion.model
                 llm_ms = completion.usage.latency_ms
@@ -307,13 +368,20 @@ class DictationPipeline:
             cost_usd=cost,
             audio_seconds=clip_seconds,
             target=session.target,
+            mode=mode.id.value,
+            profile=session.profile.profile.value,
+            app_display_name=session.profile.display_name or None,
+            selection_chars=len(selection),
+            variables=injected.used,
         )
 
         result.record_id = self._db.add_dictation(
             DictationRecord(
                 raw_text=result.raw_text,
                 final_text=result.final_text,
-                app_name=session.target.app_name if session.target else None,
+                mode=mode.id.value,
+                app_name=session.profile.display_name
+                or (session.target.app_name if session.target else None),
                 window_title=session.target.title if session.target else None,
                 language=result.language,
                 stt_provider=result.stt_provider,
@@ -369,10 +437,10 @@ class DictationPipeline:
             self._result = None
             await self._set_state(DictationState.IDLE, cancelled=True)
 
-    async def toggle(self) -> None:
+    async def toggle(self, mode: ModeId | str = ModeId.QUICK) -> None:
         """Kısayolun davranışı: boştaysa başlat, dinliyorsa bitir."""
         if self.state is DictationState.IDLE:
-            await self.start()
+            await self.start(mode)
         elif self.state is DictationState.LISTENING:
             await self.stop()
         # İşleme veya pre-flight sırasında kısayol yok sayılır; kullanıcı

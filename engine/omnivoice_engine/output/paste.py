@@ -42,6 +42,7 @@ KEYEVENTF_KEYUP = 0x0002
 INPUT_KEYBOARD = 1
 VK_CONTROL = 0x11
 VK_V = 0x56
+VK_C = 0x43
 
 
 #: `ULONG_PTR` mimariye göre 4 veya 8 bayt. `WPARAM` bu tipin ctypes karşılığı.
@@ -113,12 +114,12 @@ def _key_event(vk: int, *, up: bool) -> _INPUT:
     return event
 
 
-def _send_ctrl_v() -> bool:
-    """Ctrl+V tuş dizisini gönderir."""
+def _send_ctrl_key(vk: int) -> bool:
+    """Ctrl + verilen tuş dizisini gönderir."""
     events = [
         _key_event(VK_CONTROL, up=False),
-        _key_event(VK_V, up=False),
-        _key_event(VK_V, up=True),
+        _key_event(vk, up=False),
+        _key_event(vk, up=True),
         _key_event(VK_CONTROL, up=True),
     ]
     array = (_INPUT * len(events))(*events)
@@ -133,6 +134,16 @@ def _send_ctrl_v() -> bool:
         )
         return False
     return True
+
+
+def _send_ctrl_v() -> bool:
+    """Yapıştırma: Ctrl+V."""
+    return _send_ctrl_key(VK_V)
+
+
+def _send_copy() -> bool:
+    """Kopyalama: Ctrl+C. Seçili metni okumak için kullanılır."""
+    return _send_ctrl_key(VK_C)
 
 
 # ── Pano ──────────────────────────────────────────────────────────────────
