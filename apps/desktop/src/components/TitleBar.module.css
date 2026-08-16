@@ -1,0 +1,70 @@
+/* Başlık çubuğu — Fluent metrikleri: 40 px yükseklik, 46×40 pencere düğmeleri. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: var(--titlebar-height);
+  padding-left: 14px;
+  gap: 10px;
+}
+
+.logo {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+}
+
+.title {
+  font-size: 12px;
+  color: var(--text-titlebar);
+}
+
+.spacer {
+  flex: 1;
+  /* Boş alan sürüklenebilir olmalı; düğmeler `.no-drag` ile bunu iptal eder. */
+  align-self: stretch;
+}
+
+.buttons {
+  display: flex;
+  flex: none;
+  align-self: stretch;
+}
+
+.button {
+  width: var(--titlebar-button-width);
+  height: var(--titlebar-height);
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text-nav-idle);
+  cursor: default;
+  transition: background-color 120ms ease, color 120ms ease;
+  /* Windows 11 sistem ikonları. Yoksa yedek yazı tipine düşer. */
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', var(--font-ui);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.button:hover {
+  background: var(--surface-hover-soft);
+  color: var(--text-primary);
+}
+
+.button:active {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.close:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.close:active {
+  background: #b1271a;
+  color: #fff;
+}

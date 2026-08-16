@@ -1,0 +1,177 @@
+/**
+ * OmniVoice tasarım token'ları.
+ *
+ * docs/DESIGN-TOKENS.md dosyasının kod karşılığı — o belge de mockup'tan
+ * birebir çıkarılmıştır. Bileşenlerde sabit renk/ölçü yazılmaz, hep buradan
+ * okunur. Bir değeri değiştirmek gerekiyorsa önce belge güncellenir.
+ */
+
+:root {
+  /* ── Modül renkleri — renk anlam taşır, dekor değildir ─────────────────── */
+  --mod-audio: #2bb3a3;
+  --mod-audio-soft: #5fd8c8;
+  --mod-prompt: #7c5cff;
+  --mod-prompt-soft: #a493ff;
+  --mod-meeting: #e0559b;
+  --mod-system: #3d7ff5;
+  --mod-automation: #e59a2b;
+  --mod-automation-soft: #f0b558;
+  --mod-vault: #6fc25f;
+  --mod-vault-soft: #96d989;
+
+  --danger: #c42b1c;
+
+  --gradient-primary: linear-gradient(135deg, #7c5cff, #3d7ff5);
+  --gradient-paste: linear-gradient(135deg, #3d7ff5, #7c5cff);
+
+  /* ── Zemin ve yüzeyler ─────────────────────────────────────────────────── */
+  --bg-app: #080a11;
+  --bg-canvas: #0a0c14;
+  --bg-window: linear-gradient(180deg, rgba(24, 27, 43, 0.94), rgba(15, 17, 28, 0.96));
+  --bg-content: rgba(255, 255, 255, 0.028);
+
+  --surface-card: rgba(255, 255, 255, 0.05);
+  --surface-card-dim: rgba(255, 255, 255, 0.045);
+  --surface-feed: rgba(255, 255, 255, 0.042);
+  --surface-hover: rgba(255, 255, 255, 0.075);
+  --surface-hover-soft: rgba(255, 255, 255, 0.055);
+  --surface-hover-faint: rgba(255, 255, 255, 0.045);
+  --surface-header: rgba(255, 255, 255, 0.035);
+  --surface-acrylic: rgba(22, 25, 38, 0.86);
+  --surface-acrylic-hud: rgba(20, 23, 36, 0.88);
+
+  --border-card: rgba(255, 255, 255, 0.07);
+  --border-feed: rgba(255, 255, 255, 0.06);
+  --border-divider: rgba(255, 255, 255, 0.055);
+  --border-divider-strong: rgba(255, 255, 255, 0.08);
+  --border-control: rgba(255, 255, 255, 0.12);
+
+  /* ── Metin — hepsi #e7e9f2 üzerine opaklık; vurgu yalnız ağırlıkla ─────── */
+  --text: #e7e9f2;
+  --text-primary: rgba(231, 233, 242, 0.95);
+  --text-titlebar: rgba(231, 233, 242, 0.82);
+  --text-list: rgba(231, 233, 242, 0.76);
+  --text-body: rgba(231, 233, 242, 0.72);
+  --text-nav-idle: rgba(231, 233, 242, 0.62);
+  --text-muted: rgba(231, 233, 242, 0.55);
+  --text-subtle: rgba(231, 233, 242, 0.5);
+  --text-label: rgba(231, 233, 242, 0.45);
+  --text-dim: rgba(231, 233, 242, 0.4);
+  --text-faint: rgba(231, 233, 242, 0.34);
+
+  /* ── Tipografi ─────────────────────────────────────────────────────────── */
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Mono', ui-monospace, monospace;
+
+  --text-title: 600 28px/1.15 var(--font-ui);
+  --text-subtitle: 600 20px/1.3 var(--font-ui);
+  --text-strong: 600 14px/1.4 var(--font-ui);
+  --text-body-size: 400 14px/1.4 var(--font-ui);
+  --text-caption: 400 12px/1.4 var(--font-ui);
+  --text-body-sm: 400 12.5px/1.5 var(--font-ui);
+
+  --mono-stat: 600 25px/1 var(--font-mono);
+  --mono-value: 600 13px/1 var(--font-mono);
+  --mono-label: 600 10px/1 var(--font-mono);
+  --mono-badge: 500 11px/1 var(--font-mono);
+  --mono-tag: 500 10px/1 var(--font-mono);
+
+  --tracking-title: -0.4px;
+  --tracking-stat: -0.6px;
+  --tracking-label: 0.11em;
+  --tracking-label-wide: 0.14em;
+  --tracking-tag: 0.06em;
+
+  /* ── Ölçüler — tüm boşluklar 4 px ızgarada ─────────────────────────────── */
+  --titlebar-height: 40px;
+  --titlebar-button-width: 46px;
+  --sidebar-width: 248px;
+  --aside-width: 300px;
+  --nav-item-height: 40px;
+  --nav-pill-width: 3px;
+  --nav-pill-height: 16px;
+  --dot-size: 8px;
+  --button-height: 32px;
+  --button-height-hud: 30px;
+  --toggle-width: 40px;
+  --toggle-height: 20px;
+  --toggle-knob: 14px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+
+  /* ── Yarıçaplar ────────────────────────────────────────────────────────── */
+  --radius-window: 8px;
+  --radius-float: 9px;
+  --radius-card: 7px;
+  --radius-nav: 5px;
+  --radius-control: 4px;
+  --radius-badge: 3px;
+  --radius-dot: 2px;
+
+  /* ── Gölgeler — yalnız yüzen katmanlarda ───────────────────────────────── */
+  --shadow-window: 0 40px 88px -26px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-commandbar: 0 34px 70px -20px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(255, 255, 255, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-primary: 0 6px 18px -8px rgba(124, 92, 255, 0.9);
+
+  /* HUD'un kenar halkası duruma göre renk değiştirir. */
+  --shadow-hud-listening: 0 22px 48px -18px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(43, 179, 163, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-hud-processing: 0 22px 48px -18px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(124, 92, 255, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-hud-preflight: 0 22px 48px -18px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(61, 127, 245, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* ── Hareket ───────────────────────────────────────────────────────────── */
+  --wave-duration-panel: 1.15s;
+  --wave-duration-commandbar: 1s;
+  --wave-duration-hud: 0.95s;
+  --ring-duration: 1.1s;
+}
+
+/* ── Ortam ışığı — pencere arkası (mockup 1a / 1c) ────────────────────────── */
+.ambient-light {
+  background:
+    radial-gradient(78% 62% at 22% 4%, #22264a 0%, rgba(12, 14, 26, 0) 62%),
+    radial-gradient(52% 48% at 88% 86%, rgba(43, 179, 163, 0.16), rgba(0, 0, 0, 0) 70%),
+    radial-gradient(46% 44% at 12% 92%, rgba(124, 92, 255, 0.16), rgba(0, 0, 0, 0) 72%);
+}
+
+/* ── Animasyonlar ─────────────────────────────────────────────────────────── */
+@keyframes om-bar {
+  0%,
+  100% {
+    transform: scaleY(0.22);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes om-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * Erişilebilirlik: hareket azaltma tercihinde döngüsel animasyonlar durur.
+ * Ses seviyesi göstergesi statik bir çubuğa döner — bilgi kaybolmaz, yalnız
+ * hareket kalkar.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

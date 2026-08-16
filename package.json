@@ -1,0 +1,23 @@
+{
+  "name": "omnivoice",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Windows 11 için sesle çalışan yapay zeka asistanı",
+  "author": "Baris Kirli",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@omnivoice/desktop",
+    "build": "npm run build --workspace=@omnivoice/desktop",
+    "typecheck": "npm run typecheck --workspace=@omnivoice/desktop",
+    "lint": "npm run lint --workspace=@omnivoice/desktop",
+    "engine:install": "python -m venv engine/.venv && engine/.venv/Scripts/pip install -e engine[dev]",
+    "engine:dev": "engine/.venv/Scripts/python -m omnivoice_engine",
+    "engine:test": "engine/.venv/Scripts/python -m pytest engine -q"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

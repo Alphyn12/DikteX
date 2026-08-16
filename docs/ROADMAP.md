@@ -14,17 +14,25 @@ ile boş ama çalışan bir pencerenin açılması.
 
 | # | Madde | Durum |
 |---|---|---|
-| 0.1 | Git deposu, `.gitignore`, gizli bilgi hijyeni | 🟨 |
-| 0.2 | Monorepo yapısı (`apps/desktop`, `engine`) | ⬜ |
-| 0.3 | Electron + Vite + React + TypeScript iskeleti | ⬜ |
-| 0.4 | Python motor iskeleti (FastAPI + WebSocket) | ⬜ |
-| 0.5 | Electron ↔ Python süreç yönetimi ve IPC köprüsü | ⬜ |
-| 0.6 | Tasarım token'ları (mockup'tan çıkarılan renk/tipografi/ölçü sistemi) | ⬜ |
-| 0.7 | i18n altyapısı (TR + EN) | ⬜ |
-| 0.8 | GitHub'a ilk push (`Alphyn12/omnivoice`, private) | ⬜ |
+| 0.1 | Git deposu, `.gitignore`, gizli bilgi hijyeni | ✅ |
+| 0.2 | Monorepo yapısı (`apps/desktop`, `engine`) | ✅ |
+| 0.3 | Electron + Vite + React + TypeScript iskeleti | ✅ |
+| 0.4 | Python motor iskeleti (FastAPI + WebSocket) | ✅ |
+| 0.5 | Electron ↔ Python süreç yönetimi ve IPC köprüsü | ✅ |
+| 0.6 | Tasarım token'ları (mockup'tan çıkarılan renk/tipografi/ölçü sistemi) | ✅ |
+| 0.7 | i18n altyapısı (TR + EN) | ✅ |
+| 0.8 | GitHub'a ilk push (`Alphyn12/omnivoice`, private) | ✅ |
 
-**Çıktı:** Boş bir Windows 11 penceresi açılıyor, arkada Python motoru çalışıyor,
-ikisi birbirini görüyor.
+**Çıktı:** ✅ Pencere Mica malzemesiyle açılıyor, kendi başlık çubuğunu çiziyor,
+Python motoru arkada çalışıyor ve WebSocket el sıkışması tamamlanıyor. Motor
+çökerse süpervizör üstel geri çekilmeyle yeniden bağlanıyor. Dil TR/EN arasında
+değişiyor. Tip denetimi ve motor testleri (5/5) geçiyor.
+
+**Faz 0'da alınan kararlar:**
+- Vite 8 değil **Vite 7** — `electron-vite@5` henüz 8'i desteklemiyor.
+- Mica gerçek anlamda kullanılıyor: mockup'ın pencere gövdesi %94–96 opak bir
+  gradyandı ve Mica'yı örterdi. Properties IV.1 native Mica istediği için
+  gradyan yerine gerçek Mica tercih edildi; bu sapma bilinçlidir.
 
 ---
 

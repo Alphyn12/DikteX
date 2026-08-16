@@ -51,12 +51,34 @@ cp .env.example .env.local
 #  → GROQ_API_KEY       console.groq.com/keys
 #  → OPENROUTER_API_KEY openrouter.ai/settings/keys
 
+# Bağımlılıklar
 npm install
+npm run engine:install   # Python sanal ortamı + motor bağımlılıkları
+
+# Çalıştır
 npm run dev
+```
+
+**Kontroller**
+
+```bash
+npm run typecheck     # TypeScript
+npm run engine:test   # motor testleri
+npm run build         # üretim derlemesi
 ```
 
 > **Uyarı:** `.env.local` dosyasını asla commit etmeyin. `.gitignore` bunu
 > engeller, ama `git add -f` ile zorlamayın.
+
+### Sorun giderme
+
+**`Error: Electron uninstall`** — npm workspace kurulumunda Electron'un
+postinstall betiği bazen atlanıyor ve ikili dosya indirilmemiş oluyor.
+Çözümü:
+
+```bash
+node node_modules/electron/install.js
+```
 
 ## Tasarım
 

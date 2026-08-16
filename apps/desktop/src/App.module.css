@@ -1,0 +1,151 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: var(--text-primary);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-7);
+}
+
+/* ── Faz 0 durum kartı ───────────────────────────────────────────────────────
+   Motorun canlı durumunu gösterir. Faz 1'de Panel ekranı bu alanı devralacak,
+   bu kart da Ayarlar'daki motor bölümüne taşınacak. */
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  border: 1px solid var(--border-card);
+  /* Üst kenar şeridi durum rengini taşır — renk anlam taşır kuralı. */
+  border-top: 2px solid var(--status-color);
+}
+
+.label {
+  font: var(--mono-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-label);
+}
+
+.headline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: var(--space-3);
+}
+
+.dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  flex: none;
+  border-radius: var(--radius-dot);
+  background: var(--status-color);
+}
+
+/* Bağlantı beklenirken nokta nabız gibi atar — bekleme durumunu görünür kılar. */
+.pulsing {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.status {
+  font: var(--text-strong);
+  flex: 1;
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-divider);
+  font: var(--mono-badge);
+  color: var(--text-dim);
+}
+
+.error {
+  margin-top: var(--space-3);
+  padding: 10px 12px;
+  border-radius: var(--radius-nav);
+  background: rgba(196, 43, 28, 0.1);
+  border: 1px solid rgba(196, 43, 28, 0.28);
+  font: var(--text-body-sm);
+  color: var(--text-body);
+  /* Motor hataları çok satırlı olabilir (örn. kurulum yönergesi). */
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.button {
+  height: var(--button-height);
+  padding: 0 14px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-control);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: var(--text-body-size);
+  cursor: default;
+  transition: background-color 120ms ease;
+}
+
+.button:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ── Dil değiştirici ─────────────────────────────────────────────────────── */
+
+.langGroup {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-nav);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.lang {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: var(--radius-badge);
+  background: transparent;
+  color: var(--text-subtle);
+  font: var(--mono-badge);
+  text-transform: uppercase;
+  cursor: default;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.lang:hover {
+  color: var(--text-primary);
+}
+
+.langActive {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
