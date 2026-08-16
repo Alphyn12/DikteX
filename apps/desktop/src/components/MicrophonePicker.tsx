@@ -39,8 +39,11 @@ export function MicrophonePicker(): React.JSX.Element {
     if (busy || list?.current === device) return
     setBusy(true)
     try {
-      setList(await window.omnivoice.invoke('audio:set-device', device))
-      setError(null)
+      const next = await window.omnivoice.invoke('audio:set-device', device)
+      setList(next)
+      // Motor aygıtı açamadıysa eskisine döner ve sebebini bildirir.
+      // Bunu göstermezsek kullanıcı tıklar, hiçbir şey olmaz, sebebini bilemez.
+      setError(next.error ?? null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
     } finally {
@@ -59,32 +62,32 @@ export function MicrophonePicker(): React.JSX.Element {
         </button>
       </div>
 
-      {error ? (
-        <p className={styles.empty}>{error}</p>
-      ) : (
-        <div className={styles.list} role="radiogroup" aria-label={t('mic.title')}>
+      {/* Hata listenin yerine geçmez, üstüne çıkar: kullanıcı hem sebebi
+          görmeli hem de başka bir aygıt seçebilmeli. */}
+      {error && <p className={styles.error}>{error}</p>}
+
+      <div className={styles.list} role="radiogroup" aria-label={t('mic.title')}>
+        <Option
+          active={list?.current === null || list?.current === undefined}
+          name={t('mic.systemDefault')}
+          sub={t('mic.systemDefaultHint')}
+          onSelect={() => void select(null)}
+        />
+
+        {devices.map((device) => (
           <Option
-            active={list?.current === null || list?.current === undefined}
-            name={t('mic.systemDefault')}
-            sub={t('mic.systemDefaultHint')}
-            onSelect={() => void select(null)}
+            key={device.index}
+            active={list?.current === device.index}
+            name={device.name}
+            sub={`${device.hostApi} · ${device.sampleRate} Hz${
+              device.isSystemDefault ? ' · Windows' : ''
+            }`}
+            onSelect={() => void select(device.index)}
           />
+        ))}
 
-          {devices.map((device) => (
-            <Option
-              key={device.index}
-              active={list?.current === device.index}
-              name={device.name}
-              sub={`${device.hostApi} · ${device.sampleRate} Hz${
-                device.isSystemDefault ? ' · Windows' : ''
-              }`}
-              onSelect={() => void select(device.index)}
-            />
-          ))}
-
-          {devices.length === 0 && <p className={styles.empty}>{t('mic.noDevices')}</p>}
-        </div>
-      )}
+        {devices.length === 0 && <p className={styles.empty}>{t('mic.noDevices')}</p>}
+      </div>
 
       <div className={styles.status}>
         <span className={cx(styles.dot, !list?.streaming && styles.dotOff)} />

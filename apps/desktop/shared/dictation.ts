@@ -159,6 +159,14 @@ export interface AudioDeviceList {
   /** Seçili aygıt; `null` ise sistem varsayılanı kullanılıyor. */
   current: number | null
   streaming: boolean
+  /**
+   * Aygıt değiştirilemediyse sebebi.
+   *
+   * Bunu arayüze taşımak şart: bir mikrofon başka bir uygulama tarafından
+   * tutuluyor olabilir (örn. NVIDIA Broadcast fiziksel mikrofonu sahiplenir).
+   * Hatayı yutarsak kullanıcı tıklar, hiçbir şey olmaz ve sebebini bilemez.
+   */
+  error?: string | null
 }
 
 // ── İstatistik ve harcama ───────────────────────────────────────────────

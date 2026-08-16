@@ -94,6 +94,17 @@
   color: var(--text-subtle);
 }
 
+/* Aygıt açılamadığında sebebi. Listenin yerine geçmez, üstünde durur. */
+.error {
+  margin: var(--space-3) 0 0;
+  padding: 9px 11px;
+  border-radius: var(--radius-nav);
+  background: rgba(229, 154, 43, 0.1);
+  border: 1px solid rgba(229, 154, 43, 0.3);
+  font: 400 12px/1.5 var(--font-ui);
+  color: var(--text-body);
+}
+
 .status {
   display: flex;
   align-items: center;

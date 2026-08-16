@@ -118,6 +118,10 @@ export function registerIpc({ engine, dictation, hotkeys, getMainWindow }: IpcDe
         devices: list.devices ?? [],
         current: response.current ?? list.current ?? null,
         streaming: response.streaming ?? list.streaming ?? false,
+        // Hata mutlaka taşınmalı: aygıt başka bir uygulama tarafından
+        // tutuluyorsa kullanıcı bunu görmeli, yoksa arayüz "hiçbir şey
+        // olmadı" gibi davranır.
+        error: response.error ?? null,
       }
     },
   )

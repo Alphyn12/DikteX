@@ -38,6 +38,34 @@ class AudioDeviceError(RuntimeError):
     """Ses aygıtı açılamadı veya değiştirilemedi."""
 
 
+def _friendly_open_error(device_name: str, errors: list[str]) -> str:
+    """Ham PortAudio hatasını kullanıcının anlayacağı bir cümleye çevirir.
+
+    `AUDCLNT_E_UNSUPPORTED_FORMAT | Invalid sample rate | Invalid device`
+    dizisi kullanıcıya hiçbir şey anlatmaz. Ölçtük: bu mikrofonların en sık
+    açılamama sebebi, aygıtın başka bir uygulama (örn. NVIDIA Broadcast, Zoom,
+    Teams) tarafından tutuluyor olması — sebebi söylemek çözümü de söylemek
+    demek.
+    """
+    joined = " ".join(errors).lower()
+
+    if "unsupported_format" in joined or "device unavailable" in joined:
+        reason = (
+            f"“{device_name}” başka bir uygulama tarafından kullanılıyor olabilir "
+            "(NVIDIA Broadcast, Zoom, Teams gibi). O uygulamayı kapatıp tekrar deneyin."
+        )
+    elif "invalid device" in joined:
+        reason = f"“{device_name}” artık bağlı değil. Listeyi yenileyin."
+    elif "invalid sample rate" in joined:
+        reason = f"“{device_name}” desteklenen bir ses biçimi sunmuyor."
+    else:
+        reason = f"“{device_name}” açılamadı."
+
+    # Teknik ayrıntı kayboluyor değil, günlüğe yazılıyor; arayüz sade kalıyor.
+    log.warning("Aygıt açma hatası (%s): %s", device_name, " | ".join(errors))
+    return reason
+
+
 def _lowpass_kernel(cutoff_ratio: float, taps: int = 129) -> np.ndarray:
     """Pencerelenmiş sinc alçak geçiren süzgeç.
 
@@ -278,9 +306,7 @@ class MicrophoneCapture:
             )
             return
 
-        raise AudioDeviceError(
-            f"Mikrofon açılamadı ({self._describe_device()}): {' | '.join(errors)}"
-        )
+        raise AudioDeviceError(_friendly_open_error(self._describe_device(), errors))
 
     def _candidate_configs(self) -> list[tuple[int, int]]:
         """Denenecek (hız, kanal) birleşimleri.
