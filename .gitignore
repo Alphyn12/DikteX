@@ -1,0 +1,55 @@
+# ─── Gizli bilgiler — ASLA commit edilmez ────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.json
+credentials.json
+
+# ─── Node / Electron ─────────────────────────────────────────────────────────
+node_modules/
+dist/
+out/
+build/
+release/
+.vite/
+*.tsbuildinfo
+.eslintcache
+
+# ─── Python motoru ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# ─── Çalışma zamanı verisi (kullanıcıya ait, repoya girmez) ──────────────────
+data/
+*.sqlite
+*.sqlite3
+*.db
+recordings/
+models/
+logs/
+*.log
+
+# ─── Araç / IDE / OS ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.swp
+
+# ─── Geçici ──────────────────────────────────────────────────────────────────
+_mockup_extract/
+tmp/
+temp/
+
+# ─── Kaynak paketler (içeriği design/ altına açıldı) ─────────────────────────
+*handoff.zip

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e9e7e2;font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#4438a8}a:hover{color:#2c2378}
+.dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(0,0,0,.09);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 22px}
+.dv-tid{font:600 10px "JetBrains Mono",monospace;padding:3px 7px;background:#16181f;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#16181f}
+.dv-opts{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px "JetBrains Mono",monospace;padding:3px 7px;background:rgba(0,0,0,.075);color:#16181f;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.35 system-ui,sans-serif;color:rgba(0,0,0,.52)}
+.dv-card{border-radius:6px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.13)}
+.dv-opt:target .dv-oid{background:#4438a8;color:#fff}
+.dv-next{margin:26px 0 0;font:12px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.48)}
+@keyframes omBar{0%,100%{transform:scaleY(.22)}50%{transform:scaleY(1)}}
+@keyframes omRing{to{transform:rotate(360deg)}}
+</style></helmet>
+
+<section class="dv-turn" id="brief" style="background:#dedbd4">
+<div class="dv-thd"><span class="dv-tid" style="background:#4438a8">SİSTEM</span><span class="dv-tname">OmniVoice · Windows 11 (Fluent) · karanlık zemin, veriyle kodlanmış renk</span></div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(210px,1fr));gap:30px;max-width:1380px;font:12.5px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.66)">
+<div>
+<div style="font-weight:600;color:#16181f;margin-bottom:7px">Renk = anlam, dekor değil</div>
+Zemin tek koyu lacivert kalır. Renk yalnız modül kimliğini ve durumu taşır: 3&nbsp;px kenar şeridi, 8&nbsp;px nokta, tek satır etiket. Ekran başına en fazla iki renk baskın olur; parlama efekti yalnız canlı ses ve birincil eylemde.
+<div style="display:flex;gap:6px;margin-top:12px">
+<span style="width:34px;height:34px;border-radius:5px;background:#2bb3a3"></span>
+<span style="width:34px;height:34px;border-radius:5px;background:#7c5cff"></span>
+<span style="width:34px;height:34px;border-radius:5px;background:#e0559b"></span>
+<span style="width:34px;height:34px;border-radius:5px;background:#3d7ff5"></span>
+<span style="width:34px;height:34px;border-radius:5px;background:#e59a2b"></span>
+<span style="width:34px;height:34px;border-radius:5px;background:#6fc25f"></span>
+</div>
+<div style="font:400 10.5px/1.7 'JetBrains Mono',monospace;color:rgba(0,0,0,.45);margin-top:7px">Ses·Zeka·Toplantı·Arayüz·Otomasyon·Kasa</div>
+</div>
+<div>
+<div style="font-weight:600;color:#16181f;margin-bottom:7px">Fluent metrikleri</div>
+Başlık çubuğu 40&nbsp;px, pencere düğmeleri 46×40. Kart yarıçapı 7&nbsp;px, kontrol 4&nbsp;px, pencere 8&nbsp;px. Gezinme öğesi 40&nbsp;px yüksek, seçili olan 3×16&nbsp;px vurgulu pil. Tüm boşluklar 4&nbsp;px ızgarada.
+</div>
+<div>
+<div style="font-weight:600;color:#16181f;margin-bottom:7px">Malzeme katmanları</div>
+Mica (pencere gövdesi, duvar kağıdı süzülür) → Kart %5 beyaz + %7 kenar → Acrylic (HUD ve komut çubuğu, güçlü bulanıklık, koyu tint). Gölge yalnız yüzen katmanlarda.
+</div>
+<div>
+<div style="font-weight:600;color:#16181f;margin-bottom:7px">Tipografi rampası</div>
+Segoe UI Variable: Caption 12 / Body 14 / Strong 14 / Subtitle 20 / Title 28. Sayı, model adı, kısayol ve süre daima JetBrains&nbsp;Mono + tabular. Metinde tek vurgu yöntemi: ağırlık.
+</div>
+</div>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Dört ekran — gezinilebilir pencere + yüzen katmanlar</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Ana pencere — sol gezinmeden <b style="color:rgba(0,0,0,.72)">Panel</b> / <b style="color:rgba(0,0,0,.72)">Ayarlar</b> arasında geçiş yapılabilir</div>
+<div class="dv-card" style="width:1420px;background:#06070c">
+<div style="position:relative;width:1420px;height:900px;overflow:hidden;background:#0a0c14">
+<div style="position:absolute;inset:0;background:radial-gradient(78% 62% at 22% 4%,#22264a 0%,rgba(12,14,26,0) 62%),radial-gradient(52% 48% at 88% 86%,rgba(43,179,163,.16),rgba(0,0,0,0) 70%),radial-gradient(46% 44% at 12% 92%,rgba(124,92,255,.16),rgba(0,0,0,0) 72%),#080a11"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(8,10,17,.82);border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;gap:12px">
+<span style="width:22px;height:22px;border-radius:4px;background:rgba(255,255,255,.1)"></span>
+<span style="width:22px;height:22px;border-radius:4px;background:rgba(255,255,255,.07)"></span>
+<span style="width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,#7c5cff,#3d7ff5)"></span>
+<span style="width:22px;height:22px;border-radius:4px;background:rgba(255,255,255,.07)"></span>
+</div>
+
+<div style="position:absolute;left:56px;top:34px;width:1308px;height:812px;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;color:#e7e9f2;background:linear-gradient(180deg,rgba(24,27,43,.94),rgba(15,17,28,.96));box-shadow:0 40px 88px -26px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.09),inset 0 1px 0 rgba(255,255,255,.08)">
+
+<div style="height:40px;flex:none;display:flex;align-items:center;padding-left:14px;gap:10px">
+<img src="uploads/logo-omnivoice.png" alt="" style="width:18px;height:18px;border-radius:4px;object-fit:cover">
+<span style="font-size:12px;color:rgba(231,233,242,.82)">OmniVoice</span>
+<div style="flex:1"></div>
+<div style="width:46px;height:40px;display:grid;place-items:center;font-size:10px;color:rgba(231,233,242,.62)">&#9472;</div>
+<div style="width:46px;height:40px;display:grid;place-items:center;font-size:9px;color:rgba(231,233,242,.62)">&#9633;</div>
+<div style="width:46px;height:40px;display:grid;place-items:center;font-size:10px;color:rgba(231,233,242,.62)" style-hover="background:#c42b1c;color:#ffffff">&#10005;</div>
+</div>
+
+<div style="flex:1;display:flex;min-height:0">
+<div style="width:248px;flex:none;padding:0 8px 12px;display:flex;flex-direction:column;gap:2px">
+<div onClick="{{ goPanel }}" style="height:40px;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:5px;cursor:pointer;background:{{ panelBg }}" style-hover="background:rgba(255,255,255,.055)">
+<span style="width:3px;height:16px;border-radius:2px;background:{{ panelBar }}"></span>
+<span style="font-size:14px;font-weight:{{ panelWeight }};color:rgba(231,233,242,.95)">Panel</span>
+</div>
+<div onClick="{{ goSettings }}" style="height:40px;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:5px;cursor:pointer;background:{{ setBg }}" style-hover="background:rgba(255,255,255,.055)">
+<span style="width:3px;height:16px;border-radius:2px;background:{{ setBar }}"></span>
+<span style="font-size:14px;font-weight:{{ setWeight }};color:rgba(231,233,242,.95)">Ayarlar</span>
+</div>
+
+<div style="height:20px"></div>
+<div style="padding:0 12px 8px;font:600 10px 'JetBrains Mono',monospace;letter-spacing:.14em;color:rgba(231,233,242,.34)">MODÜLLER</div>
+<sc-for list="{{ modules }}" as="m" hint-placeholder-count="6">
+<div style="height:40px;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:5px;cursor:pointer" style-hover="background:rgba(255,255,255,.045)">
+<span style="width:3px;height:16px;border-radius:2px;background:transparent"></span>
+<span style="width:8px;height:8px;border-radius:2px;background:{{ m.c }}"></span>
+<span style="font-size:14px;color:rgba(231,233,242,.62)">{{ m.n }}</span>
+<div style="flex:1"></div>
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.3)">{{ m.k }}</span>
+</div>
+</sc-for>
+
+<div style="flex:1"></div>
+<div style="margin:0 4px;padding:12px;border-radius:7px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="width:8px;height:8px;border-radius:2px;background:#6fc25f"></span>
+<span style="font-size:12px;font-weight:600">Kasa kilitli değil</span>
+</div>
+<div style="font-size:12px;line-height:1.5;color:rgba(231,233,242,.55);margin-top:6px">3 anahtar Credential Manager’da · PII maskeleme açık</div>
+</div>
+</div>
+
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;border-radius:8px 0 0 0;background:rgba(255,255,255,.028);border-left:1px solid rgba(255,255,255,.055);border-top:1px solid rgba(255,255,255,.055);overflow:hidden">
+
+<sc-if value="{{ isPanel }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;min-height:0;display:flex;flex-direction:column">
+<div style="flex:none;padding:24px 28px 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+<div>
+<div style="font-size:28px;font-weight:600;letter-spacing:-.4px;line-height:1.15">Bugün</div>
+<div style="font-size:12px;color:rgba(231,233,242,.5);margin-top:5px">16 Ağustos 2026, Cumartesi · 27 dikte · 4 uygulama · 1 toplantı</div>
+</div>
+<div style="display:flex;gap:8px;align-items:center">
+<div style="height:32px;display:flex;align-items:center;gap:9px;padding:0 14px;border-radius:4px;background:linear-gradient(135deg,#7c5cff,#3d7ff5);font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px -8px rgba(124,92,255,.9)">Dikte başlat<span style="font:500 11px 'JetBrains Mono',monospace;opacity:.72">Ctrl+Alt+Space</span></div>
+<div style="height:32px;display:flex;align-items:center;padding:0 14px;border-radius:4px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:14px;cursor:pointer" style-hover="background:rgba(255,255,255,.09)">Toplantı kaydı</div>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;display:flex;gap:20px;padding:0 28px 26px;overflow:hidden">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px">
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+<sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+<div style="padding:14px 15px 13px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-top:2px solid {{ s.c }}">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.11em;color:rgba(231,233,242,.45)">{{ s.l }}</div>
+<div style="display:flex;align-items:baseline;gap:5px;margin-top:9px">
+<span style="font:600 25px 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.6px">{{ s.v }}</span>
+<span style="font-size:12px;color:rgba(231,233,242,.45)">{{ s.u }}</span>
+</div>
+<div style="display:flex;align-items:flex-end;gap:2px;height:16px;margin-top:11px">
+<sc-for list="{{ s.spark }}" as="b" hint-placeholder-count="7">
+<span style="flex:1;border-radius:1px;background:{{ s.c }};opacity:.5;height:{{ b.h }}%"></span>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)">
+<div style="display:flex;align-items:center;gap:2px;height:28px;flex:none">
+<sc-for list="{{ wave }}" as="b" hint-placeholder-count="22">
+<span style="width:2px;border-radius:1px;background:#2bb3a3;height:100%;transform-origin:center;animation:omBar 1.15s ease-in-out infinite;animation-delay:{{ b.d }}s"></span>
+</sc-for>
+</div>
+<div style="flex:1;min-width:0">
+<div style="font-size:14px;font-weight:600">Hibrit işleme · yerel GPU</div>
+<div style="font:400 11.5px/1.5 'JetBrains Mono',monospace;color:rgba(231,233,242,.48);margin-top:3px">faster-whisper large-v3 turbo · pre-roll 1000 ms · sözlük 148 terim · LLM claude-3.5-haiku</div>
+</div>
+<div style="flex:none;text-align:right">
+<div style="font:600 13px 'JetBrains Mono',monospace;color:#5fd8c8;font-variant-numeric:tabular-nums">180 ms</div>
+<div style="font-size:11px;color:rgba(231,233,242,.4);margin-top:2px">ilk hece kaybı yok</div>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="font-size:14px;font-weight:600;white-space:nowrap">Son dikteler</span>
+<span style="flex:1;height:1px;background:rgba(255,255,255,.07)"></span>
+<span style="font-size:12px;color:rgba(231,233,242,.45);cursor:pointer">Tümü · yerel SQLite arama</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ feed }}" as="f" hint-placeholder-count="4">
+<div style="display:flex;gap:14px;padding:13px 15px;border-radius:7px;background:rgba(255,255,255,.042);border:1px solid rgba(255,255,255,.06);border-left:3px solid {{ f.c }};cursor:pointer" style-hover="background:rgba(255,255,255,.075)">
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+<span style="font-size:14px;font-weight:600;white-space:nowrap">{{ f.app }}</span>
+<span style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.06em;padding:2px 6px;border-radius:3px;color:{{ f.c }};border:1px solid {{ f.cd }}">{{ f.tag }}</span>
+<span style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.06em;padding:2px 6px;border-radius:3px;color:rgba(231,233,242,.5);background:rgba(255,255,255,.06)">{{ f.tag2 }}</span>
+</div>
+<div style="font-size:12.5px;line-height:1.55;color:rgba(231,233,242,.6);margin-top:6px;text-wrap:pretty">{{ f.body }}</div>
+</div>
+<div style="flex:none;text-align:right;font:500 11px/1.75 'JetBrains Mono',monospace;color:rgba(231,233,242,.36);font-variant-numeric:tabular-nums">{{ f.t }}<br>{{ f.meta }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="width:300px;flex:none;display:flex;flex-direction:column;gap:12px;min-height:0">
+<div style="padding:15px 16px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-top:2px solid #e0559b">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+<span style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.11em;color:rgba(231,233,242,.45)">ACTION ITEMS</span>
+<span style="font-size:11px;color:rgba(231,233,242,.38)">Sprint planlama</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+<div style="display:flex;gap:10px"><span style="width:15px;height:15px;flex:none;margin-top:1px;border-radius:3px;border:1.5px solid rgba(224,85,155,.6)"></span><span style="font-size:12.5px;line-height:1.45;color:rgba(231,233,242,.76)">Loopback izin akışını Deniz test edecek <span style="color:rgba(231,233,242,.4)">· Çar</span></span></div>
+<div style="display:flex;gap:10px"><span style="width:15px;height:15px;flex:none;margin-top:1px;border-radius:3px;border:1.5px solid rgba(224,85,155,.6)"></span><span style="font-size:12.5px;line-height:1.45;color:rgba(231,233,242,.76)">Sözlüğe 12 mühendislik terimi <span style="color:rgba(231,233,242,.4)">· Ela</span></span></div>
+<div style="display:flex;gap:10px"><span style="width:15px;height:15px;flex:none;margin-top:1px;border-radius:3px;background:rgba(224,85,155,.55);display:grid;place-items:center;font-size:9px;color:#fff">&#10003;</span><span style="font-size:12.5px;line-height:1.45;color:rgba(231,233,242,.38);text-decoration:line-through">HUD gecikme ölçümü paylaşıldı</span></div>
+</div>
+</div>
+
+<div style="padding:15px 16px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-top:2px solid #7c5cff">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.11em;color:rgba(231,233,242,.45)">SESLİ NOT DEFTERİ</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+<div style="font-size:12.5px;line-height:1.45;color:rgba(231,233,242,.72);padding-left:11px;border-left:1px solid rgba(124,92,255,.45)">Prompt linter’a rol tanımı kontrolü ekle</div>
+<div style="font-size:12.5px;line-height:1.45;color:rgba(231,233,242,.72);padding-left:11px;border-left:1px solid rgba(124,92,255,.45)">A/B sonuçlarını CSV’ye çıkart</div>
+<div style="font-size:12.5px;line-height:1.45;color:rgba(231,233,242,.72);padding-left:11px;border-left:1px solid rgba(124,92,255,.45)">Pil modunda model düşerken uyarı ver</div>
+</div>
+<div style="display:flex;align-items:center;margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)">
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.4)">3 ham fikir</span>
+<div style="flex:1"></div>
+<span style="font-size:12px;color:#a493ff;cursor:pointer">Gün sonu derle</span>
+</div>
+</div>
+
+<div style="padding:15px 16px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-top:2px solid #2bb3a3">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.11em;color:rgba(231,233,242,.45)">SÖZLÜK ÖNERİLERİ</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+<span style="font:500 11px 'JetBrains Mono',monospace;padding:4px 8px;border-radius:3px;background:rgba(43,179,163,.14);color:#5fd8c8">faster-whisper</span>
+<span style="font:500 11px 'JetBrains Mono',monospace;padding:4px 8px;border-radius:3px;background:rgba(43,179,163,.14);color:#5fd8c8">diarization</span>
+<span style="font:500 11px 'JetBrains Mono',monospace;padding:4px 8px;border-radius:3px;background:rgba(43,179,163,.14);color:#5fd8c8">Kayseri</span>
+<span style="font:500 11px 'JetBrains Mono',monospace;padding:4px 8px;border-radius:3px;background:rgba(255,255,255,.06);color:rgba(231,233,242,.5)">+9</span>
+</div>
+<div style="font-size:12px;line-height:1.5;color:rgba(231,233,242,.45);margin-top:11px">Bu hafta 4 kez hatalı yazıldı.</div>
+</div>
+
+<div style="flex:1"></div>
+<div style="display:flex;gap:11px;padding:12px 14px;border-radius:7px;background:rgba(229,154,43,.08);border:1px solid rgba(229,154,43,.26)">
+<span style="width:8px;height:8px;flex:none;margin-top:5px;border-radius:2px;background:#e59a2b"></span>
+<span style="font-size:12.5px;line-height:1.5;color:rgba(231,233,242,.72)">Pil moduna geçildi — dinamik seçici <b>Whisper Small</b>’a düştü. <span style="color:#f0b558;cursor:pointer">Geri al</span></span>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;display:flex;flex-direction:column">
+<div style="flex:none;padding:24px 28px 18px">
+<div style="font:500 11px 'JetBrains Mono',monospace;letter-spacing:.1em;color:rgba(231,233,242,.4)">AYARLAR</div>
+<div style="font-size:28px;font-weight:600;letter-spacing:-.4px;line-height:1.15;margin-top:6px">Modeller &amp; Kısayollar</div>
+<div style="font-size:12px;color:rgba(231,233,242,.5);margin-top:5px">Her mod kendi modelini, sağlayıcısını ve global kısayolunu taşır</div>
+</div>
+
+<div style="flex:1;min-height:0;display:flex;gap:20px;padding:0 28px 26px;overflow:hidden">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px">
+
+<div style="border-radius:7px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);overflow:hidden">
+<div style="display:grid;grid-template-columns:1.2fr 1.25fr .8fr 92px 108px 52px;gap:14px;padding:10px 16px;background:rgba(255,255,255,.035);font:600 10px 'JetBrains Mono',monospace;letter-spacing:.11em;color:rgba(231,233,242,.42)">
+<span>MOD</span><span>MODEL</span><span>SAĞLAYICI</span><span style="text-align:right">GECİKME</span><span>KISAYOL</span><span style="text-align:right">AKTİF</span>
+</div>
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+<div style="display:grid;grid-template-columns:1.2fr 1.25fr .8fr 92px 108px 52px;gap:14px;align-items:center;padding:12px 16px;border-top:1px solid rgba(255,255,255,.055)" style-hover="background:rgba(255,255,255,.04)">
+<span style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;min-width:0"><span style="width:8px;height:8px;flex:none;border-radius:2px;background:{{ r.c }}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.mode }}</span></span>
+<span style="font:500 12px 'JetBrains Mono',monospace;color:rgba(231,233,242,.82);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.model }}</span>
+<span style="font-size:12.5px;color:rgba(231,233,242,.55)">{{ r.prov }}</span>
+<span style="text-align:right;font:500 12px 'JetBrains Mono',monospace;color:{{ r.lc }};font-variant-numeric:tabular-nums">{{ r.lat }}</span>
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.62);padding:3px 7px;border-radius:3px;border:1px solid rgba(255,255,255,.12);justify-self:start">{{ r.key }}</span>
+<span style="justify-self:end;width:40px;height:20px;border-radius:10px;background:{{ r.tb }};display:flex;align-items:center;padding:0 3px;justify-content:{{ r.tj }}"><span style="width:14px;height:14px;border-radius:50%;background:{{ r.td }}"></span></span>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:7px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)">
+<div style="min-width:0">
+<div style="font-size:14px;font-weight:600">Dinamik model seçici</div>
+<div style="font-size:12.5px;color:rgba(231,233,242,.55);margin-top:3px">Pil / GPU yüküne göre Tiny · Small · Large arasında anlık geçiş</div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;flex:none">
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.45)">eşik %35 pil</span>
+<span style="width:40px;height:20px;border-radius:10px;background:#2bb3a3;display:flex;align-items:center;justify-content:flex-end;padding:0 3px"><span style="width:14px;height:14px;border-radius:50%;background:#07120f"></span></span>
+</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:7px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)">
+<div style="min-width:0">
+<div style="font-size:14px;font-weight:600">Pre-flight önizleme</div>
+<div style="font-size:12.5px;color:rgba(231,233,242,.55);margin-top:3px">Çıktı yapıştırılmadan önce düzenleme penceresi açılır</div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;flex:none">
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.45)">mega-prompt’ta zorunlu</span>
+<span style="width:40px;height:20px;border-radius:10px;background:#7c5cff;display:flex;align-items:center;justify-content:flex-end;padding:0 3px"><span style="width:14px;height:14px;border-radius:50%;background:#0d0a1a"></span></span>
+</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:7px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)">
+<div style="min-width:0">
+<div style="font-size:14px;font-weight:600">PII maskeleme <span style="font:500 10px 'JetBrains Mono',monospace;padding:2px 6px;border-radius:3px;background:rgba(111,194,95,.16);color:#96d989;margin-left:6px">YEREL</span></div>
+<div style="font-size:12.5px;color:rgba(231,233,242,.55);margin-top:3px">TC kimlik, kart no ve API anahtarı buluta gitmeden sansürlenir</div>
+</div>
+<span style="flex:none;width:40px;height:20px;border-radius:10px;background:#6fc25f;display:flex;align-items:center;justify-content:flex-end;padding:0 3px"><span style="width:14px;height:14px;border-radius:50%;background:#0a1408"></span></span>
+</div>
+</div>
+</div>
+
+<div style="width:300px;flex:none;display:flex;flex-direction:column;gap:12px">
+<div style="padding:16px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.11em;color:rgba(231,233,242,.45)">CHORDED SHORTCUT</div>
+<div style="display:flex;align-items:center;gap:6px;margin-top:13px;flex-wrap:wrap">
+<span style="font:600 12px 'JetBrains Mono',monospace;padding:6px 9px;border-radius:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);box-shadow:0 1px 0 rgba(0,0,0,.5)">Ctrl</span>
+<span style="color:rgba(231,233,242,.35)">+</span>
+<span style="font:600 12px 'JetBrains Mono',monospace;padding:6px 9px;border-radius:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);box-shadow:0 1px 0 rgba(0,0,0,.5)">Alt</span>
+<span style="color:rgba(231,233,242,.35)">+</span>
+<span style="font:600 12px 'JetBrains Mono',monospace;padding:6px 9px;border-radius:4px;background:linear-gradient(135deg,#7c5cff,#3d7ff5);border:1px solid rgba(255,255,255,.2)">Space</span>
+<span style="color:rgba(231,233,242,.35)">→</span>
+<span style="font:600 12px 'JetBrains Mono',monospace;padding:6px 9px;border-radius:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)">K</span>
+</div>
+<div style="font-size:12.5px;line-height:1.5;color:rgba(231,233,242,.55);margin-top:12px">Basılı tut → mod seç. <b style="color:rgba(231,233,242,.8)">K</b> kod, <b style="color:rgba(231,233,242,.8)">E</b> İngilizce, <b style="color:rgba(231,233,242,.8)">M</b> mega-prompt.</div>
+<div style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.38);margin-top:10px;padding-top:11px;border-top:1px solid rgba(255,255,255,.07)">çakışma yok · 6 mod bağlı</div>
+</div>
+
+<div style="padding:16px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.11em;color:rgba(231,233,242,.45)">API KASASI</div>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:13px">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:8px;height:8px;border-radius:2px;background:#6fc25f"></span><span style="font-size:13px;flex:1">OpenRouter</span><span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.4)">sk-or-•••• 4f2a</span></div>
+<div style="display:flex;align-items:center;gap:10px"><span style="width:8px;height:8px;border-radius:2px;background:#6fc25f"></span><span style="font-size:13px;flex:1">Groq Whisper</span><span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.4)">gsk_•••• 91cd</span></div>
+<div style="display:flex;align-items:center;gap:10px"><span style="width:8px;height:8px;border-radius:2px;background:rgba(255,255,255,.2)"></span><span style="font-size:13px;flex:1;color:rgba(231,233,242,.5)">Webhook (Notion)</span><span style="font-size:12px;color:#96d989;cursor:pointer">ekle</span></div>
+</div>
+</div>
+
+<div style="padding:16px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.11em;color:rgba(231,233,242,.45)">YEREL SUNUCU</div>
+<div style="font:500 12.5px 'JetBrains Mono',monospace;color:rgba(231,233,242,.8);margin-top:12px">localhost:8756</div>
+<div style="font-size:12px;line-height:1.5;color:rgba(231,233,242,.5);margin-top:7px">REST + webhook açık — dış betikler motoru tetikleyebilir.</div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Floating Command Bar — imlecin yanında, acrylic, fare gerekmez</div>
+<div class="dv-card" style="width:1000px;background:#06070c">
+<div style="position:relative;width:1000px;height:640px;overflow:hidden;background:#12141c">
+<div style="position:absolute;inset:0;padding:16px 18px;font:400 12.5px/1.85 'JetBrains Mono',monospace;color:rgba(231,233,242,.16);white-space:pre">async def route_request(payload: dict) -> Response:
+    provider = select_provider(payload["mode"])
+    if provider.is_local and gpu_busy():
+        provider = FALLBACK_CLOUD
+    text = await provider.transcribe(payload["audio"])
+    text = strip_fillers(text, lang="tr")
+    return await llm.complete(build_prompt(text, ctx=active_window()))</div>
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,12,20,.35),rgba(10,12,20,.72))"></div>
+
+<div style="position:absolute;left:154px;top:150px;width:692px;border-radius:9px;overflow:hidden;color:#e7e9f2;background:rgba(22,25,38,.86);backdrop-filter:blur(42px) saturate(150%);box-shadow:0 34px 70px -20px rgba(0,0,0,.92),0 0 0 1px rgba(255,255,255,.11),inset 0 1px 0 rgba(255,255,255,.1)">
+<div style="display:flex;align-items:center;gap:14px;padding:16px 18px">
+<div style="display:flex;align-items:center;gap:2px;height:22px;flex:none">
+<sc-for list="{{ wave2 }}" as="b" hint-placeholder-count="12">
+<span style="width:2px;border-radius:1px;background:#7c5cff;height:100%;transform-origin:center;animation:omBar 1s ease-in-out infinite;animation-delay:{{ b.d }}s"></span>
+</sc-for>
+</div>
+<div style="flex:1;min-width:0;font-size:17px;font-weight:500;letter-spacing:-.1px">şu handler’ı async yap, hataları tek yerde topla<span style="display:inline-block;width:2px;height:17px;background:#7c5cff;margin-left:3px;vertical-align:-2px"></span></div>
+<span style="flex:none;font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.42)">00:07</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:0 18px 14px;flex-wrap:wrap">
+<span style="display:flex;align-items:center;gap:7px;font:500 11px 'JetBrains Mono',monospace;padding:4px 9px;border-radius:3px;background:rgba(124,92,255,.16);color:#a493ff"><span style="width:6px;height:6px;border-radius:2px;background:#7c5cff"></span>KOD MODU · VS Code</span>
+<span style="font:500 11px 'JetBrains Mono',monospace;padding:4px 9px;border-radius:3px;background:rgba(255,255,255,.07);color:rgba(231,233,242,.55)">{SelectedText} 42 satır</span>
+<span style="font:500 11px 'JetBrains Mono',monospace;padding:4px 9px;border-radius:3px;background:rgba(255,255,255,.07);color:rgba(231,233,242,.55)">deepseek-v3</span>
+<div style="flex:1"></div>
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.34)">3 dolgu kelime ayıklandı</span>
+</div>
+
+<div style="border-top:1px solid rgba(255,255,255,.08);padding:8px 6px">
+<div style="display:flex;align-items:center;gap:13px;padding:9px 12px;border-radius:5px;background:rgba(124,92,255,.16)">
+<span style="width:3px;height:18px;border-radius:2px;background:#7c5cff;flex:none"></span>
+<div style="flex:1;min-width:0">
+<div style="font-size:14px;font-weight:600">Seçili bloğu refactor et</div>
+<div style="font-size:12px;color:rgba(231,233,242,.55);margin-top:2px">async + tek hata yakalayıcı, docstring korunur</div>
+</div>
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.5);padding:3px 7px;border-radius:3px;border:1px solid rgba(255,255,255,.14)">Enter</span>
+</div>
+<div style="display:flex;align-items:center;gap:13px;padding:9px 12px;border-radius:5px" style-hover="background:rgba(255,255,255,.055)">
+<span style="width:3px;height:18px;border-radius:2px;background:#e59a2b;flex:none"></span>
+<div style="flex:1;min-width:0">
+<div style="font-size:14px;font-weight:600">Commit mesajı üret</div>
+<div style="font-size:12px;color:rgba(231,233,242,.55);margin-top:2px">git diff · 31 satır · conventional commit</div>
+</div>
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.5);padding:3px 7px;border-radius:3px;border:1px solid rgba(255,255,255,.14)">Ctrl+G</span>
+</div>
+<div style="display:flex;align-items:center;gap:13px;padding:9px 12px;border-radius:5px" style-hover="background:rgba(255,255,255,.055)">
+<span style="width:3px;height:18px;border-radius:2px;background:#3d7ff5;flex:none"></span>
+<div style="flex:1;min-width:0">
+<div style="font-size:14px;font-weight:600">Bölge seç &amp; sor <span style="font-weight:400;color:rgba(231,233,242,.45)">(OCR + Vision)</span></div>
+<div style="font-size:12px;color:rgba(231,233,242,.55);margin-top:2px">Ekrandan hata penceresini kırp, sesli soru ekle</div>
+</div>
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.5);padding:3px 7px;border-radius:3px;border:1px solid rgba(255,255,255,.14)">Ctrl+R</span>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:14px;padding:9px 18px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.4)">
+<span>↑↓ gez</span><span>Tab mod</span><span>Esc iptal</span>
+<div style="flex:1"></div>
+<span style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#2bb3a3"></span>yerel · buluta veri gitmiyor</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Canlı dikte HUD — üç durum: dinliyor · işliyor · pre-flight</div>
+<div class="dv-card" style="width:1420px;background:#0a0c14">
+<div style="position:relative;width:1420px;height:420px;background:radial-gradient(60% 70% at 20% 10%,#1d2140,rgba(0,0,0,0) 60%),radial-gradient(50% 60% at 84% 90%,rgba(43,179,163,.14),rgba(0,0,0,0) 70%),#080a11;display:flex;align-items:center;justify-content:center;gap:34px;padding:0 34px;color:#e7e9f2">
+
+<div style="width:400px;flex:none;display:flex;flex-direction:column;gap:11px">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.14em;color:rgba(231,233,242,.38)">01 · DİNLİYOR</div>
+<div style="border-radius:9px;padding:16px 18px;background:rgba(20,23,36,.88);backdrop-filter:blur(38px);box-shadow:0 22px 48px -18px rgba(0,0,0,.9),0 0 0 1px rgba(43,179,163,.34),inset 0 1px 0 rgba(255,255,255,.08)">
+<div style="display:flex;align-items:center;gap:14px">
+<div style="display:flex;align-items:center;gap:2.5px;height:34px;flex:none">
+<sc-for list="{{ wave3 }}" as="b" hint-placeholder-count="16">
+<span style="width:2.5px;border-radius:1px;background:#2bb3a3;height:100%;transform-origin:center;animation:omBar .95s ease-in-out infinite;animation-delay:{{ b.d }}s"></span>
+</sc-for>
+</div>
+<div style="flex:1;min-width:0">
+<div style="font-size:14px;font-weight:600">Dinliyor</div>
+<div style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.45);margin-top:3px">pre-roll 1.0 sn yakalandı · whisper turbo</div>
+</div>
+<span style="font:600 13px 'JetBrains Mono',monospace;color:#5fd8c8;font-variant-numeric:tabular-nums">00:07</span>
+</div>
+<div style="font-size:13px;line-height:1.55;color:rgba(231,233,242,.72);margin-top:13px;padding-top:13px;border-top:1px solid rgba(255,255,255,.08)">…sprint sonunda demoyu hazırlayamayız, <span style="color:rgba(231,233,242,.3)">eee</span> pazartesi sabahı diyelim</div>
+<div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+<span style="font:500 10.5px 'JetBrains Mono',monospace;padding:3px 7px;border-radius:3px;background:rgba(43,179,163,.14);color:#5fd8c8">HIZLI DİKTE</span>
+<span style="font:500 10.5px 'JetBrains Mono',monospace;padding:3px 7px;border-radius:3px;background:rgba(255,255,255,.06);color:rgba(231,233,242,.5)">Slack · #urun-ekibi</span>
+<div style="flex:1"></div>
+<span style="font:500 10.5px 'JetBrains Mono',monospace;color:rgba(231,233,242,.34)">Esc iptal</span>
+</div>
+</div>
+</div>
+
+<div style="width:400px;flex:none;display:flex;flex-direction:column;gap:11px">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.14em;color:rgba(231,233,242,.38)">02 · İŞLİYOR</div>
+<div style="border-radius:9px;padding:16px 18px;background:rgba(20,23,36,.88);backdrop-filter:blur(38px);box-shadow:0 22px 48px -18px rgba(0,0,0,.9),0 0 0 1px rgba(124,92,255,.34),inset 0 1px 0 rgba(255,255,255,.08)">
+<div style="display:flex;align-items:center;gap:14px">
+<div style="width:34px;height:34px;flex:none;border-radius:50%;background:conic-gradient(from 0deg,rgba(124,92,255,0),#7c5cff);mask:radial-gradient(circle,transparent 11px,#000 12px);-webkit-mask:radial-gradient(circle,transparent 11px,#000 12px);animation:omRing 1.1s linear infinite"></div>
+<div style="flex:1;min-width:0">
+<div style="font-size:14px;font-weight:600">Chain-of-Thought kuruluyor</div>
+<div style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.45);margin-top:3px">claude-3.5-sonnet · 3/4 aşama</div>
+</div>
+<span style="font:600 13px 'JetBrains Mono',monospace;color:#a493ff;font-variant-numeric:tabular-nums">1.8s</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:7px;margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.08)">
+<div style="display:flex;align-items:center;gap:9px;font-size:12.5px;color:rgba(231,233,242,.5)"><span style="width:14px;height:14px;border-radius:3px;background:rgba(124,92,255,.5);display:grid;place-items:center;font-size:9px;color:#fff">&#10003;</span>Dolgu ayıklama · 9 kelime</div>
+<div style="display:flex;align-items:center;gap:9px;font-size:12.5px;color:rgba(231,233,242,.5)"><span style="width:14px;height:14px;border-radius:3px;background:rgba(124,92,255,.5);display:grid;place-items:center;font-size:9px;color:#fff">&#10003;</span>Bağlam · aktif pencere Slack</div>
+<div style="display:flex;align-items:center;gap:9px;font-size:12.5px;color:rgba(231,233,242,.85)"><span style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(124,92,255,.7)"></span>Ton eşleme · öğrenilen stil</div>
+<div style="display:flex;align-items:center;gap:9px;font-size:12.5px;color:rgba(231,233,242,.35)"><span style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(255,255,255,.16)"></span>Prompt linter kontrolü</div>
+</div>
+</div>
+</div>
+
+<div style="width:400px;flex:none;display:flex;flex-direction:column;gap:11px">
+<div style="font:600 10px 'JetBrains Mono',monospace;letter-spacing:.14em;color:rgba(231,233,242,.38)">03 · PRE-FLIGHT</div>
+<div style="border-radius:9px;padding:16px 18px;background:rgba(20,23,36,.9);backdrop-filter:blur(38px);box-shadow:0 22px 48px -18px rgba(0,0,0,.9),0 0 0 1px rgba(61,127,245,.34),inset 0 1px 0 rgba(255,255,255,.08)">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="width:8px;height:8px;border-radius:2px;background:#3d7ff5"></span>
+<span style="font-size:14px;font-weight:600;flex:1">Yapıştırmaya hazır</span>
+<span style="font:500 11px 'JetBrains Mono',monospace;color:rgba(231,233,242,.45)">Markdown</span>
+</div>
+<div style="font-size:13px;line-height:1.6;color:rgba(231,233,242,.9);margin-top:13px;padding:12px 13px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);text-wrap:pretty">Sprint sonuna kadar demoyu tamamlayamayacağız. Pazartesi sabahı için hedef koyalım — eksik kalan iki uç noktayı hafta sonuna kadar bitiriyorum.</div>
+<div style="display:flex;align-items:center;gap:8px;margin-top:13px">
+<div style="height:30px;display:flex;align-items:center;padding:0 13px;border-radius:4px;background:linear-gradient(135deg,#3d7ff5,#7c5cff);font-size:13px;font-weight:600;cursor:pointer">Yapıştır <span style="font:500 10.5px 'JetBrains Mono',monospace;opacity:.75;margin-left:6px">Enter</span></div>
+<div style="height:30px;display:flex;align-items:center;padding:0 13px;border-radius:4px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.05);font-size:13px;cursor:pointer" style-hover="background:rgba(255,255,255,.09)">Düzenle</div>
+<div style="flex:1"></div>
+<span style="font:500 10.5px 'JetBrains Mono',monospace;color:rgba(231,233,242,.34)">A/B karşılaştır ⇧Enter</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Sıradaki: “<a class="dv-oid" href="#1a">1a</a>’ya toplantı modu ekle” · “<a class="dv-oid" href="#1c">1c</a> HUD’u daha küçük ve tek satır yap” · “aynı sistemle prompt akış editörü”</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#7c5cff&quot;,&quot;options&quot;:[&quot;#7c5cff&quot;,&quot;#3d7ff5&quot;,&quot;#2bb3a3&quot;,&quot;#e0559b&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;showModuleColors&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;showSparklines&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Panel&quot;}}">
+const spark = a => a.map(h => ({h}));
+class Component extends DCLogic {
+  state = {view: 'panel'};
+  renderVals() {
+    const on = this.state.view;
+    const accent = this.props.accent ?? '#7c5cff';
+    const mono = this.props.showModuleColors === false;
+    const mc = c => mono ? 'rgba(231,233,242,.35)' : c;
+    const noSpark = this.props.showSparklines === false;
+    const bars = (n, seed) => Array.from({length: n}, (_, i) => ({d: +(((i * seed) % 10) / 10 - 0.5).toFixed(2)}));
+    return {
+      isPanel: on === 'panel', isSettings: on === 'settings',
+      goPanel: () => this.setState({view: 'panel'}),
+      goSettings: () => this.setState({view: 'settings'}),
+      panelBg: on === 'panel' ? 'rgba(255,255,255,.075)' : 'transparent',
+      setBg: on === 'settings' ? 'rgba(255,255,255,.075)' : 'transparent',
+      panelBar: on === 'panel' ? accent : 'transparent',
+      setBar: on === 'settings' ? accent : 'transparent',
+      panelWeight: on === 'panel' ? 600 : 400,
+      setWeight: on === 'settings' ? 600 : 400,
+      modules: [
+        {n: 'Ses & STT', c: mc('#2bb3a3'), k: '148'},
+        {n: 'Prompt Stüdyosu', c: mc('#7c5cff'), k: '31'},
+        {n: 'Toplantılar', c: mc('#e0559b'), k: '4'},
+        {n: 'Otomasyon', c: mc('#e59a2b'), k: '12'},
+        {n: 'Kasa & Gizlilik', c: mc('#6fc25f'), k: ''}
+      ],
+      stats: [
+        {l: 'DİKTE EDİLEN', v: '4.812', u: 'kelime', c: mc('#2bb3a3'), spark: noSpark ? [] : spark([38, 52, 44, 71, 60, 88, 96])},
+        {l: 'KAZANILAN SÜRE', v: '38', u: 'dakika', c: mc('#7c5cff'), spark: noSpark ? [] : spark([30, 41, 55, 48, 66, 74, 92])},
+        {l: 'DOLGU TEMİZLENEN', v: '214', u: '“eee / ımm”', c: mc('#e59a2b'), spark: noSpark ? [] : spark([62, 48, 70, 55, 80, 66, 74])},
+        {l: 'ORT. GECİKME', v: '420', u: 'ms', c: mc('#3d7ff5'), spark: noSpark ? [] : spark([86, 78, 70, 74, 58, 52, 44])}
+      ],
+      wave: bars(22, 3), wave2: bars(12, 4), wave3: bars(16, 5),
+      feed: [
+        {app: 'VS Code · api_router.py', tag: 'KOD MODU', cd: 'rgba(124,92,255,.4)', c: '#7c5cff', tag2: '{SelectedText} 42 satır', t: '14:38', meta: 'deepseek-v3 · 1.9 sn', body: '“şu handler’ı async yap, hataları tek yerde topla” — refactor + docstring üretildi, biçim korunarak yapıştırıldı.'},
+        {app: 'Teams · Sprint planlama', tag: 'LOOPBACK · 3 KONUŞMACI', cd: 'rgba(224,85,155,.4)', c: '#e0559b', tag2: 'PII 2 alan maskelendi', t: '13:05', meta: '48 dk kayıt', body: '6 action item çıkarıldı, sorumlular etiketlendi; özet webhook ile Notion’a gönderildi.'},
+        {app: 'Slack · #urun-ekibi', tag: 'HIZLI DİKTE', cd: 'rgba(43,179,163,.4)', c: '#2bb3a3', tag2: 'ton: profesyonel', t: '11:52', meta: 'whisper-tiny · 0.4 sn', body: '“yarına kadar demoyu hazırlayamayız, pazartesi diyelim” — nazik ve net mesaja çevrildi, 9 dolgu kelime ayıklandı.'},
+        {app: 'Terminal · omnivoice-core', tag: 'GIT COMMIT', cd: 'rgba(229,154,43,.4)', c: '#e59a2b', tag2: 'git diff · 31 satır', t: '10:20', meta: 'yerel · 0.7 sn', body: 'feat(stt): add circular pre-roll buffer to capture leading syllable'}
+      ],
+      rows: [
+        {mode: 'Hızlı dikte', model: 'whisper large-v3 turbo', prov: 'Yerel GPU', lat: '180 ms', lc: '#5fd8c8', key: 'Ctrl+Alt+Space', c: '#2bb3a3', tb: '#2bb3a3', tj: 'flex-end', td: '#07120f'},
+        {mode: 'Mega-prompt · CoT', model: 'claude-3.5-sonnet', prov: 'OpenRouter', lat: '2.4 sn', lc: '#f0b558', key: '⋯ + M', c: '#7c5cff', tb: '#7c5cff', tj: 'flex-end', td: '#0d0a1a'},
+        {mode: 'Kod & refactor', model: 'deepseek-v3', prov: 'OpenRouter', lat: '1.9 sn', lc: '#5fd8c8', key: '⋯ + K', c: '#7c5cff', tb: '#7c5cff', tj: 'flex-end', td: '#0d0a1a'},
+        {mode: 'EN çeviri', model: 'gpt-4o-mini', prov: 'OpenRouter', lat: '0.9 sn', lc: '#5fd8c8', key: '⋯ + E', c: '#3d7ff5', tb: 'rgba(255,255,255,.14)', tj: 'flex-start', td: 'rgba(231,233,242,.55)'},
+        {mode: 'A/B karşılaştırma', model: 'sonnet ⇄ llama-3.3-70b', prov: 'OpenRouter', lat: '3.1 sn', lc: '#f0b558', key: '⇧ Enter', c: '#e0559b', tb: 'rgba(255,255,255,.14)', tj: 'flex-start', td: 'rgba(231,233,242,.55)'},
+        {mode: 'Toplantı özeti', model: 'whisper large + haiku', prov: 'Hibrit', lat: 'akış', lc: 'rgba(231,233,242,.6)', key: 'Ctrl+Alt+M', c: '#e0559b', tb: '#e0559b', tj: 'flex-end', td: '#1a0812'}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

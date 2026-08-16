@@ -1,0 +1,15 @@
+# Metin dosyaları depoda LF ile saklanır, Windows'ta CRLF olarak açılır.
+* text=auto eol=lf
+
+# Windows'a özel betikler daima CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# İkili dosyalar
+*.png  binary
+*.ico  binary
+*.jpg  binary
+*.zip  binary
+*.wav  binary
+*.mp3  binary
