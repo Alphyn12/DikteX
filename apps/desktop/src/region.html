@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      İçerik güvenlik politikası: renderer yalnız kendi paketinden yüklenir.
+      Uzak betik, uzak stil ve uzak yazı tipi yasak — yazı tipleri pakete
+      gömülüdür, uygulamanın çevrimdışı da aynı görünmesi gerekir.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:*"
+    />
+    <title>OmniVoice Bolge Secimi</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./entries/region.tsx"></script>
+  </body>
+</html>

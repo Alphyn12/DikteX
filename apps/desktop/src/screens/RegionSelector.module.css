@@ -1,0 +1,69 @@
+/* Ekran bölgesi seçim kaplaması. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  /* Hafif karartma: seçilebilir alan olduğu belli olsun ama altındaki
+     içerik hâlâ okunsun — kullanıcı neyi seçtiğini görmeli. */
+  background: rgba(6, 7, 12, 0.35);
+  cursor: crosshair;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Seçilen dikdörtgen: içi tamamen şeffaf kalır ki altındaki içerik net
+   görünsün. Karartma yalnız dışarıda kalır. */
+.selection {
+  position: absolute;
+  border: 1px solid var(--mod-system);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    /* Devasa yayılma ile dış alanı karartıyoruz; ayrı dört maske
+       elemanı çizmekten daha basit ve kenarları piksel piksel oturuyor. */
+    0 0 0 9999px rgba(6, 7, 12, 0.45);
+  background: transparent;
+}
+
+/* Boyut göstergesi seçimin dışına, en yakın kenara yerleşir. */
+.size {
+  position: absolute;
+  padding: 3px 7px;
+  border-radius: var(--radius-badge);
+  background: var(--mod-system);
+  color: #fff;
+  font: 600 11px/1 var(--font-mono);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Başlangıç ipucu — ekranın üst ortasında. */
+.hint {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-radius: var(--radius-float);
+  background: var(--surface-acrylic);
+  backdrop-filter: blur(38px) saturate(140%);
+  box-shadow: var(--shadow-commandbar);
+  color: var(--text-primary);
+  font: var(--text-body-size);
+  pointer-events: none;
+}
+
+.hintKey {
+  padding: 4px 8px;
+  border-radius: var(--radius-badge);
+  border: 1px solid var(--border-control);
+  background: rgba(255, 255, 255, 0.08);
+  font: var(--mono-badge);
+  color: var(--text-nav-idle);
+}
+
+.hintDim {
+  color: var(--text-subtle);
+}

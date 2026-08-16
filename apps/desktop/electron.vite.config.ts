@@ -44,6 +44,7 @@ export default defineConfig({
           main: resolve(__dirname, 'src/main.html'),
           hud: resolve(__dirname, 'src/hud.html'),
           commandbar: resolve(__dirname, 'src/commandbar.html'),
+          region: resolve(__dirname, 'src/region.html'),
         },
       },
     },

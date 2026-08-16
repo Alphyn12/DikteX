@@ -48,6 +48,7 @@ const MODE_ACCELERATORS: ReadonlyArray<{ mode: string; key: string }> = [
   { mode: 'image_prompt', key: 'G' },
   { mode: 'sql', key: 'S' },
   { mode: 'commit', key: 'C' },
+  { mode: 'screen', key: 'R' },
 ]
 
 export interface HotkeyRegistration {

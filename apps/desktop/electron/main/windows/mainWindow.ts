@@ -49,7 +49,7 @@ export function createMainWindow(): BrowserWindow {
  * Geliştirmede Vite sunucusundan, ürün sürümünde derlenmiş dosyadan yükler.
  * Her yüzen katman kendi HTML giriş noktasına sahiptir.
  */
-export function loadRenderer(window: BrowserWindow, entry: 'main' | 'hud' | 'commandbar'): void {
+export function loadRenderer(window: BrowserWindow, entry: 'main' | 'hud' | 'commandbar' | 'region'): void {
   const devServer = process.env['ELECTRON_RENDERER_URL']
   if (devServer) {
     void window.loadURL(`${devServer}/${entry}.html`)

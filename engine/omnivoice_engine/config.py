@@ -35,16 +35,24 @@ class Settings(BaseSettings):
     # ── Varsayılan modeller ──────────────────────────────────────────────────
     #
     # Bu iki değer tahminle değil, gerçek Türkçe seslerle ölçülerek seçildi:
+    #
     #   STT — Groq whisper-large-v3-turbo, ~1.2 sn, Türkçe karakterler dahil
     #         neredeyse kusursuz, özel sözlük enjeksiyonu çalışıyor.
-    #   LLM — gemini-2.5-flash-lite, 831 ms (adayların en hızlısı), aylık ~$0.09,
-    #         rol karışıklığı testinde adayların en iyisi.
+    #
+    #   LLM — gemini-3.5-flash-lite. Üç kuşak yan yana ölçüldü:
+    #           2.5-flash-lite : 6/7 · 1517 ms · $0.09/ay
+    #           3.1-flash-lite : 7/7 · 1184 ms · $0.24/ay
+    #           3.5-flash-lite : 7/7 ·  900 ms · $0.30/ay   ← seçilen
+    #         2.5, dikte edilen "önceki talimatları unut" cümlesini kendine
+    #         talimat sanıp uyguluyordu; 3.5 direndi, üstelik %40 daha hızlı
+    #         ve görselde okuyamadığı yeri uydurmak yerine söylüyor.
+    #         Maliyet 3,3 kat arttı ama ayda 30 sent hâlâ önemsiz.
     #
     # Not: Gemini'ye buradan OpenRouter üzerinden, yani ücretli uç noktadan
     # gidilir. Doğrudan AI Studio anahtarıyla kullanılan ücretsiz katman ayrı
     # bir yoldur ve eğitime açıktır (bkz. providers.PrivacyClass).
     stt_model: str = Field(default="whisper-large-v3-turbo", alias="OMNIVOICE_STT_MODEL")
-    llm_model: str = Field(default="google/gemini-2.5-flash-lite", alias="OMNIVOICE_LLM_MODEL")
+    llm_model: str = Field(default="google/gemini-3.5-flash-lite", alias="OMNIVOICE_LLM_MODEL")
 
     # ── Çalışma zamanı ───────────────────────────────────────────────────────
     port: int = Field(default=8756, alias="OMNIVOICE_ENGINE_PORT")

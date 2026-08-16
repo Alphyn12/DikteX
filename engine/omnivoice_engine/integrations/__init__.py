@@ -1,0 +1,1 @@
+"""Dış araç entegrasyonları — git, webhook, dosya sistemi."""

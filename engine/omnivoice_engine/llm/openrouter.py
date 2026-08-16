@@ -69,11 +69,27 @@ class OpenRouterLlm:
             raise ProviderError("openrouter", "API anahtarı yok")
 
         chosen = model or self.default_model
+
+        # Görsel varsa kullanıcı mesajı çok parçalı biçime geçer. Metni önce
+        # koyuyoruz: modelin ne sorulduğunu görsele bakmadan önce bilmesi,
+        # ilgili yere odaklanmasını sağlıyor.
+        user_content: object
+        if prompt.images:
+            user_content = [
+                {"type": "text", "text": prompt.user},
+                *[
+                    {"type": "image_url", "image_url": {"url": image}}
+                    for image in prompt.images
+                ],
+            ]
+        else:
+            user_content = prompt.user
+
         body = {
             "model": chosen,
             "messages": [
                 {"role": "system", "content": prompt.system},
-                {"role": "user", "content": prompt.user},
+                {"role": "user", "content": user_content},
             ],
             "temperature": prompt.temperature,
             "max_tokens": prompt.max_tokens,

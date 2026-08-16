@@ -24,12 +24,15 @@ from omnivoice_engine.audio.capture import MicrophoneCapture
 from omnivoice_engine.context.apps import AppProfile, profile_for
 from omnivoice_engine.context.selection import read_selection, truncate_selection
 from omnivoice_engine.context.variables import VariableContext, inject, mentions_selection
+from omnivoice_engine.integrations.git import read_context_for_window
+from omnivoice_engine.integrations.screen import Region, ScreenCaptureError, capture_region
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
 from omnivoice_engine.output.paste import PasteError, paste_text, read_clipboard_text
 from omnivoice_engine.output.window import WindowInfo, get_foreground_window
 from omnivoice_engine.pipeline.fillers import strip_fillers
 from omnivoice_engine.pipeline.modes import Mode, ModeId, get_mode
 from omnivoice_engine.pipeline.prompts import build_prompt, sanitize_output
+from omnivoice_engine.pipeline.vision_prompts import screen_question_prompt
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database, DictationRecord
 from omnivoice_engine.storage.vocabulary import Vocabulary
@@ -117,6 +120,12 @@ class _Session:
     mode: Mode
     profile: AppProfile
     level_task: asyncio.Task[None] | None = field(default=None, repr=False)
+    #: Ekran modunda kaydedilen bölge görüntüsü (data URL).
+    #:
+    #: Görüntü kayıt BAŞLARKEN alınır, bitince değil: kullanıcı konuşurken
+    #: ekran değişmiş olabilir ve o zaman sorduğu şeyin resmi elde kalmaz.
+    screen_image: str | None = None
+    screen_size: tuple[int, int] | None = None
 
 
 class DictationPipeline:
@@ -153,8 +162,16 @@ class DictationPipeline:
 
     # ── Akış ──────────────────────────────────────────────────────────────
 
-    async def start(self, mode: ModeId | str = ModeId.QUICK) -> None:
-        """Kaydı başlatır. Zaten kayıttaysa yok sayar."""
+    async def start(
+        self,
+        mode: ModeId | str = ModeId.QUICK,
+        *,
+        region: dict[str, int] | None = None,
+    ) -> None:
+        """Kaydı başlatır. Zaten kayıttaysa yok sayar.
+
+        `region` yalnız ekran modunda gelir; kaplamada seçilen dikdörtgen.
+        """
         async with self._lock:
             if self.state in {
                 DictationState.LISTENING,
@@ -170,6 +187,28 @@ class DictationPipeline:
             resolved_mode = get_mode(mode)
             profile = profile_for(target.process_name if target else "")
 
+            # Ekran görüntüsü kayıttan ÖNCE alınır: kullanıcı konuşurken ekran
+            # değişebilir ve sorduğu şeyin resmi elde kalmaz.
+            screen_image: str | None = None
+            screen_size: tuple[int, int] | None = None
+            if resolved_mode.uses_screen_region and region:
+                try:
+                    capture = await asyncio.to_thread(
+                        capture_region,
+                        Region(
+                            x=int(region["x"]),
+                            y=int(region["y"]),
+                            width=int(region["width"]),
+                            height=int(region["height"]),
+                        ),
+                    )
+                    screen_image = capture.to_data_url()
+                    screen_size = (capture.width, capture.height)
+                    log.info("Ekran bölgesi yakalandı: %dx%d", capture.width, capture.height)
+                except ScreenCaptureError as exc:
+                    await self._set_state(DictationState.ERROR, message=str(exc))
+                    return
+
             if not self._mic.is_streaming:
                 self._mic.start_stream()
 
@@ -180,6 +219,8 @@ class DictationPipeline:
                 pre_roll_seconds=pre_roll,
                 mode=resolved_mode,
                 profile=profile,
+                screen_image=screen_image,
+                screen_size=screen_size,
             )
             self._result = None
 
@@ -301,6 +342,25 @@ class DictationPipeline:
             if selection:
                 log.info("Seçili metin okundu: %d karakter", len(selection))
 
+        # Git bağlamı: kullanıcı ne değiştirdiğini anlatmak zorunda kalmasın
+        # (Properties V.5). Depo bulunamazsa mod diff'siz çalışmaya devam eder.
+        git_diff: str | None = None
+        git_summary: str | None = None
+        if mode.uses_git_diff and session.target:
+            context = await asyncio.to_thread(
+                read_context_for_window,
+                session.target.title,
+                session.target.process_name,
+            )
+            if context and not context.is_empty:
+                git_diff = context.diff
+                git_summary = context.summary_line()
+                log.info("Git bağlamı okundu: %s", git_summary)
+            else:
+                await self._emit(
+                    {"type": "dictation:warning", "message": "Bekleyen git değişikliği bulunamadı"}
+                )
+
         variables = VariableContext(
             app_name=session.profile.display_name
             or (session.target.app_name if session.target else ""),
@@ -331,15 +391,26 @@ class DictationPipeline:
 
         if self._llm.is_available() and injected.text:
             try:
-                prompt = build_prompt(
-                    injected.text,
-                    mode=mode,
-                    profile=session.profile.profile,
-                    app_name=session.profile.display_name or None,
-                    vocabulary=self._vocabulary.llm_terms() if self._vocabulary else None,
-                    language=transcript.language,
-                    selection=selection,
-                )
+                if session.screen_image:
+                    # Ekran modunun istemi ayrı: burada iş metni temizlemek
+                    # değil, görüntüyü okuyup soruyu yanıtlamak.
+                    prompt = screen_question_prompt(
+                        injected.text,
+                        session.screen_image,
+                        language=transcript.language,
+                    )
+                else:
+                    prompt = build_prompt(
+                        injected.text,
+                        mode=mode,
+                        profile=session.profile.profile,
+                        app_name=session.profile.display_name or None,
+                        vocabulary=self._vocabulary.llm_terms() if self._vocabulary else None,
+                        language=transcript.language,
+                        selection=selection,
+                        git_diff=git_diff,
+                        git_summary=git_summary,
+                    )
                 completion = await self._llm.complete(prompt, model=mode.model)
                 final_text = sanitize_output(completion.text) or injected.text
                 llm_provider = completion.provider
@@ -452,12 +523,14 @@ class DictationPipeline:
             self._result = None
             await self._set_state(DictationState.IDLE, cancelled=True)
 
-    async def toggle(self, mode: ModeId | str = ModeId.QUICK) -> None:
+    async def toggle(
+        self, mode: ModeId | str = ModeId.QUICK, *, region: dict[str, int] | None = None
+    ) -> None:
         """Kısayolun davranışı: boştaysa başlat, dinliyorsa bitir."""
         # SILENT ve ERROR birer bilgilendirme durumu; kısayola tekrar basmak
         # yeni bir dikte başlatmalı, kullanıcıyı önce kapatmaya zorlamamalı.
         if self.state in {DictationState.IDLE, DictationState.SILENT, DictationState.ERROR}:
-            await self.start(mode)
+            await self.start(mode, region=region)
         elif self.state is DictationState.LISTENING:
             await self.stop()
         # İşleme veya pre-flight sırasında kısayol yok sayılır; kullanıcı

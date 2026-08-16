@@ -40,6 +40,8 @@ def build_prompt(
     language: str | None = None,
     selection: str | None = None,
     app_name: str | None = None,
+    git_diff: str | None = None,
+    git_summary: str | None = None,
 ) -> Prompt:
     """Katmanları birleştirip istemi kurar."""
     resolved = mode if isinstance(mode, Mode) else get_mode(mode)
@@ -76,6 +78,13 @@ def build_prompt(
     # Sınırlayıcı metnin içinde geçerse sınırı bozmasın.
     safe_text = text.replace(DELIMITER, "")
     user_parts: list[str] = []
+
+    if git_diff and git_diff.strip():
+        # Diff, sesli notun ÖNÜNDE veriliyor: model önce gerçekte ne
+        # değiştiğini görsün, sonra kullanıcının niyetini okusun.
+        safe_diff = git_diff.replace(DELIMITER, "")
+        header = f"BEKLEYEN DEĞİŞİKLİKLER ({git_summary})" if git_summary else "BEKLEYEN DEĞİŞİKLİKLER"
+        user_parts += [header, DELIMITER, safe_diff, DELIMITER, "", "SESLİ NOT:"]
 
     if selection and selection.strip():
         safe_selection = selection.replace(DELIMITER, "")

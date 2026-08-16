@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron'
 import type { EngineSupervisor } from './engine'
+import { selectRegion } from './windows/regionWindow'
 import {
   INITIAL_DICTATION_STATE,
   type DictationResult,
@@ -136,7 +137,27 @@ export class DictationController {
 
   // ── Komutlar ──────────────────────────────────────────────────────────
 
-  toggle(mode = 'quick'): void {
+  /**
+   * Dikteyi başlatır veya bitirir.
+   *
+   * Ekran modu iki adımlı: önce bölge seçilir, sonra kayıt başlar. Bölge
+   * seçimi kayıttan **önce** yapılmalı — kullanıcı konuşurken ekranda
+   * dikdörtgen çizemez.
+   */
+  async toggle(mode = 'quick'): Promise<void> {
+    // Kayıt sürüyorsa mod ne olursa olsun bitirme komutu gider.
+    if (this.state.status === 'listening') {
+      this.engine.send({ type: 'dictation:toggle', mode })
+      return
+    }
+
+    if (mode === 'screen') {
+      const region = await selectRegion()
+      if (!region) return // kullanıcı iptal etti
+      this.engine.send({ type: 'dictation:toggle', mode, region })
+      return
+    }
+
     this.engine.send({ type: 'dictation:toggle', mode })
   }
 

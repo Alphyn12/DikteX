@@ -106,6 +106,13 @@ export interface IpcInvokeMap {
   'meeting:devices': { args: []; result: LoopbackDeviceList }
   'meeting:history': { args: []; result: MeetingHistoryItem[] }
 
+  // ── Ekran bölgesi ──────────────────────────────────────────────────────
+  /** Kaplamadaki seçimi main process'e bildirir. `null` iptal demektir. */
+  'region:result': {
+    args: [region: { x: number; y: number; width: number; height: number } | null]
+    result: void
+  }
+
   // ── Modlar ─────────────────────────────────────────────────────────────
   'modes:list': { args: []; result: ModeList }
 
@@ -152,4 +159,4 @@ export interface OmniVoiceBridge {
   readonly surface: WindowSurface
 }
 
-export type WindowSurface = 'main' | 'hud' | 'commandbar'
+export type WindowSurface = 'main' | 'hud' | 'commandbar' | 'region'

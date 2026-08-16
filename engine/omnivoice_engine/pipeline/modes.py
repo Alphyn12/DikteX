@@ -22,6 +22,7 @@ class ModeId(str, Enum):
     IMAGE_PROMPT = "image_prompt"
     SQL = "sql"
     COMMIT = "commit"
+    SCREEN = "screen"
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +42,10 @@ class Mode:
     require_preflight: bool = False
     #: Seçili metin otomatik okunsun mu?
     uses_selection: bool = False
+    #: Aktif dizindeki `git diff` okunup isteme eklensin mi (Properties V.5)?
+    uses_git_diff: bool = False
+    #: Konuşmadan önce ekrandan bölge seçilsin mi (Properties V.2)?
+    uses_screen_region: bool = False
     #: Uygulama profiline göre biçim yönergesi eklensin mi?
     #:
     #: Kapalı olduğu modlar çıktının biçimini kendisi belirler; üstüne bir de
@@ -172,17 +177,40 @@ MODES: dict[ModeId, Mode] = {
         chord_key="C",
         module="automation",
         instruction=(
-            "Kullanıcının anlattığı değişikliği bir conventional commit "
-            "mesajına çevir.\n"
+            "Bir conventional commit mesajı yaz.\n"
+            "- Sana `git diff` verildiyse mesajı ÖNCELİKLE ona dayandır; "
+            "kullanıcının sesli notu niyeti açıklar, diff ise gerçekte ne "
+            "değiştiğini gösterir.\n"
             "- Biçim: <tip>(<kapsam>): <özet>\n"
             "- Tip: feat, fix, docs, style, refactor, test, chore\n"
             "- Özet 72 karakteri geçmesin, küçük harfle başlasın, nokta ile "
             "bitmesin.\n"
-            "- Kullanıcı ayrıntı verdiyse boş satırdan sonra gövde ekle.\n"
-            "- Kapsamı uydurma; kullanıcı söylemediyse parantezi hiç yazma."
+            "- Değişiklik birden fazla konuyu kapsıyorsa boş satırdan sonra "
+            "madde işaretli gövde ekle.\n"
+            "- Kapsamı diff'teki dosya yollarından çıkar; belirsizse parantezi "
+            "hiç yazma.\n"
+            "- Diff'te GÖRMEDİĞİN bir değişikliği mesaja yazma."
         ),
         use_app_profile=False,
         require_preflight=True,
+        uses_git_diff=True,
+        max_tokens=1000,
+    ),
+    ModeId.SCREEN: Mode(
+        id=ModeId.SCREEN,
+        chord_key="R",
+        module="system",
+        # Bu modun asıl yönergesi `vision_prompts.py` içinde; burada yalnız
+        # mod kaydı için bir özet duruyor.
+        instruction=(
+            "Kullanıcı ekrandan bir bölge seçti ve onun hakkında soru soruyor. "
+            "Gördüğüne dayan, okuyamadığını uydurma."
+        ),
+        use_app_profile=False,
+        uses_screen_region=True,
+        require_preflight=True,
+        max_tokens=1500,
+        temperature=0.3,
     ),
 }
 

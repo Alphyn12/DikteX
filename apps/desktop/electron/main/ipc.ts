@@ -14,6 +14,7 @@ import type {
   VocabularyList,
 } from '@shared/ipc'
 import { getLocaleStore } from './locale'
+import { resolveRegion } from './windows/regionWindow'
 
 interface IpcDeps {
   engine: EngineSupervisor
@@ -69,6 +70,9 @@ export function registerIpc({
 
   ipcMain.handle('dictation:get-state', () => dictation.getState())
   ipcMain.handle('dictation:toggle', (_event, mode?: string) => dictation.toggle(mode))
+
+  // Bölge seçim kaplamasından gelen sonuç.
+  ipcMain.handle('region:result', (_event, region) => resolveRegion(region))
   ipcMain.handle('dictation:cancel', () => dictation.cancel())
   ipcMain.handle('dictation:paste', (_event, text: string) => dictation.paste(text))
 

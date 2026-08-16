@@ -36,6 +36,7 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'meeting:dismiss',
   'meeting:devices',
   'meeting:history',
+  'region:result',
   'modes:list',
   'vocabulary:list',
   'vocabulary:add',
@@ -58,6 +59,7 @@ function detectSurface(): WindowSurface {
   const file = location.pathname.split('/').pop() ?? ''
   if (file.startsWith('hud')) return 'hud'
   if (file.startsWith('commandbar')) return 'commandbar'
+  if (file.startsWith('region')) return 'region'
   return 'main'
 }
 

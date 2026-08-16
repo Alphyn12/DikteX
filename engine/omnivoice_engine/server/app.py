@@ -185,10 +185,14 @@ async def _handle_message(
 
         # ── Dikte ─────────────────────────────────────────────────────────
         case "dictation:toggle":
-            await context.pipeline.toggle(str(message.get("mode", "quick")))
+            await context.pipeline.toggle(
+                str(message.get("mode", "quick")), region=message.get("region")
+            )
 
         case "dictation:start":
-            await context.pipeline.start(str(message.get("mode", "quick")))
+            await context.pipeline.start(
+                str(message.get("mode", "quick")), region=message.get("region")
+            )
 
         case "dictation:stop":
             await context.pipeline.stop()
