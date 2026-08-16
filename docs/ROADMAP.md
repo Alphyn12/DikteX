@@ -3,7 +3,11 @@
 **Strateji: dikey dilim.** Her faz, kullanılabilir bir uygulama bırakır. Bir fazdaki
 her madde **%100 bitmeden** bir sonraki faza geçilmez.
 
-**Durum işaretleri:** ⬜ başlanmadı · 🟨 devam ediyor · ✅ bitti
+**Durum işaretleri:** ⬜ başlanmadı · 🟨 devam ediyor · ✅ bitti · ❌ kapsam dışı
+
+**16 Ağustos 2026 — kapsam daraltma.** Kalan 16 maddenin 10'u, kullanıcıyla
+madde madde değerlendirildikten sonra kapsam dışı bırakıldı. Gerekçeler
+"Kapsam dışı bırakılan" bölümünde tek tek yazılı. Kalan 6 madde aşağıda.
 
 ---
 
@@ -141,17 +145,17 @@ kaydedilen ses, ölçülen gecikme, gerçek harcama ve SQLite'tan gelen geçmiş
 | 3.3 | Seçili metni referans alma (`{SelectedText}` — Highlight & Transform) | V | ✅ |
 | 3.4 | Dinamik değişken enjeksiyonu (`{CurrentDate}`, `{AppTitle}`, `{ClipboardContent}`) | II | ✅ |
 | 3.5 | Mod kısayolları — K kod · E İngilizce · M mega-prompt (chord değil, bkz. not) | IV | ✅ |
-| 3.6 | Chain-of-Thought / akıl yürütme modu | II | ⬜ |
+| 3.6 | Chain-of-Thought / akıl yürütme modu | II | ❌ kapsam dışı |
 | 3.7 | Özel terim & sözlük katmanı (`.json`, STT + LLM'e enjekte) | I | ✅ |
 | 3.8 | Çoklu model orkestrasyonu (mod başına model/sağlayıcı) | II | 🟨 |
-| 3.9 | A/B model karşılaştırıcı (yan yana) | II | ⬜ |
+| 3.9 | A/B model karşılaştırıcı (yan yana) | II | ❌ kapsam dışı |
 | 3.10 | Negative prompting & yasaklı kalıplar | II | ✅ |
-| 3.11 | Kritik prompt denetçisi (Prompt Linter) | II | ⬜ |
+| 3.11 | Kritik prompt denetçisi (Prompt Linter) | II | ❌ kapsam dışı |
 | 3.12 | Meta-prompt & çoklu format çevirici (Midjourney, SQL, regex…) | II | ✅ |
 | 3.13 | Öğrenen kişisel stil (Style Refiner) | II | ⬜ |
 | 3.13b | Gemini sağlayıcısı — yalnız düşük riskli arka plan işleri + STT yedeği | — | ⬜ |
-| 3.14 | Floating Command Bar (mockup 1b) | IV | ⬜ |
-| 3.15 | Dinamik model seçici (pil/GPU durumuna göre) | I | ⬜ |
+| 3.14 | Floating Command Bar (mockup 1b) | IV | ❌ kapsam dışı |
+| 3.15 | Dinamik model seçici (pil/GPU durumuna göre) | I | ❌ kapsam dışı |
 
 **Faz 3'te alınan kararlar:**
 
@@ -254,10 +258,10 @@ Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
 | 5.1 | Bölgesel ekran gözü (Region OCR + Vision) | V | ✅ |
 | 5.2 | Snippet & şablon kütüphanesi | V | ✅ |
 | 5.3 | Git commit mesajı üretici (`git diff` → conventional commit) | V | ✅ |
-| 5.4 | Sesli dosya & kod oluşturucu | V | ⬜ |
+| 5.4 | Sesli dosya & kod oluşturucu | V | ❌ kapsam dışı |
 | 5.5 | Biçimlendirilmiş yapıştırma motoru (Markdown / JSON / HTML / düz metin) | V | ✅ |
-| 5.6 | Otomatik makro & API tetikleyici (Notion, webhook) | V | ⬜ |
-| 5.7 | Görsel prompt akış editörü (node/tree canvas) | IV | ⬜ |
+| 5.6 | Otomatik makro & API tetikleyici (Notion, webhook) | V | ❌ kapsam dışı |
+| 5.7 | Görsel prompt akış editörü (node/tree canvas) | IV | ❌ kapsam dışı |
 
 ---
 
@@ -267,9 +271,9 @@ Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
 |---|---|---|---|
 | 6.1 | Hassas veri maskeleme (PII: TC kimlik, kart no, API anahtarı) | VI | ⬜ |
 | 6.2 | Prompt geçmişi arama motoru (tam metin arama) | VI | ⬜ |
-| 6.3 | Sesli not defteri (Daily Scratchpad) + gün sonu derleme | VI | ⬜ |
-| 6.4 | Yerel REST / Webhook sunucusu (`localhost:8756`) | VI | ⬜ |
-| 6.5 | Otomatik başlatma, güncelleme kontrolü | — | ⬜ |
+| 6.3 | Sesli not defteri (Daily Scratchpad) + gün sonu derleme | VI | ❌ kapsam dışı |
+| 6.4 | Yerel REST / Webhook sunucusu (`localhost:8756`) | VI | ❌ kapsam dışı |
+| 6.5 | Otomatik başlatma (güncelleme kontrolü kapsam dışı) | — | ⬜ |
 | 6.6 | Windows kurulum paketi (installer) | — | ⬜ |
 
 ### 6.6 hakkında — dağıtımın bilinen riskleri
@@ -306,3 +310,27 @@ makinede sınanması şart. Bu maddeyi "bir günde biter" diye planlamıyoruz.
 |---|---|
 | Yerel GPU Whisper (`faster-whisper` / `whisper.cpp`) | Donanım 4 GB VRAM (RTX 3050 Ti Laptop) — büyük modeller sığmıyor. Ayrıca kullanıcı bulut tercih etti. **STT katmanı sağlayıcıdan bağımsız arayüz olarak yazılıyor**, ileride yerel motor ek maliyetsiz takılabilir. |
 | Mockup'taki "180 ms" gecikme | Bu bir yerel GPU rakamı. Bulut mimarisinde gerçekçi hedef ~1.2–2.5 sn. Arayüzde **ölçülen gerçek değer** gösterilecek. |
+
+### 16 Ağustos 2026 kapsam daraltması
+
+Değerlendirme ölçütleri: (1) gerçek kullanımda işe yarar mı, (2) geliştirme ve
+API maliyeti ne, (3) mevcut bir şey aynı işi zaten yapıyor mu.
+
+| # | Madde | Gerekçe |
+|---|---|---|
+| 3.6 | Chain-of-Thought modu | Dikte temizliğinde akıl yürütmenin karşılığı yok — yalnız gecikme ve token ekler. Anlamlı olduğu tek yer mega-prompt, orada da **moda daha güçlü bir model bağlamak** aynı işi görüyor ve mod başına model seçimi zaten var. Ayrı bir mekanizma gereksiz. |
+| 3.9 | A/B model karşılaştırıcı | **Her kullanımda maliyeti ikiye katlıyor**, buna karşılık hayat boyu birkaç kez kullanılıp bir modele karar verilen türden bir araç. Karşılaştırma zaten yapıldı: üç Gemini kuşağı ölçülüp sonuç `config.py`'ye yazıldı. |
+| 3.11 | Kritik prompt denetçisi | Denetim için **istem başına ikinci bir LLM çağrısı** gerekiyor, yani mega-prompt maliyeti iki katına çıkıyor. Kullanıcının mega-prompt kullanım sıklığı bunu haklı çıkaracak düzeyde değil. |
+| 3.14 | Floating Command Bar | Mockup 1b'de var, ama **HUD + global kısayollar işlevsel olarak aynı işi görüyor**; eklediği tek şey klavyeyle mod seçmek. Kullanıcı tasarım sadakati yerine işlevi tercih etti. |
+| 3.15 | Dinamik model seçici | **Gerekçesi çürüdü.** Madde, yerel GPU çıkarımı varsayımıyla yazılmıştı (pil azalınca küçük modele geç). Yerel GPU kapsam dışı bırakıldığı için pil durumu hiçbir şeyi değiştirmiyor; istek her hâlükârda buluta gidiyor ve varsayılan model ayda ~$0.30. |
+| 5.4 | Sesli dosya & kod oluşturucu | İki sebep: (1) **konuşma tanıma belirsiz, dosya yazma geri alınamaz** — "test.py" ile "text.py" karışması gerçek bir üzerine-yazma riski; (2) kullanıcı zaten Claude Code kullanıyor ve dosya oluşturmayı orası daha güvenilir yapıyor. |
+| 5.6 | Otomatik makro & API tetikleyici | Kullanıcı Notion / Zapier / n8n kullanmıyor. Dinleyeni olmayan bir webhook yazmak ölü kod. |
+| 5.7 | Görsel prompt akış editörü | Sürükle-bırak node canvas + graf yürütme motoru **tek başına küçük bir uygulama**. Tek kullanıcı için bir şablon yazmaya kıyasla kazancı yok; **5.2 şablon kütüphanesi bu ihtiyacın büyük kısmını zaten karşılıyor**. |
+| 6.3 | Sesli not defteri (Scratchpad) | Değeri tamamen çalışma alışkanlığına bağlı ve kullanıcının böyle bir alışkanlığı yok. Altyapı (SQLite) duruyor; sonradan istenirse eklenebilir. |
+| 6.4 | Yerel REST / Webhook sunucusu | Kullanıcının tetikleyecek betiği yok. Ayrıca **yapıştırma tetikleyebilen açık bir localhost portu gerçek bir saldırı yüzeyi**: tarayıcıda açık kötü niyetli bir sayfa `localhost:8756`'ya istek atıp aktif pencereye metin yapıştırabilir. Yapılacak olsaydı token + `Origin` doğrulaması zorunlu olurdu; ihtiyaç olmadığı için port kapalı kalıyor. |
+
+**Kalan 6 madde** (öncelik sırasıyla): 6.1 PII maskeleme · 3.13 Style Refiner ·
+6.2 geçmiş arama · 3.13b Gemini yedeği · 6.5 otomatik başlatma · 6.6 installer.
+
+6.5'in "güncelleme kontrolü" yarısı da kapsam dışı: dağıtım kanalı yok,
+güncelleme `git pull` ile alınıyor.
