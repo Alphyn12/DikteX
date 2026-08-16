@@ -77,8 +77,23 @@ class LlmProvider(Protocol):
     async def complete(self, prompt: Prompt, *, model: str) -> Completion: ...
 ```
 
-Bugünkü uygulamalar: `GroqStt`, `OpenRouterStt`, `OpenRouterLlm`.
+Bugünkü uygulamalar: `GroqStt`, `OpenRouterStt`, `OpenRouterLlm`, `GeminiLlm` (Faz 3).
 Yarın yerel bir motor istenirse `LocalWhisperStt` eklenir, çağıran taraf değişmez.
+
+### Gizlilik sınıfı — sağlayıcı seçimini bu belirler
+
+Her sağlayıcı bir **gizlilik sınıfı** taşır ve her iş bir **hassasiyet düzeyi**
+ile etiketlenir. Yönlendirici ikisini eşleştirir; hassas içerik eğitime açık bir
+sağlayıcıya asla varsayılan olarak gitmez.
+
+| Sağlayıcı | Gizlilik sınıfı | Varsayılan kullanım |
+|---|---|---|
+| Groq | veri eğitime girmez | dikte transkripsiyonu |
+| OpenRouter | veri eğitime girmez | **kullanıcı içeriği**: dikte, kod, mesaj, toplantı |
+| Gemini (ücretsiz katman) | ⚠️ **girdi/çıktı eğitime girer** | yalnız düşük riskli arka plan: stil analizi, sözlük önerisi, başlık üretme, gün sonu derleme, STT yedeği |
+
+Arayüzde eğitime açık sağlayıcılar **"eğitime açık" rozetiyle** işaretlenir;
+kullanıcı bir modu elle bu sağlayıcıya alabilir, ama bunu görerek yapar.
 
 Her `Transcript` ve `Completion` **ölçülen gecikmeyi ve gerçek maliyeti** taşır;
 bu değerler SQLite'a yazılır ve panelde gösterilir. Arayüzde sahte performans

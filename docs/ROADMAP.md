@@ -87,6 +87,7 @@ Mockup 1a'nın birebir hayata geçirilmesi. Sahte veriyle, motor bağlı değil.
 | 3.11 | Kritik prompt denetçisi (Prompt Linter) | II | ⬜ |
 | 3.12 | Meta-prompt & çoklu format çevirici (Midjourney, SQL, regex…) | II | ⬜ |
 | 3.13 | Öğrenen kişisel stil (Style Refiner) | II | ⬜ |
+| 3.13b | Gemini sağlayıcısı — yalnız düşük riskli arka plan işleri + STT yedeği | — | ⬜ |
 | 3.14 | Floating Command Bar (mockup 1b) | IV | ⬜ |
 | 3.15 | Dinamik model seçici (pil/GPU durumuna göre) | I | ⬜ |
 
