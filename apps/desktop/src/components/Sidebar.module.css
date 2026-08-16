@@ -1,0 +1,109 @@
+/* Sol gezinme — 248 px, 40 px öğeler, 3×16 px seçim pili. */
+
+.sidebar {
+  width: var(--sidebar-width);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--space-2) var(--space-3);
+  min-height: 0;
+}
+
+.item {
+  height: var(--nav-item-height);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-nav);
+  background: transparent;
+  text-align: start;
+  cursor: default;
+  transition: background-color 120ms ease;
+}
+
+.item:hover {
+  background: var(--surface-hover-soft);
+}
+
+.itemActive {
+  background: var(--surface-hover);
+}
+
+.itemLabel {
+  font: var(--text-body-size);
+  color: var(--text-primary);
+}
+
+.itemActive .itemLabel {
+  font-weight: 600;
+}
+
+/* Modül satırları gezinme değil, sayaç göstergesi — daha sönük. */
+.module:hover {
+  background: var(--surface-hover-faint);
+}
+
+.moduleLabel {
+  font: var(--text-body-size);
+  color: var(--text-nav-idle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font: var(--mono-badge);
+  color: var(--text-faint);
+  margin-inline-start: auto;
+}
+
+.gap {
+  height: var(--space-5);
+  flex: none;
+}
+
+.sectionLabel {
+  flex: none;
+  padding: 0 var(--space-3) var(--space-2);
+  font: var(--mono-label);
+  letter-spacing: var(--tracking-label-wide);
+  color: var(--text-faint);
+}
+
+.spacer {
+  flex: 1;
+  min-height: var(--space-3);
+}
+
+/* ── Kasa durumu kartı ────────────────────────────────────────────────────── */
+
+.vault {
+  flex: none;
+  margin: 0 var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--surface-card-dim);
+  border: 1px solid var(--border-card);
+}
+
+.vaultHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.vaultTitle {
+  font: var(--text-caption);
+  font-weight: 600;
+}
+
+.vaultSummary {
+  margin-top: 6px;
+  font: var(--text-caption);
+  line-height: 1.5;
+  color: var(--text-muted);
+}

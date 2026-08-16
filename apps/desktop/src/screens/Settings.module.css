@@ -1,0 +1,289 @@
+/* Ayarlar ekranı — mockup 1a (Ayarlar görünümü). */
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  flex: none;
+  padding: var(--space-6) var(--space-7) 18px;
+}
+
+.eyebrow {
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.title {
+  margin-top: 6px;
+  font: var(--text-title);
+  letter-spacing: var(--tracking-title);
+}
+
+.subtitle {
+  margin-top: 5px;
+  font: var(--text-caption);
+  color: var(--text-subtle);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: var(--space-5);
+  padding: 0 var(--space-7) 26px;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow-y: auto;
+  padding-inline-end: 2px;
+}
+
+.aside {
+  width: var(--aside-width);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Mod / model tablosu ──────────────────────────────────────────────────── */
+
+.table {
+  flex: none;
+  border-radius: var(--radius-card);
+  background: var(--surface-card-dim);
+  border: 1px solid var(--border-card);
+  overflow: hidden;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.25fr 0.8fr 92px 108px 52px;
+  gap: 14px;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+}
+
+.headRow {
+  padding: 10px var(--space-4);
+  background: var(--surface-header);
+  font: var(--mono-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-label);
+}
+
+.bodyRow {
+  border-top: 1px solid var(--border-divider);
+  transition: background-color 120ms ease;
+}
+
+.bodyRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.alignEnd {
+  text-align: end;
+}
+
+.mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font: var(--text-strong);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model {
+  font: 500 12px/1 var(--font-mono);
+  color: var(--text-titlebar);
+}
+
+.provider {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: 400 12.5px/1 var(--font-ui);
+  color: var(--text-muted);
+}
+
+.latency {
+  font: 500 12px/1 var(--font-mono);
+}
+
+.latencyOk {
+  color: var(--mod-audio-soft);
+}
+
+.latencySlow {
+  color: var(--mod-automation-soft);
+}
+
+.latencyNeutral {
+  color: var(--text-nav-idle);
+}
+
+.shortcutCell {
+  justify-self: start;
+}
+
+.toggleCell {
+  justify-self: end;
+}
+
+/* ── Anahtar satırları ────────────────────────────────────────────────────── */
+
+.switches {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 14px var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--surface-card-dim);
+  border: 1px solid var(--border-card);
+}
+
+.switchText {
+  min-width: 0;
+}
+
+.switchTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--text-strong);
+}
+
+.switchDesc {
+  margin-top: 3px;
+  font: 400 12.5px/1.4 var(--font-ui);
+  color: var(--text-muted);
+}
+
+.switchControl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+.switchMeta {
+  font: var(--mono-badge);
+  color: var(--text-label);
+}
+
+/* ── Sağ sütun ────────────────────────────────────────────────────────────── */
+
+.chord {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 13px;
+}
+
+.chordJoin {
+  color: var(--text-faint);
+}
+
+.chordDesc {
+  margin-top: var(--space-3);
+  font: 400 12.5px/1.5 var(--font-ui);
+  color: var(--text-muted);
+}
+
+.chordKey {
+  font-weight: 600;
+  color: var(--text-titlebar);
+}
+
+.chordStatus {
+  margin-top: 10px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border-card);
+  font: var(--mono-badge);
+  color: var(--text-dim);
+}
+
+.keyList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 13px;
+}
+
+.keyRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.keyName {
+  flex: 1;
+  min-width: 0;
+  font: 400 13px/1 var(--font-ui);
+}
+
+.keyNameEmpty {
+  color: var(--text-subtle);
+}
+
+.keyMasked {
+  font: var(--mono-badge);
+  color: var(--text-dim);
+}
+
+.keyAdd {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: var(--text-caption);
+  color: var(--mod-vault-soft);
+  cursor: default;
+}
+
+.keyEmptyDot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  flex: none;
+  border-radius: var(--radius-dot);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.serverAddress {
+  margin-top: var(--space-3);
+  font: 500 12.5px/1 var(--font-mono);
+  color: var(--text-titlebar);
+}
+
+.serverDesc {
+  margin-top: 7px;
+  font: var(--text-caption);
+  line-height: 1.5;
+  color: var(--text-subtle);
+}

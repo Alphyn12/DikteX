@@ -1,0 +1,467 @@
+/* Panel ekranı — mockup 1a. */
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Başlık ───────────────────────────────────────────────────────────────── */
+
+.header {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-7) 18px;
+}
+
+.title {
+  font: var(--text-title);
+  letter-spacing: var(--tracking-title);
+}
+
+.subtitle {
+  margin-top: 5px;
+  font: var(--text-caption);
+  color: var(--text-subtle);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.primaryButton {
+  height: var(--button-height);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-primary);
+  color: var(--text-primary);
+  font: var(--text-strong);
+  cursor: default;
+  white-space: nowrap;
+}
+
+.primaryButton:hover {
+  filter: brightness(1.08);
+}
+
+.primaryShortcut {
+  font: var(--mono-badge);
+  opacity: 0.72;
+}
+
+.secondaryButton {
+  height: var(--button-height);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: var(--text-body-size);
+  cursor: default;
+  white-space: nowrap;
+  transition: background-color 120ms ease;
+}
+
+.secondaryButton:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* ── Gövde ────────────────────────────────────────────────────────────────── */
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: var(--space-5);
+  padding: 0 var(--space-7) 26px;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/**
+ * Sağ sütun.
+ *
+ * Kartlar kaydırılabilir bir bölgede durur, pil uyarısı ise her zaman altta
+ * sabit kalır. Mockup 812 px yüksekliğe göre çizilmişti; daha kısa pencerelerde
+ * kartlar taşıp uyarıyı ekran dışına itiyordu.
+ */
+.aside {
+  width: var(--aside-width);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.asideScroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-y: auto;
+  padding-inline-end: 2px;
+}
+
+/* Kartlar boşluğu doldurmak için uzamaz — mockup'taki gibi üstte toplanır. */
+.asideScroll > * {
+  flex: none;
+}
+
+/* ── İstatistik kartları ──────────────────────────────────────────────────── */
+
+.stats {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+
+.stat {
+  padding: 14px 15px 13px;
+}
+
+.statValue {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.statNumber {
+  font: var(--mono-stat);
+  letter-spacing: var(--tracking-stat);
+}
+
+.statUnit {
+  font: var(--text-caption);
+  color: var(--text-label);
+}
+
+/* ── Motor durum şeridi ───────────────────────────────────────────────────── */
+
+.engineStrip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 14px var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  border: 1px solid var(--border-card);
+}
+
+.engineText {
+  flex: 1;
+  min-width: 0;
+}
+
+.engineTitle {
+  font: var(--text-strong);
+}
+
+.engineDetail {
+  margin-top: 3px;
+  font: 400 11.5px/1.5 var(--font-mono);
+  color: var(--text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.engineMetric {
+  flex: none;
+  text-align: end;
+}
+
+.engineLatency {
+  font: var(--mono-value);
+  color: var(--mod-audio-soft);
+}
+
+.engineNote {
+  margin-top: 2px;
+  font: 400 11px/1 var(--font-ui);
+  color: var(--text-dim);
+}
+
+/* ── Dikte akışı ──────────────────────────────────────────────────────────── */
+
+.feed {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedHeader {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.feedTitle {
+  font: var(--text-strong);
+  white-space: nowrap;
+}
+
+.rule {
+  flex: 1;
+  height: 1px;
+  background: var(--border-card);
+}
+
+.feedAll {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: var(--text-caption);
+  color: var(--text-label);
+  cursor: default;
+  white-space: nowrap;
+}
+
+.feedAll:hover {
+  color: var(--text-primary);
+}
+
+.feedList {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+  /* Kaydırma çubuğu içeriği kırpmasın. */
+  padding-inline-end: 2px;
+}
+
+.feedItem {
+  flex: none;
+  display: flex;
+  gap: 14px;
+  padding: 13px 15px;
+  border-radius: var(--radius-card);
+  background: var(--surface-feed);
+  border: 1px solid var(--border-feed);
+  border-left: 3px solid var(--tone);
+  text-align: start;
+  cursor: default;
+  transition: background-color 120ms ease;
+}
+
+.feedItem:hover {
+  background: var(--surface-hover);
+}
+
+.feedMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.feedTags {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.feedApp {
+  font: var(--text-strong);
+  white-space: nowrap;
+}
+
+.feedBody {
+  margin-top: 6px;
+  font: 400 12.5px/1.55 var(--font-ui);
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.feedMeta {
+  flex: none;
+  text-align: end;
+  font: 500 11px/1.75 var(--font-mono);
+  color: var(--text-faint);
+}
+
+/* ── Sağ sütun kartları ───────────────────────────────────────────────────── */
+
+.asideHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.asideSource {
+  font: 400 11px/1 var(--font-ui);
+  color: var(--text-dim);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: var(--space-3);
+}
+
+/* Action item */
+.action {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: start;
+  cursor: default;
+}
+
+.checkbox {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 1px;
+  border-radius: var(--radius-badge);
+  border: 1.5px solid color-mix(in srgb, var(--tone) 60%, transparent);
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  color: #fff;
+}
+
+.checkboxDone {
+  background: color-mix(in srgb, var(--tone) 55%, transparent);
+  border-color: transparent;
+}
+
+.actionText {
+  font: 400 12.5px/1.45 var(--font-ui);
+  color: var(--text-list);
+}
+
+.actionTextDone {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+
+.actionOwner {
+  color: var(--text-dim);
+}
+
+/* Sesli not defteri */
+.note {
+  padding-inline-start: 11px;
+  border-inline-start: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  font: 400 12.5px/1.45 var(--font-ui);
+  color: var(--text-body);
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  margin-top: 13px;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-card);
+}
+
+.footerMeta {
+  font: var(--mono-badge);
+  color: var(--text-dim);
+}
+
+.footerAction {
+  margin-inline-start: auto;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: var(--text-caption);
+  color: var(--mod-prompt-soft);
+  cursor: default;
+}
+
+.footerAction:hover {
+  filter: brightness(1.2);
+}
+
+/* Sözlük önerileri */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-3);
+}
+
+.chip {
+  padding: 4px 8px;
+  border-radius: var(--radius-badge);
+  font: var(--mono-badge);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--mod-audio-soft);
+}
+
+.chipMore {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-subtle);
+}
+
+.vocabNote {
+  margin-top: 11px;
+  font: var(--text-caption);
+  line-height: 1.5;
+  color: var(--text-label);
+}
+
+/* Pil uyarısı — her zaman sağ sütunun en altında kalır. */
+.notice {
+  flex: none;
+  display: flex;
+  gap: 11px;
+  margin-top: var(--space-3);
+  padding: var(--space-3) 14px;
+  border-radius: var(--radius-card);
+  background: rgba(229, 154, 43, 0.08);
+  border: 1px solid rgba(229, 154, 43, 0.26);
+}
+
+.noticeDot {
+  margin-top: 5px;
+}
+
+.noticeText {
+  font: 400 12.5px/1.5 var(--font-ui);
+  color: var(--text-body);
+}
+
+.noticeAction {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: var(--mod-automation-soft);
+  cursor: default;
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import logoUrl from '../assets/logo.png'
 import { useI18n } from '../i18n/useI18n'
 import styles from './TitleBar.module.css'
+import { cx } from '../utils/cx'
 
 /** Segoe Fluent Icons kod noktaları — Windows 11'in kendi pencere simgeleri. */
 const ICON = {
@@ -21,13 +22,13 @@ export function TitleBar(): React.JSX.Element {
   }, [])
 
   return (
-    <div className={`${styles.bar} drag-region`}>
+    <div className={cx(styles.bar, 'drag-region')}>
       <img className={styles.logo} src={logoUrl} alt="" />
       <span className={styles.title}>OmniVoice</span>
 
       <div className={styles.spacer} />
 
-      <div className={`${styles.buttons} no-drag`}>
+      <div className={cx(styles.buttons, 'no-drag')}>
         <button
           type="button"
           className={styles.button}
@@ -48,7 +49,7 @@ export function TitleBar(): React.JSX.Element {
         </button>
         <button
           type="button"
-          className={`${styles.button} ${styles.close}`}
+          className={cx(styles.button, styles.close)}
           title={t('titlebar.close')}
           aria-label={t('titlebar.close')}
           onClick={() => void window.omnivoice.invoke('window:close')}

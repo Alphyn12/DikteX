@@ -1,18 +1,43 @@
-import type { CSSProperties } from 'react'
-import type { EngineStatus, Locale } from '@shared/ipc'
+import { useState, type CSSProperties } from 'react'
+import type { AppView, EngineStatus, Locale } from '@shared/ipc'
 import { TitleBar } from './components/TitleBar'
+import { Sidebar } from './components/Sidebar'
+import { Panel } from './screens/Panel'
+import { Settings } from './screens/Settings'
 import { I18nProvider, useI18n } from './i18n/useI18n'
 import { useEngine } from './hooks/useEngine'
+import { VAULT_KEYS } from './mock/data'
 import type { MessageKey } from './i18n/tr'
 import styles from './App.module.css'
+import { cx } from './utils/cx'
 
-/**
- * Faz 0 kabuğu.
- *
- * Amacı iki süreçli mimarinin ayakta olduğunu görünür kılmak: pencere Mica ile
- * açılıyor, kendi başlık çubuğunu çiziyor, Python motoruyla el sıkışıyor ve
- * dil değişimi çalışıyor. Faz 1'de gövde, mockup'taki Panel ekranıyla değişecek.
- */
+export function App(): React.JSX.Element {
+  return (
+    <I18nProvider>
+      <Shell />
+    </I18nProvider>
+  )
+}
+
+function Shell(): React.JSX.Element {
+  const [view, setView] = useState<AppView>('panel')
+  const configuredKeys = VAULT_KEYS.filter((key) => key.masked !== null).length
+
+  return (
+    <div className={styles.shell}>
+      <TitleBar />
+
+      <div className={styles.body}>
+        <Sidebar view={view} onNavigate={setView} vaultKeyCount={configuredKeys} />
+        <main className={styles.content}>{view === 'panel' ? <Panel /> : <Settings />}</main>
+      </div>
+
+      <StatusBar />
+    </div>
+  )
+}
+
+// ── Alt durum çubuğu ───────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<EngineStatus, string> = {
   starting: 'var(--mod-automation)',
@@ -28,72 +53,60 @@ const STATUS_MESSAGE: Record<EngineStatus, MessageKey> = {
   failed: 'engine.failed',
 }
 
-export function App(): React.JSX.Element {
-  return (
-    <I18nProvider>
-      <Shell />
-    </I18nProvider>
-  )
-}
-
-function Shell(): React.JSX.Element {
-  return (
-    <div className={`${styles.shell} ambient-light`}>
-      <TitleBar />
-      <div className={styles.body}>
-        <EngineCard />
-      </div>
-    </div>
-  )
-}
-
-function EngineCard(): React.JSX.Element {
+/**
+ * Motorun canlı durumu her ekranda görünür kalır.
+ *
+ * Faz 0'daki büyük durum kartının yerini aldı: motor sağlıklıyken tek satırlık
+ * sessiz bir gösterge, sorun çıktığında hatayı ve yeniden deneme düğmesini
+ * gösteren bir uyarı olur.
+ */
+function StatusBar(): React.JSX.Element {
   const { t, locale, setLocale } = useI18n()
   const { state, restart } = useEngine()
 
   const pending = state.status === 'starting' || state.status === 'disconnected'
+  const healthy = state.status === 'connected'
 
   return (
-    <section
-      className={styles.card}
+    <footer
+      className={styles.statusBar}
       style={{ '--status-color': STATUS_COLOR[state.status] } as CSSProperties}
       aria-live="polite"
     >
-      <div className={styles.label}>OMNIVOICE ENGINE</div>
+      <span className={styles.statusItem}>
+        <span className={cx(styles.statusDot, pending ? styles.pulsing : '')} />
+        {t(STATUS_MESSAGE[state.status])}
+      </span>
 
-      <div className={styles.headline}>
-        <span className={`${styles.dot} ${pending ? styles.pulsing : ''}`} />
-        <span className={styles.status}>{t(STATUS_MESSAGE[state.status])}</span>
-      </div>
-
-      <div className={`${styles.meta} tabular`}>
-        <span>
+      {healthy && (
+        <span className={cx(styles.statusItem, 'tabular')}>
           {t('engine.port')} {state.port}
         </span>
-        {state.version && (
-          <span>
-            {t('engine.version')} {state.version}
-          </span>
-        )}
-        {state.retries > 0 && state.status !== 'connected' && (
-          <span>
-            {t('engine.retrying')} {state.retries}/5
-          </span>
-        )}
-      </div>
+      )}
 
-      {state.error && <p className={`${styles.error} selectable`}>{state.error}</p>}
+      {!healthy && state.retries > 0 && (
+        <span className={cx(styles.statusItem, 'tabular')}>
+          {t('engine.retrying')} {state.retries}/5
+        </span>
+      )}
 
-      <div className={styles.actions}>
-        {state.status !== 'connected' && (
-          <button type="button" className={styles.button} onClick={restart}>
-            {t('engine.retry')}
-          </button>
-        )}
-        <div className={styles.spacer} />
-        <LocaleSwitch locale={locale} onChange={setLocale} />
-      </div>
-    </section>
+      {!healthy && state.error && (
+        <span className={styles.statusError} title={state.error}>
+          {state.error.split('\n')[0]}
+        </span>
+      )}
+
+      {!healthy && (
+        <button type="button" className={styles.statusButton} onClick={restart}>
+          {t('engine.retry')}
+        </button>
+      )}
+
+      <span className={styles.statusSpacer} />
+
+      <span className={styles.statusItem}>{t('common.mockNotice')}</span>
+      <LocaleSwitch locale={locale} onChange={setLocale} />
+    </footer>
   )
 }
 
@@ -111,7 +124,7 @@ function LocaleSwitch({
         <button
           key={code}
           type="button"
-          className={`${styles.lang} ${locale === code ? styles.langActive : ''}`}
+          className={cx(styles.lang, locale === code ? styles.langActive : '')}
           aria-pressed={locale === code}
           onClick={() => onChange(code)}
         >

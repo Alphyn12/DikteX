@@ -2,23 +2,122 @@ import type { Messages } from './tr'
 
 /** İngilizce metinler. Şekli `tr` belirler; eksik anahtar derleme hatasıdır. */
 export const en: Messages = {
+  // ── Title bar ────────────────────────────────────────────────────────────
   'titlebar.minimize': 'Minimize',
   'titlebar.maximize': 'Maximize',
   'titlebar.restore': 'Restore',
   'titlebar.close': 'Close',
 
+  // ── Navigation ───────────────────────────────────────────────────────────
   'nav.panel': 'Dashboard',
   'nav.settings': 'Settings',
   'nav.modules': 'MODULES',
+  'nav.label': 'Main navigation',
 
+  'module.audio': 'Audio & STT',
+  'module.prompt': 'Prompt Studio',
+  'module.meeting': 'Meetings',
+  'module.automation': 'Automation',
+  'module.vault': 'Vault & Privacy',
+
+  'vault.unlocked': 'Vault unlocked',
+  'vault.locked': 'Vault locked',
+  'vault.summary': '{count} keys in Credential Manager · PII masking on',
+
+  // ── Dashboard ────────────────────────────────────────────────────────────
+  'panel.title': 'Today',
+  'panel.subtitle': '{dictations} dictations · {apps} apps · {meetings} meeting',
+  'panel.startDictation': 'Start dictation',
+  'panel.recordMeeting': 'Record meeting',
+
+  'stat.words': 'WORDS DICTATED',
+  'stat.words.unit': 'words',
+  'stat.timeSaved': 'TIME SAVED',
+  'stat.timeSaved.unit': 'minutes',
+  'stat.fillers': 'FILLERS REMOVED',
+  'stat.fillers.unit': '“uh / um”',
+  'stat.latency': 'AVG. LATENCY',
+  'stat.latency.unit': 'ms',
+
+  'engineStrip.title': 'Hybrid processing · cloud',
+  'engineStrip.note': 'no leading syllable lost',
+
+  'feed.title': 'Recent dictations',
+  'feed.viewAll': 'All · local SQLite search',
+
+  'aside.actionItems': 'ACTION ITEMS',
+  'aside.scratchpad': 'VOICE SCRATCHPAD',
+  'aside.vocabulary': 'VOCABULARY SUGGESTIONS',
+  'aside.rawIdeas': '{count} raw ideas',
+  'aside.compile': 'Compile end of day',
+  'aside.vocabNote': 'Misspelled {count} times this week.',
+  'aside.batteryNotice': 'Switched to battery mode — dynamic selector dropped to {model}.',
+  'aside.undo': 'Undo',
+
+  // ── Settings ─────────────────────────────────────────────────────────────
+  'settings.eyebrow': 'SETTINGS',
+  'settings.title': 'Models & Shortcuts',
+  'settings.subtitle': 'Each mode carries its own model, provider and global shortcut',
+
+  'table.mode': 'MODE',
+  'table.model': 'MODEL',
+  'table.provider': 'PROVIDER',
+  'table.latency': 'LATENCY',
+  'unit.seconds': 's',
+  'latency.stream': 'stream',
+  'table.shortcut': 'SHORTCUT',
+  'table.active': 'ACTIVE',
+
+  'mode.quickDictation': 'Quick dictation',
+  'mode.megaPrompt': 'Mega-prompt · CoT',
+  'mode.code': 'Code & refactor',
+  'mode.translate': 'EN translation',
+  'mode.abCompare': 'A/B comparison',
+  'mode.meetingSummary': 'Meeting summary',
+
+  'provider.groq': 'Groq',
+  'provider.openrouter': 'OpenRouter',
+  'provider.gemini': 'Gemini',
+  'provider.hybrid': 'Hybrid',
+
+  'toggle.dynamicModel': 'Dynamic model selector',
+  'toggle.dynamicModel.desc': 'Switches between model sizes based on battery / network state',
+  'toggle.dynamicModel.meta': 'threshold 35% battery',
+  'toggle.preflight': 'Pre-flight preview',
+  'toggle.preflight.desc': 'Opens an edit window before the output is pasted',
+  'toggle.preflight.meta': 'required for mega-prompt',
+  'toggle.pii': 'PII masking',
+  'toggle.pii.desc': 'National ID, card and API key redacted before leaving the device',
+  'toggle.pii.badge': 'LOCAL',
+
+  'aside.chorded': 'CHORDED SHORTCUT',
+  'aside.chorded.desc': 'Hold → pick a mode.',
+  'aside.chorded.legend': '{k} code, {e} English, {m} mega-prompt.',
+  'aside.chorded.status': 'no conflicts · {count} modes bound',
+  'aside.apiVault': 'API VAULT',
+  'aside.addKey': 'add',
+  'aside.localServer': 'LOCAL SERVER',
+  'aside.localServer.desc': 'REST + webhook open — external scripts can trigger the engine.',
+
+  'training.badge': 'trains on data',
+  'training.tooltip':
+    "This provider's free tier uses submitted data for model training. Do not route sensitive content here.",
+
+  // ── Engine status ────────────────────────────────────────────────────────
   'engine.starting': 'Starting engine',
   'engine.connected': 'Engine connected',
   'engine.disconnected': 'Engine disconnected',
   'engine.failed': 'Engine failed to start',
   'engine.retry': 'Retry',
-  'engine.retrying': 'Reconnecting…',
+  'engine.retrying': 'Reconnecting',
   'engine.port': 'port',
-  'engine.version': 'version',
 
+  // ── Tray menu ────────────────────────────────────────────────────────────
+  'tray.show': 'Show OmniVoice',
+  'tray.startDictation': 'Start dictation',
+  'tray.quit': 'Quit',
+
+  // ── Common ───────────────────────────────────────────────────────────────
   'lang.switch': 'Language',
+  'common.mockNotice': 'Sample data — engine connects in Phase 2',
 }

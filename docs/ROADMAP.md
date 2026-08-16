@@ -42,15 +42,34 @@ Mockup 1a'nın birebir hayata geçirilmesi. Sahte veriyle, motor bağlı değil.
 
 | # | Madde | Kaynak | Durum |
 |---|---|---|---|
-| 1.1 | Mica malzemeli pencere, 8 px yarıçap, özel başlık çubuğu (40 px, 46×40 düğmeler) | IV | ⬜ |
-| 1.2 | Sol gezinme (248 px, 40 px öğeler, 3×16 px seçim pili, modül renkleri) | IV | ⬜ |
-| 1.3 | Panel ekranı — istatistik kartları, sparkline, motor durum şeridi, dikte akışı | IV | ⬜ |
-| 1.4 | Sağ sütun — Action items, Sesli not defteri, Sözlük önerileri, uyarı kartı | IV | ⬜ |
-| 1.5 | Ayarlar ekranı — mod/model tablosu, anahtarlar, kasa kartı | IV | ⬜ |
-| 1.6 | Sistem tepsisi (tray) ikonu ve menüsü | IV | ⬜ |
-| 1.7 | TR/EN dil değiştirme çalışır durumda | — | ⬜ |
+| 1.1 | Mica malzemeli pencere, 8 px yarıçap, özel başlık çubuğu (40 px, 46×40 düğmeler) | IV | ✅ |
+| 1.2 | Sol gezinme (248 px, 40 px öğeler, 3×16 px seçim pili, modül renkleri) | IV | ✅ |
+| 1.3 | Panel ekranı — istatistik kartları, sparkline, motor durum şeridi, dikte akışı | IV | ✅ |
+| 1.4 | Sağ sütun — Action items, Sesli not defteri, Sözlük önerileri, uyarı kartı | IV | ✅ |
+| 1.5 | Ayarlar ekranı — mod/model tablosu, anahtarlar, kasa kartı | IV | ✅ |
+| 1.6 | Sistem tepsisi (tray) ikonu ve menüsü | IV | ✅ |
+| 1.7 | TR/EN dil değiştirme çalışır durumda | — | ✅ |
 
-**Çıktı:** Mockup'a birebir benzeyen, gezilebilen ama henüz konuşmayan uygulama.
+**Çıktı:** ✅ Mockup'a birebir benzeyen, gezilebilen ama henüz konuşmayan uygulama.
+Kapatma düğmesi uygulamayı sonlandırmaz, tepsiye çeker — global kısayolun her an
+çalışması gerektiği için.
+
+**Faz 1'de yakalanan hatalar:**
+- **Ses dalgası hiç animasyon yapmıyordu.** `@keyframes om-bar` global `tokens.css`
+  içindeydi, ona `primitives.module.css` içinden atıf yapılıyordu. CSS Modules
+  modüldeki animasyon adını kapsamlandırıp yeniden adlandırıyor; global tanıma
+  yapılan atıf var olmayan bir ada dönüşüp **sessizce** düşüyordu. Kare tanımı
+  onu kullanan modüle taşındı.
+- **Sayı ve birimler yerelleşmiyordu.** Gecikme değerleri (`1.1 sn`, `akış`) ve
+  istatistikler (`4.812`) veriye metin olarak yazılmıştı; İngilizce arayüzde
+  Türkçe birim ve Türkçe binlik ayırıcı görünüyordu. Sayılar ham sayıya çevrildi,
+  biçimlendirme `Intl` üzerinden arayüze taşındı.
+- **Sağ sütun taşıyordu.** Mockup 812 px yüksekliğe göre çizilmişti; daha kısa
+  pencerede pil uyarısı ekran dışına düşüyordu. Kartlar kaydırılabilir bölgeye
+  alındı, uyarı alta sabitlendi.
+- **Sınıf adı birleştirme riskliydi.** CSS modül anahtarları tip düzeyinde
+  `string | undefined`; şablonla birleştirmek yanlış yazılmış bir sınıfı
+  `"undefined"` diye basardı. `cx()` yardımcısı eklendi.
 
 ---
 

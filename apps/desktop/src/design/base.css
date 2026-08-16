@@ -59,6 +59,43 @@ body {
   white-space: nowrap;
 }
 
+/**
+ * Kaydırma çubuğu.
+ *
+ * Windows'un varsayılan çubuğu açık renkli ve kalın; koyu arayüzde yamalı
+ * duruyor. İnce, saydam ve yalnız üstüne gelince belirginleşen bir çubuk
+ * kullanıyoruz — Fluent'in kendi davranışı da budur.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-clip: padding-box;
+  /* Şeffaf kenarlık, tutamağı ince gösterirken tıklama alanını geniş tutar. */
+  border: 3px solid transparent;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.28);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Windows başlık çubuğu sürükleme bölgeleri. */
 .drag-region {
   -webkit-app-region: drag;

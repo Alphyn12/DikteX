@@ -144,22 +144,15 @@
     radial-gradient(46% 44% at 12% 92%, rgba(124, 92, 255, 0.16), rgba(0, 0, 0, 0) 72%);
 }
 
-/* ── Animasyonlar ─────────────────────────────────────────────────────────── */
-@keyframes om-bar {
-  0%,
-  100% {
-    transform: scaleY(0.22);
-  }
-  50% {
-    transform: scaleY(1);
-  }
-}
-
-@keyframes om-ring {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/**
+ * Animasyon kareleri (`om-bar`, `om-ring`) burada DEĞİL, onları kullanan
+ * `.module.css` dosyasında tanımlanır.
+ *
+ * Sebebi: CSS Modules, modül dosyasındaki `animation` adlarını kapsamlandırıp
+ * yeniden adlandırır. Kare tanımı global bir dosyada durursa modüldeki atıf
+ * var olmayan bir ada çevrilir ve animasyon **sessizce** çalışmaz — hata
+ * vermez, yalnız durur. Tanım ile atıf aynı dosyada olmalı.
+ */
 
 /**
  * Erişilebilirlik: hareket azaltma tercihinde döngüsel animasyonlar durur.

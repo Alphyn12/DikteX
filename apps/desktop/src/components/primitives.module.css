@@ -1,0 +1,230 @@
+/**
+ * Tasarım sisteminin taşıyıcı parçaları.
+ *
+ * DESIGN-TOKENS.md § 1: renk yalnız üç biçimde taşınır — 3 px kenar şeridi,
+ * 8 px nokta, tek satır etiket. Bu dosya o üçünü tanımlar.
+ */
+
+/* ── 8 px nokta ───────────────────────────────────────────────────────────── */
+.dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  flex: none;
+  border-radius: var(--radius-dot);
+  background: var(--tone);
+}
+
+/* ── 3 px kenar şeridi (gezinme seçim pili) ───────────────────────────────── */
+.pill {
+  width: var(--nav-pill-width);
+  height: var(--nav-pill-height);
+  flex: none;
+  border-radius: var(--radius-dot);
+  background: var(--tone, transparent);
+}
+
+/* ── Etiket / rozet ───────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 3px 7px;
+  border-radius: var(--radius-badge);
+  font: var(--mono-tag);
+  letter-spacing: var(--tracking-tag);
+  white-space: nowrap;
+}
+
+/* Modül renginde: saydam zemin + aynı renkte ince kenar. */
+.badgeTone {
+  color: var(--tone);
+  border: 1px solid color-mix(in srgb, var(--tone) 40%, transparent);
+}
+
+/* Nötr: bilgi taşır ama modül kimliği taşımaz. */
+.badgeNeutral {
+  color: var(--text-subtle);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Dolgulu: modül renginin çok soluk zemini üzerinde açık ton. */
+.badgeFilled {
+  background: color-mix(in srgb, var(--tone) 15%, transparent);
+  color: var(--tone-soft, var(--tone));
+}
+
+/* Uyarı rozeti — eğitime açık sağlayıcı gibi bilinçli risk göstergeleri. */
+.badgeWarn {
+  background: rgba(229, 154, 43, 0.14);
+  color: var(--mod-automation-soft);
+  cursor: help;
+}
+
+/* ── Klavye tuşu ──────────────────────────────────────────────────────────── */
+.key {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 3px 7px;
+  border-radius: var(--radius-badge);
+  border: 1px solid var(--border-control);
+  font: var(--mono-badge);
+  color: var(--text-nav-idle);
+  white-space: nowrap;
+}
+
+/* Fiziksel tuş görünümü — chorded shortcut kartında kullanılır. */
+.keyCap {
+  padding: 6px 9px;
+  border-radius: var(--radius-control);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  font: 600 12px/1 var(--font-mono);
+  color: var(--text-primary);
+}
+
+.keyCapAccent {
+  background: var(--gradient-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Kart ─────────────────────────────────────────────────────────────────── */
+.card {
+  padding: 15px 16px;
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  border: 1px solid var(--border-card);
+}
+
+/* Üst kenar şeridi kartın hangi modüle ait olduğunu söyler. */
+.cardTopped {
+  border-top: 2px solid var(--tone);
+}
+
+.cardLabel {
+  font: var(--mono-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-label);
+}
+
+/* ── Anahtar (toggle) ─────────────────────────────────────────────────────── */
+.toggle {
+  width: var(--toggle-width);
+  height: var(--toggle-height);
+  flex: none;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  cursor: default;
+  transition: background-color 140ms ease, justify-content 0s;
+}
+
+.toggleOn {
+  justify-content: flex-end;
+  background: var(--tone);
+}
+
+.toggleKnob {
+  width: var(--toggle-knob);
+  height: var(--toggle-knob);
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background-color 140ms ease;
+}
+
+/* Açıkken tutamak, üstünde durduğu rengin çok koyu tonuna döner. */
+.toggleOn .toggleKnob {
+  background: color-mix(in srgb, var(--tone) 22%, #05070a);
+}
+
+/* ── Ses dalgası ──────────────────────────────────────────────────────────── */
+
+/**
+ * Kare tanımı bu dosyada durmak zorunda: CSS Modules `animation` adlarını
+ * kapsamlandırır, global bir dosyadaki tanıma yapılan atıf sessizce kopar.
+ */
+@keyframes om-bar {
+  0%,
+  100% {
+    transform: scaleY(0.22);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* İşleme halkası — HUD'un "işliyor" durumunda kullanılacak (Faz 2.8). */
+@keyframes om-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.wave {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 2px;
+}
+
+.waveBar {
+  width: 2px;
+  height: 100%;
+  border-radius: 1px;
+  background: var(--tone);
+  transform-origin: center;
+  animation: om-bar var(--wave-duration) ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+/* Bağlama göre tempo — süreler token'lardan gelir. */
+.wavePanel {
+  --wave-duration: var(--wave-duration-panel);
+}
+
+.waveCommandbar {
+  --wave-duration: var(--wave-duration-commandbar);
+}
+
+.waveHud {
+  --wave-duration: var(--wave-duration-hud);
+  gap: 2.5px;
+}
+
+/* HUD'da çubuklar biraz kalın. */
+.waveHud .waveBar {
+  width: 2.5px;
+}
+
+/**
+ * Hareket azaltma: çubuklar donar. Sabit yükseklik yerine her çubuğa kendi
+ * yüksekliğini veriyoruz ki donmuş hâli de bir dalga gibi okunsun, düz bir
+ * çizgi gibi değil.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .waveBar {
+    transform: scaleY(var(--static-scale, 0.6));
+  }
+}
+
+/* ── Sparkline ────────────────────────────────────────────────────────────── */
+.spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+  margin-top: 11px;
+}
+
+.sparkBar {
+  flex: 1;
+  border-radius: 1px;
+  background: var(--tone);
+  opacity: 0.5;
+}
