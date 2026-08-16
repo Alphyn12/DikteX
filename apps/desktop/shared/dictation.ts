@@ -181,6 +181,8 @@ export interface AudioDeviceList {
 
 export interface TodayStats {
   dictations: number
+  /** Bugün kaydedilen toplantı sayısı. */
+  meetings: number
   apps: number
   fillers: number
   audio_seconds: number

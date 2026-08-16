@@ -15,6 +15,22 @@ import type {
   VaultEntry,
   VocabularyList,
 } from './dictation'
+import type {
+  LoopbackDeviceList,
+  MeetingHistoryItem,
+  MeetingState,
+} from './meeting'
+
+export type {
+  LoopbackDevice,
+  LoopbackDeviceList,
+  MeetingActionItem,
+  MeetingHistoryItem,
+  MeetingResult,
+  MeetingState,
+  MeetingStatus,
+} from './meeting'
+export { INITIAL_MEETING_STATE } from './meeting'
 
 export type {
   AudioDevice,
@@ -82,6 +98,14 @@ export interface IpcInvokeMap {
   /** Pre-flight'taki metni yapıştırır. Kullanıcı düzenlemişse düzenlenmiş hâli. */
   'dictation:paste': { args: [text: string]; result: void }
 
+  // ── Toplantı ───────────────────────────────────────────────────────────
+  'meeting:get-state': { args: []; result: MeetingState }
+  'meeting:toggle': { args: []; result: void }
+  'meeting:cancel': { args: []; result: void }
+  'meeting:dismiss': { args: []; result: void }
+  'meeting:devices': { args: []; result: LoopbackDeviceList }
+  'meeting:history': { args: []; result: MeetingHistoryItem[] }
+
   // ── Modlar ─────────────────────────────────────────────────────────────
   'modes:list': { args: []; result: ModeList }
 
@@ -108,6 +132,7 @@ export interface IpcEventMap {
   'window:maximize-changed': boolean
   'app:locale-changed': Locale
   'dictation:changed': DictationState
+  'meeting:changed': MeetingState
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap

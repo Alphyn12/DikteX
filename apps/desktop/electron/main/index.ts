@@ -1,11 +1,12 @@
 import { app, BrowserWindow, type Tray } from 'electron'
 import { EngineSupervisor } from './engine'
 import { createMainWindow } from './windows/mainWindow'
-import { createHudWindow, syncHud } from './windows/hudWindow'
+import { createHudWindow, syncHud, syncMeetingHud } from './windows/hudWindow'
 import { createTray } from './tray'
 import { registerIpc } from './ipc'
 import { loadEnv } from './env'
 import { DictationController, broadcastDictation } from './dictation'
+import { MeetingController, broadcastMeeting } from './meeting'
 import { registerHotkeys, unregisterHotkeys } from './hotkeys'
 
 /** Motorun dinlediği port. `.env.local` ile değiştirilebilir. */
@@ -57,6 +58,13 @@ async function main(): Promise<void> {
     syncHud(getHudWindow(), state)
   })
 
+  const meeting = new MeetingController(engine, (state) => {
+    broadcastMeeting(state)
+    // Toplantı HUD'u dikte HUD'uyla aynı pencereyi paylaşıyor; ikisi aynı
+    // anda çalışamaz (motor da bunu engelliyor), bu yüzden tek pencere yeterli.
+    syncMeetingHud(getHudWindow(), state)
+  })
+
   // Kısayolları IPC'den önce kaydediyoruz: `modes:list` yanıtı hangi
   // kısayolun kaydedilebildiğini de taşıyor.
   const hotkeys = registerHotkeys(dictation)
@@ -64,7 +72,7 @@ async function main(): Promise<void> {
     console.warn(`[kısayol] çakışan kısayollar: ${hotkeys.conflicts.join(', ')}`)
   }
 
-  registerIpc({ engine, dictation, hotkeys, getMainWindow })
+  registerIpc({ engine, dictation, meeting, hotkeys, getMainWindow })
   tray = createTray(getMainWindow, dictation)
 
   // Başlık çubuğundaki X ve sistem kapatma isteği pencereyi gizler.

@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/useI18n'
 import { getContent, type ModuleId } from '../mock/data'
 import { Badge, Card, CardLabel, Sparkline, Waveform, tone } from '../components/primitives'
 import { useDictation } from '../hooks/useDictation'
+import { useMeeting } from '../hooks/useMeeting'
 import { useEngineData, type HistoryItem } from '../hooks/useEngineData'
 import { cx } from '../utils/cx'
 import styles from './Panel.module.css'
@@ -28,6 +29,7 @@ export function Panel(): React.JSX.Element {
 
   const dictations = stats?.today.dictations ?? 0
   const apps = stats?.today.apps ?? 0
+  const meetings = stats?.today.meetings ?? 0
 
   return (
     <div className={styles.screen}>
@@ -36,15 +38,13 @@ export function Panel(): React.JSX.Element {
           <h1 className={styles.title}>{t('panel.title')}</h1>
           <p className={styles.subtitle}>
             {today} ·{' '}
-            {t('panel.subtitle', { dictations, apps, meetings: content.meetingCount })}
+            {t('panel.subtitle', { dictations, apps, meetings })}
           </p>
         </div>
 
         <div className={styles.headerActions}>
           <StartButton />
-          <button type="button" className={styles.secondaryButton}>
-            {t('panel.recordMeeting')}
-          </button>
+          <MeetingButton />
         </div>
       </header>
 
@@ -86,6 +86,35 @@ function StartButton(): React.JSX.Element {
     >
       {active ? t('panel.stopDictation') : t('panel.startDictation')}
       <span className={styles.primaryShortcut}>Ctrl+Alt+Space</span>
+    </button>
+  )
+}
+
+/**
+ * Toplantı kaydını başlatır/bitirir.
+ *
+ * Dikte sürerken devre dışı: ikisi aynı mikrofonu kullanıyor ve motor da
+ * bunu engelliyor. Düğmeyi tıklanabilir bırakıp sessizce reddetmek yerine
+ * neden çalışmadığını göstermek daha dürüst.
+ */
+function MeetingButton(): React.JSX.Element {
+  const { t } = useI18n()
+  const { state: meeting, toggle } = useMeeting()
+  const { state: dictation } = useDictation()
+
+  const recording = meeting.status === 'recording'
+  const busy = meeting.status === 'transcribing' || meeting.status === 'summarizing'
+  const blocked = dictation.status !== 'idle'
+
+  return (
+    <button
+      type="button"
+      className={cx(styles.secondaryButton, recording && styles.recordingButton)}
+      onClick={() => toggle()}
+      disabled={busy || blocked}
+      title={blocked ? t('meeting.blockedByDictation') : undefined}
+    >
+      {recording ? t('meeting.stop') : t('panel.recordMeeting')}
     </button>
   )
 }

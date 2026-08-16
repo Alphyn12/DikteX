@@ -184,11 +184,45 @@ toplantı koçu kapsam dışı. Gerekçeler aşağıda.
 
 | # | Madde | Kaynak | Durum |
 |---|---|---|---|
-| 4.1 | İki yönlü sistem sesi kaydı (WASAPI loopback) | III | ⬜ |
-| 4.2 | Uzun kayıt: önce FLAC sıkıştırma, sonra parçalama | — | ⬜ |
-| 4.4 | Eylem maddesi çıkarıcı (action items + sorumlular) | III | ⬜ |
-| 4.5 | Toplantı özeti ve dışa aktarma | III | ⬜ |
-| 4.6 | Video & podcast özetleyici | III | ⬜ |
+| 4.1 | İki yönlü sistem sesi kaydı (WASAPI loopback) | III | ✅ |
+| 4.2 | Uzun kayıt: önce FLAC sıkıştırma, sonra parçalama | — | ✅ |
+| 4.4 | Eylem maddesi çıkarıcı (action items + sorumlular) | III | ✅ |
+| 4.5 | Toplantı özeti ve dışa aktarma | III | ✅ |
+| 4.6 | Video & podcast özetleyici | III | ✅ |
+
+**Çıktı:** ✅ "Toplantı kaydı" düğmesi mikrofon ve sistem sesini birlikte
+kaydediyor, iki kanalı ayrı ayrı metne çeviriyor, özet ve eylem maddesi
+üretiyor. 4.6 ayrı bir özellik gerektirmedi: loopback zaten YouTube/podcast
+sesini de yakalıyor, aynı düğme onu da özetliyor.
+
+**Ölçülen değerler** (canlı test):
+- 13,6 sn kayıt → STT 2372 ms + LLM 1857 ms → **$0.000112**
+- FLAC kazancı **1,96x** ölçüldü: 25 MB sınırı 14 dakikadan **27 dakikaya** çıktı
+- 27 dakikayı aşan kayıtlar parçalanıyor
+
+**Konuşmacı ayrımının yerine ne kondu**
+
+Diarization kapsam dışıydı, ama mikrofon ile loopback zaten **fiziksel olarak
+ayrı** iki kaynak: biri sen, diğeri karşı taraf. İkisini ayrı çevirip
+`[BEN]` / `[DİĞER KATILIMCILAR]` diye etiketliyoruz. Bu, hiçbir ek servis
+olmadan konuşmacı ayrımının makul bir yaklaşığı. Karşı taraftaki kişileri
+birbirinden **ayıramaz** ve bunu iddia etmiyoruz.
+
+**Faz 4'te yakalanan hatalar:**
+
+| Hata | Nasıl bulundu | Sonucu ne olurdu |
+|---|---|---|
+| **COM iş parçacığı başına başlatılmalı** | Loopback iş parçacığı `0x800401f0 CO_E_NOTINITIALIZED` ile düştü | Sistem sesi kaydı hiç çalışmazdı; ana iş parçacığında çalışan aynı kod arka planda düşüyordu |
+| **13 dakika sessiz sınır** | Hesap: 1,92 MB/dk × 25 MB sınırı | Uzun dikteler sessizce başarısız oluyordu |
+| **Sabit aralıkla kesme** | Tasarım incelemesi | Parçalar kelime ortasından bölünüp iki tarafta da bozuk kelime üretirdi; en sessiz noktadan kesiliyor |
+
+**Doğrulananlar:** Yeniden örnekleyici sınandı — 48 kHz ham ses ile 16 kHz'e
+indirilmiş hâli **birebir aynı** transkripti verdi. Eylem maddesi JSON'u kod
+bloğu sarmalı, araya serpiştirilmiş cümle ve bozuk çıktıya karşı sınandı;
+bozuk çıktıda boş liste dönüyor çünkü uydurma bir görev listesi göstermek hiç
+göstermemekten kötü.
+
+**194 test geçiyor.**
 
 ### Kapsam dışı bırakılanlar
 

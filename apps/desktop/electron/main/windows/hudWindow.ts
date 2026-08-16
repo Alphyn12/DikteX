@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { BrowserWindow, screen } from 'electron'
-import type { DictationState } from '@shared/ipc'
+import type { DictationState, MeetingState } from '@shared/ipc'
 import { loadRenderer } from './mainWindow'
 
 /**
@@ -73,9 +73,29 @@ export function positionHud(window: BrowserWindow): void {
  * HUD'u dikte durumuna göre gösterir, gizler ve odak davranışını ayarlar.
  */
 export function syncHud(window: BrowserWindow, state: DictationState): void {
-  if (window.isDestroyed()) return
+  // Pre-flight, hata ve sessizlik durumları kullanıcıdan karar bekler;
+  // klavyenin HUD'a ulaşması gerekir.
+  const needsFocus =
+    state.status === 'preflight' || state.status === 'error' || state.status === 'silent'
+  applyHudVisibility(window, state.status !== 'idle', needsFocus)
+}
 
-  const visible = state.status !== 'idle'
+/**
+ * Toplantı HUD'u. Dikte HUD'uyla aynı pencereyi paylaşır — ikisi aynı anda
+ * çalışamadığı için (motor da engelliyor) tek pencere yeterli.
+ */
+export function syncMeetingHud(window: BrowserWindow, state: MeetingState): void {
+  // Sonuç ve hata ekranlarında kullanıcı okuyup karar veriyor.
+  const needsFocus = state.status === 'done' || state.status === 'error'
+  applyHudVisibility(window, state.status !== 'idle', needsFocus)
+}
+
+function applyHudVisibility(
+  window: BrowserWindow,
+  visible: boolean,
+  needsFocus: boolean,
+): void {
+  if (window.isDestroyed()) return
 
   if (!visible) {
     if (window.isVisible()) window.hide()
@@ -89,8 +109,6 @@ export function syncHud(window: BrowserWindow, state: DictationState): void {
     window.showInactive()
   }
 
-  // Pre-flight'ta klavye HUD'a gelmeli; diğer durumlarda gelmemeli.
-  const needsFocus = state.status === 'preflight' || state.status === 'error'
   if (needsFocus && !window.isFocused()) {
     window.setFocusable(true)
     window.focus()

@@ -519,3 +519,18 @@
   color: var(--mod-automation-soft);
   cursor: default;
 }
+
+/* Toplantı kaydı sürerken düğme durumu belli olmalı. */
+.recordingButton {
+  border-color: color-mix(in srgb, var(--mod-meeting) 55%, transparent);
+  background: color-mix(in srgb, var(--mod-meeting) 16%, transparent);
+  color: var(--text-primary);
+}
+
+.recordingButton:hover {
+  background: color-mix(in srgb, var(--mod-meeting) 24%, transparent);
+}
+
+.secondaryButton:disabled {
+  opacity: 0.45;
+}

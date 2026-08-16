@@ -1,11 +1,14 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
 import type { EngineSupervisor } from './engine'
 import type { DictationController } from './dictation'
+import type { MeetingController } from './meeting'
 import type { HotkeyRegistration } from './hotkeys'
 import type {
   AudioDeviceList,
   EngineStats,
   Locale,
+  LoopbackDeviceList,
+  MeetingHistoryItem,
   ModeList,
   VaultEntry,
   VocabularyList,
@@ -15,11 +18,18 @@ import { getLocaleStore } from './locale'
 interface IpcDeps {
   engine: EngineSupervisor
   dictation: DictationController
+  meeting: MeetingController
   hotkeys: HotkeyRegistration
   getMainWindow: () => BrowserWindow
 }
 
-export function registerIpc({ engine, dictation, hotkeys, getMainWindow }: IpcDeps): void {
+export function registerIpc({
+  engine,
+  dictation,
+  meeting,
+  hotkeys,
+  getMainWindow,
+}: IpcDeps): void {
   // ── Pencere ────────────────────────────────────────────────────────────
 
   ipcMain.handle('window:minimize', () => {
@@ -61,6 +71,28 @@ export function registerIpc({ engine, dictation, hotkeys, getMainWindow }: IpcDe
   ipcMain.handle('dictation:toggle', (_event, mode?: string) => dictation.toggle(mode))
   ipcMain.handle('dictation:cancel', () => dictation.cancel())
   ipcMain.handle('dictation:paste', (_event, text: string) => dictation.paste(text))
+
+  // ── Toplantı ───────────────────────────────────────────────────────────
+
+  ipcMain.handle('meeting:get-state', () => meeting.getState())
+  ipcMain.handle('meeting:toggle', () => meeting.toggle())
+  ipcMain.handle('meeting:cancel', () => meeting.cancel())
+  ipcMain.handle('meeting:dismiss', () => meeting.dismiss())
+
+  ipcMain.handle('meeting:devices', async (): Promise<LoopbackDeviceList> => {
+    const response = await engine.request<LoopbackDeviceList>({ type: 'meeting:devices' })
+    return {
+      devices: response.devices ?? [],
+      available: response.available ?? false,
+    }
+  })
+
+  ipcMain.handle('meeting:history', async (): Promise<MeetingHistoryItem[]> => {
+    const response = await engine.request<{ items: MeetingHistoryItem[] }>({
+      type: 'meeting:history',
+    })
+    return response.items ?? []
+  })
 
   // ── Modlar ─────────────────────────────────────────────────────────────
 

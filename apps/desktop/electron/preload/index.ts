@@ -30,6 +30,12 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'dictation:paste',
   'audio:list-devices',
   'audio:set-device',
+  'meeting:get-state',
+  'meeting:toggle',
+  'meeting:cancel',
+  'meeting:dismiss',
+  'meeting:devices',
+  'meeting:history',
   'modes:list',
   'vocabulary:list',
   'vocabulary:add',
@@ -44,6 +50,7 @@ const EVENT_CHANNELS = new Set<IpcEventChannel>([
   'window:maximize-changed',
   'app:locale-changed',
   'dictation:changed',
+  'meeting:changed',
 ])
 
 /** Hangi pencerede olduğumuzu HTML dosya adından çıkarıyoruz. */

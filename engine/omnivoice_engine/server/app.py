@@ -347,6 +347,7 @@ async def _handle_message(
         case "stats:get":
             stats = await asyncio.to_thread(context.db.today_stats)
             spend = await asyncio.to_thread(context.db.spend_summary)
+            stats["meetings"] = await asyncio.to_thread(context.db.meeting_count_today)
             await reply(
                 {
                     "type": "stats:get",
