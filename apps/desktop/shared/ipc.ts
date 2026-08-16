@@ -12,6 +12,8 @@ import type {
   EngineStats,
   ModeId,
   ModeList,
+  Snippet,
+  SnippetList,
   VaultEntry,
   VocabularyList,
 } from './dictation'
@@ -43,6 +45,8 @@ export type {
   ModeInfo,
   ModeList,
   OutputProfile,
+  Snippet,
+  SnippetList,
   SpendStats,
   TodayStats,
   VaultEntry,
@@ -120,6 +124,25 @@ export interface IpcInvokeMap {
   'vocabulary:list': { args: []; result: VocabularyList }
   'vocabulary:add': { args: [text: string]; result: VocabularyList }
   'vocabulary:remove': { args: [text: string]; result: VocabularyList }
+
+  // ── Snippet kütüphanesi ────────────────────────────────────────────────
+  'snippets:list': { args: []; result: SnippetList }
+  /**
+   * `added: false` demek "aynı ad zaten var" demek — motor sessizce
+   * yok saymıyor, arayüz bunu kullanıcıya söyleyebilsin diye bildiriyor.
+   */
+  'snippets:add': {
+    args: [name: string, body: string, triggers: string[]]
+    result: SnippetList & { added: boolean }
+  }
+  'snippets:remove': { args: [name: string]; result: SnippetList }
+  /**
+   * Yazılan cümleyle hangi snippet'in tetikleneceğini önceden denemek için.
+   *
+   * Eşleşme bulanık olduğu için bu şart: aksi hâlde kullanıcı ayarını ancak
+   * canlı dikte sırasında sınayabilir.
+   */
+  'snippets:test': { args: [text: string]; result: { match: Snippet | null } }
 
   // ── Mikrofon ───────────────────────────────────────────────────────────
   'audio:list-devices': { args: []; result: AudioDeviceList }

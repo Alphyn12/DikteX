@@ -347,6 +347,22 @@ function Preflight({
         {result.variables.map((name) => (
           <Badge key={name} variant="neutral">{`{${name}}`}</Badge>
         ))}
+        {/*
+          Snippet ve biçim rozetleri pre-flight'ta görünmek zorunda: ikisi de
+          çıktıyı sessizce değiştiriyor. Snippet eşleşmesi bulanık olduğu için
+          yanlış şablon tutabilir, biçim dönüşümü ise yapıştırma anında
+          uygulandığı için önizlemede henüz görünmüyor.
+        */}
+        {result.snippet && (
+          <Badge module="automation" variant="tone">
+            {result.snippet}
+          </Badge>
+        )}
+        {result.pasteFormat && (
+          <Badge module="system" variant="tone">
+            {t(`hud.format.${result.pasteFormat}` as never)}
+          </Badge>
+        )}
         <span className={styles.meta}>
           {result.sttProvider} · {result.llmProvider ?? t('hud.localOnly')}
         </span>

@@ -42,11 +42,19 @@ def build_prompt(
     app_name: str | None = None,
     git_diff: str | None = None,
     git_summary: str | None = None,
+    snippet: str | None = None,
 ) -> Prompt:
     """Katmanları birleştirip istemi kurar."""
     resolved = mode if isinstance(mode, Mode) else get_mode(mode)
 
     parts: list[str] = [_ROLE_GUARD, "", "GÖREVİN:", resolved.instruction]
+
+    if snippet and snippet.strip():
+        # Snippet gövdesi sistem isteminde, sınırlayıcıların DIŞINDA duruyor —
+        # dikte metninin aksine. Fark bilinçli: snippet'i kullanıcı ayarlardan
+        # kendi elleriyle yazdı, yani gerçek bir talimat. Dikte metni ise
+        # mikrofondan geliyor ve talimat sayılmamalı (bkz. `_ROLE_GUARD`).
+        parts += ["", "KULLANICININ KAYITLI ŞABLONU — bu talimata da uy:", snippet.strip()]
 
     # Uygulama profili — modun kendi biçim kuralı varsa eklenmez.
     if resolved.use_app_profile and profile is not None:

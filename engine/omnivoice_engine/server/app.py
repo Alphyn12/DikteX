@@ -29,6 +29,7 @@ from omnivoice_engine.pipeline.dictation import DictationPipeline, DictationStat
 from omnivoice_engine.pipeline.meeting import MeetingPipeline
 from omnivoice_engine.pipeline.modes import MODES
 from omnivoice_engine.storage.db import Database
+from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
 from omnivoice_engine.vault import list_entries
@@ -50,6 +51,7 @@ class EngineContext:
         self.llm = OpenRouterLlm()
         self.db = Database()
         self.vocabulary = Vocabulary.load()
+        self.snippets = SnippetLibrary.load()
         self.budget_usd = settings.budget_usd
 
         #: Bağlı arayüz istemcileri. Olaylar hepsine yayınlanır.
@@ -62,6 +64,7 @@ class EngineContext:
             db=self.db,
             emit=self.broadcast,
             vocabulary=self.vocabulary,
+            snippets=self.snippets,
         )
 
         # Toplantı boru hattı aynı mikrofonu paylaşıyor; ikisi aynı anda
@@ -327,6 +330,49 @@ async def _handle_message(
                     "type": "vocabulary:remove",
                     "removed": removed,
                     **context.vocabulary.to_payload(),
+                }
+            )
+
+        # ── Snippet kütüphanesi ───────────────────────────────────────────
+        case "snippets:list":
+            await reply({"type": "snippets:list", **context.snippets.to_payload()})
+
+        case "snippets:add":
+            added = await asyncio.to_thread(
+                context.snippets.add,
+                str(message.get("name", "")),
+                str(message.get("body", "")),
+                [str(t) for t in message.get("triggers", []) if str(t).strip()],
+            )
+            await reply(
+                {
+                    "type": "snippets:add",
+                    "added": added,
+                    **context.snippets.to_payload(),
+                }
+            )
+
+        case "snippets:remove":
+            removed = await asyncio.to_thread(
+                context.snippets.remove, str(message.get("name", ""))
+            )
+            await reply(
+                {
+                    "type": "snippets:remove",
+                    "removed": removed,
+                    **context.snippets.to_payload(),
+                }
+            )
+
+        case "snippets:test":
+            # Kullanıcı bir cümle yazıp hangi snippet'in tetikleneceğini
+            # görebiliyor. Bulanık eşleşmede bu şart: aksi hâlde ayarı
+            # ancak canlı dikte sırasında sınayabilir.
+            match = context.snippets.find(str(message.get("text", "")))
+            await reply(
+                {
+                    "type": "snippets:test",
+                    "match": match.to_payload() if match else None,
                 }
             )
 

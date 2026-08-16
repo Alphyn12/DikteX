@@ -27,6 +27,7 @@ from omnivoice_engine.context.variables import VariableContext, inject, mentions
 from omnivoice_engine.integrations.git import read_context_for_window
 from omnivoice_engine.integrations.screen import Region, ScreenCaptureError, capture_region
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
+from omnivoice_engine.output.formats import PasteFormat, apply_format, detect_format
 from omnivoice_engine.output.paste import PasteError, paste_text, read_clipboard_text
 from omnivoice_engine.output.window import WindowInfo, get_foreground_window
 from omnivoice_engine.pipeline.fillers import strip_fillers
@@ -35,6 +36,7 @@ from omnivoice_engine.pipeline.prompts import build_prompt, sanitize_output
 from omnivoice_engine.pipeline.vision_prompts import screen_question_prompt
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database, DictationRecord
+from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
 
@@ -83,6 +85,14 @@ class DictationResult:
     selection_chars: int = 0
     #: Doldurulan dinamik değişkenler.
     variables: tuple[str, ...] = ()
+    #: Kullanıcının sesle istediği yapıştırma biçimi (Properties V.7).
+    paste_format: PasteFormat | None = None
+    #: Tetiklenen snippet'in adı — arayüzde rozet olarak gösterilir.
+    #:
+    #: Göstermek şart: eşleşme bulanık olduğu için yanlış şablon tetiklenebilir
+    #: ve kullanıcı bunu ancak çıktıya bakınca anlar. Adı pre-flight'ta
+    #: görürse hatayı yapıştırmadan önce yakalar.
+    snippet: str | None = None
 
     def to_payload(self) -> dict[str, Any]:
         return {
@@ -107,6 +117,8 @@ class DictationResult:
             "profile": self.profile,
             "selectionChars": self.selection_chars,
             "variables": list(self.variables),
+            "pasteFormat": self.paste_format.value if self.paste_format else None,
+            "snippet": self.snippet,
         }
 
 
@@ -140,6 +152,7 @@ class DictationPipeline:
         db: Database,
         emit: EventSink,
         vocabulary: Vocabulary | None = None,
+        snippets: SnippetLibrary | None = None,
     ) -> None:
         self._mic = mic
         self._stt = stt
@@ -147,6 +160,7 @@ class DictationPipeline:
         self._db = db
         self._emit = emit
         self._vocabulary = vocabulary
+        self._snippets = snippets
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
@@ -361,6 +375,13 @@ class DictationPipeline:
                     {"type": "dictation:warning", "message": "Bekleyen git değişikliği bulunamadı"}
                 )
 
+        # Snippet tetikleme (Properties V.3). HAM metinden değil, dolgu
+        # temizlenmiş metinden aranıyor: "şey, kod inceleme yap" içindeki
+        # "şey" eşleşme oranını gereksiz yere düşürürdü.
+        snippet = self._snippets.find(local.text) if self._snippets else None
+        if snippet is not None:
+            log.info("Snippet tetiklendi: %s", snippet.name)
+
         variables = VariableContext(
             app_name=session.profile.display_name
             or (session.target.app_name if session.target else ""),
@@ -379,6 +400,7 @@ class DictationPipeline:
                 "sttMs": transcript.usage.latency_ms,
                 "selectionChars": len(selection),
                 "variables": list(injected.used),
+                "snippet": snippet.name if snippet else None,
             }
         )
 
@@ -410,6 +432,7 @@ class DictationPipeline:
                         selection=selection,
                         git_diff=git_diff,
                         git_summary=git_summary,
+                        snippet=snippet.body if snippet else None,
                     )
                 completion = await self._llm.complete(prompt, model=mode.model)
                 final_text = sanitize_output(completion.text) or injected.text
@@ -454,6 +477,10 @@ class DictationPipeline:
             cost_usd=cost,
             audio_seconds=clip_seconds,
             target=session.target,
+            # Biçim isteği HAM metinden okunur: LLM temizlerken "json olarak"
+            # ifadesini çıkarmış olabilir ama kullanıcı onu söylemişti.
+            paste_format=detect_format(transcript.text),
+            snippet=snippet.name if snippet else None,
             mode=mode.id.value,
             profile=session.profile.profile.value,
             app_display_name=session.profile.display_name or None,
@@ -482,6 +509,11 @@ class DictationPipeline:
                 cost_usd=result.cost_usd,
             )
         )
+
+        if snippet is not None and self._snippets is not None:
+            # Sayaç diske yazıyor; olay döngüsünü bekletmesin.
+            await asyncio.to_thread(self._snippets.mark_used, snippet.name)
+
         return result
 
     async def paste(self, text: str | None = None) -> None:
@@ -492,6 +524,11 @@ class DictationPipeline:
 
         # Kullanıcı önizlemede düzenlemiş olabilir.
         content = text if text is not None else result.final_text
+
+        # Biçim dönüşümü yapıştırma anında uygulanır, üretim anında değil:
+        # kullanıcı pre-flight'ta metni düzenlerse dönüşüm ona da uygulanmalı.
+        if result.paste_format is not None:
+            content = apply_format(content, result.paste_format)
 
         try:
             # Yapıştırma bloklayıcı Win32 çağrıları içeriyor; olay döngüsünü

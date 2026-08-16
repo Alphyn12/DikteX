@@ -11,6 +11,8 @@ import type {
   MeetingHistoryItem,
   ModeList,
   VaultEntry,
+  Snippet,
+  SnippetList,
   VocabularyList,
 } from '@shared/ipc'
 import { getLocaleStore } from './locale'
@@ -127,6 +129,24 @@ export function registerIpc({
 
   ipcMain.handle('vocabulary:remove', (_event, text: string) =>
     engine.request<VocabularyList>({ type: 'vocabulary:remove', text }),
+  )
+
+  ipcMain.handle('snippets:list', () =>
+    engine.request<SnippetList>({ type: 'snippets:list' }),
+  )
+
+  ipcMain.handle(
+    'snippets:add',
+    (_event, name: string, body: string, triggers: string[]) =>
+      engine.request<SnippetList>({ type: 'snippets:add', name, body, triggers }),
+  )
+
+  ipcMain.handle('snippets:remove', (_event, name: string) =>
+    engine.request<SnippetList>({ type: 'snippets:remove', name }),
+  )
+
+  ipcMain.handle('snippets:test', (_event, text: string) =>
+    engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
   )
 
   // ── Mikrofon ───────────────────────────────────────────────────────────

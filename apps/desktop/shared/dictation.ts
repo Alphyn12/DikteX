@@ -59,7 +59,25 @@ export interface DictationResult {
   selectionChars: number
   /** Doldurulan dinamik değişkenler ({SelectedText} gibi). */
   variables: string[]
+  /** Sesle istenen yapıştırma biçimi; `null` ise dönüşüm yok. */
+  pasteFormat: PasteFormat | null
+  /**
+   * Tetiklenen snippet'in adı.
+   *
+   * Pre-flight'ta gösterilmesi şart: eşleşme bulanık olduğu için yanlış
+   * şablon tetiklenebilir ve kullanıcı bunu yalnız çıktıya bakarak anlar.
+   */
+  snippet: string | null
 }
+
+/** Yapıştırma biçimi — motordaki `PasteFormat` ile birebir. */
+export type PasteFormat =
+  | 'plain'
+  | 'markdown'
+  | 'plain_from_markdown'
+  | 'json_string'
+  | 'html'
+  | 'code_block'
 
 /** Bir dikte modunun tanımı. */
 export interface ModeInfo {
@@ -96,6 +114,21 @@ export interface VocabularyList {
   terms: VocabularyTerm[]
   confirmedCount: number
   suggestionCount: number
+}
+
+// ── Snippet kütüphanesi ─────────────────────────────────────────────────
+
+export interface Snippet {
+  name: string
+  body: string
+  /** Ada ek olarak eşleşen anahtar kelimeler. */
+  triggers: string[]
+  used: number
+}
+
+export interface SnippetList {
+  path: string
+  snippets: Snippet[]
 }
 
 /** HUD'un çizdiği tüm durum. */

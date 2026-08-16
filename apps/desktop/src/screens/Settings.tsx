@@ -13,6 +13,7 @@ import {
   TrainingBadge,
 } from '../components/primitives'
 import { MicrophonePicker } from '../components/MicrophonePicker'
+import { SnippetEditor } from '../components/SnippetEditor'
 import { VocabularyEditor } from '../components/VocabularyEditor'
 import { useModes } from '../hooks/useModes'
 import { useDictation } from '../hooks/useDictation'
@@ -46,6 +47,7 @@ export function Settings(): React.JSX.Element {
         <aside className={styles.aside}>
           <MicrophonePicker />
           <VocabularyEditor />
+          <SnippetEditor />
           <ChordedShortcut />
           <ApiVault />
           <LocalServer />

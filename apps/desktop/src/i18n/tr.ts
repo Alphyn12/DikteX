@@ -220,12 +220,38 @@ export const tr = {
   'profile.browser': 'tarayıcı',
   'profile.plain': 'düz metin',
   'table.shortcutConflict': 'çakışma',
+  'hud.format.plain': 'düz',
+  'hud.format.markdown': 'Markdown',
+  'hud.format.plain_from_markdown': 'düz metne indir',
+  'hud.format.json_string': 'JSON dizesi',
+  'hud.format.html': 'HTML',
+  'hud.format.code_block': 'kod bloğu',
+
   'vocab.title': 'ÖZEL SÖZLÜK',
   'vocab.add': 'Terim ekle',
   'vocab.placeholder': 'yeni terim',
   'vocab.empty': 'Henüz terim yok',
   'vocab.count': '{count} terim',
   'vocab.hint': 'Bu terimler hem konuşma tanımaya hem de metin işlemeye iletilir',
+
+  'snippets.title': 'ŞABLON KÜTÜPHANESİ',
+  'snippets.count': '{count} şablon',
+  'snippets.name': 'Şablon adı',
+  'snippets.namePlaceholder': 'şablon adı — konuşurken bunu söyle',
+  'snippets.body': 'Şablon metni',
+  'snippets.bodyPlaceholder': 'Şu kodu incele ve iyileştirme öner:',
+  'snippets.triggers': 'Ek tetikleyiciler',
+  'snippets.triggersPlaceholder': 'ek tetikleyiciler, virgülle ayır (isteğe bağlı)',
+  'snippets.duplicate': 'Bu adda bir şablon zaten var',
+  'snippets.empty': 'Henüz şablon yok',
+  'snippets.used': '{count}×',
+  'snippets.try': 'Dene',
+  'snippets.tryPlaceholder': 'bir cümle yaz, hangi şablonun tutacağını gör',
+  'snippets.tryHit': '“{name}” tetiklenir',
+  'snippets.tryMiss': 'Hiçbir şablon tetiklenmez',
+  'snippets.hint':
+    'Şablon adı konuşmanda geçince kalıp isteme eklenir. Eşleşme esnektir: ' +
+    '“kod inceleme” kaydı “kod incelemesi yap” ile de tutar.',
 
   // ── Genel ────────────────────────────────────────────────────────────────
   'lang.switch': 'Dil',

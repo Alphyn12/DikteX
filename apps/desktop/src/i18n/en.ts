@@ -213,12 +213,38 @@ export const en: Messages = {
   'profile.browser': 'browser',
   'profile.plain': 'plain text',
   'table.shortcutConflict': 'conflict',
+  'hud.format.plain': 'plain',
+  'hud.format.markdown': 'Markdown',
+  'hud.format.plain_from_markdown': 'strip to plain',
+  'hud.format.json_string': 'JSON string',
+  'hud.format.html': 'HTML',
+  'hud.format.code_block': 'code block',
+
   'vocab.title': 'CUSTOM VOCABULARY',
   'vocab.add': 'Add term',
   'vocab.placeholder': 'new term',
   'vocab.empty': 'No terms yet',
   'vocab.count': '{count} terms',
   'vocab.hint': 'These terms are passed to both speech recognition and text processing',
+
+  'snippets.title': 'TEMPLATE LIBRARY',
+  'snippets.count': '{count} templates',
+  'snippets.name': 'Template name',
+  'snippets.namePlaceholder': 'template name — say this while dictating',
+  'snippets.body': 'Template text',
+  'snippets.bodyPlaceholder': 'Review this code and suggest improvements:',
+  'snippets.triggers': 'Extra triggers',
+  'snippets.triggersPlaceholder': 'extra triggers, comma separated (optional)',
+  'snippets.duplicate': 'A template with this name already exists',
+  'snippets.empty': 'No templates yet',
+  'snippets.used': '{count}×',
+  'snippets.try': 'Test',
+  'snippets.tryPlaceholder': 'type a sentence to see which template matches',
+  'snippets.tryHit': '“{name}” will trigger',
+  'snippets.tryMiss': 'No template will trigger',
+  'snippets.hint':
+    'When a template name appears in your speech, the template is added to ' +
+    'the prompt. Matching is fuzzy — “code review” also matches “review this code”.',
 
   // ── Common ───────────────────────────────────────────────────────────────
   'lang.switch': 'Language',

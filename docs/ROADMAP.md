@@ -251,11 +251,11 @@ Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
 
 | # | Madde | Kaynak | Durum |
 |---|---|---|---|
-| 5.1 | Bölgesel ekran gözü (Region OCR + Vision) | V | ⬜ |
-| 5.2 | Snippet & şablon kütüphanesi | V | ⬜ |
-| 5.3 | Git commit mesajı üretici (`git diff` → conventional commit) | V | ⬜ |
+| 5.1 | Bölgesel ekran gözü (Region OCR + Vision) | V | ✅ |
+| 5.2 | Snippet & şablon kütüphanesi | V | ✅ |
+| 5.3 | Git commit mesajı üretici (`git diff` → conventional commit) | V | ✅ |
 | 5.4 | Sesli dosya & kod oluşturucu | V | ⬜ |
-| 5.5 | Biçimlendirilmiş yapıştırma motoru (Markdown / JSON / HTML / düz metin) | V | ⬜ |
+| 5.5 | Biçimlendirilmiş yapıştırma motoru (Markdown / JSON / HTML / düz metin) | V | ✅ |
 | 5.6 | Otomatik makro & API tetikleyici (Notion, webhook) | V | ⬜ |
 | 5.7 | Görsel prompt akış editörü (node/tree canvas) | IV | ⬜ |
 
@@ -271,6 +271,32 @@ Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
 | 6.4 | Yerel REST / Webhook sunucusu (`localhost:8756`) | VI | ⬜ |
 | 6.5 | Otomatik başlatma, güncelleme kontrolü | — | ⬜ |
 | 6.6 | Windows kurulum paketi (installer) | — | ⬜ |
+
+### 6.6 hakkında — dağıtımın bilinen riskleri
+
+Uygulama **iki süreç** olduğu için tek adımlı bir paketleme yok:
+
+| Parça | Araç | Risk |
+|---|---|---|
+| Electron arayüz | `electron-builder` → NSIS `.exe` | Düşük, standart iş |
+| Python motor | `PyInstaller` → tek dosya `.exe` | **Yüksek** |
+
+Python tarafındaki risk somut: `sounddevice` (PortAudio DLL), `soundcard`,
+`keyring`'in Windows arka ucu ve `pythoncom` — hepsi yerel DLL taşıyor ve
+PyInstaller bunları düzenli olarak kaçırıyor. **Geliştirme makinesinde
+çalışması hiçbir şey kanıtlamaz**; Python'un kurulu OLMADIĞI temiz bir
+makinede sınanması şart. Bu maddeyi "bir günde biter" diye planlamıyoruz.
+
+Üç davranış kararı, gerekçeleriyle:
+
+1. **API anahtarları kuruluma gömülmez.** Anahtarlar Windows Kimlik Bilgisi
+   Yöneticisi'nde, makineye özel duruyor; yeni bilgisayarda yeniden girilir.
+   Gömmek, kurulum dosyasını eline geçiren herkese bakiyeyi açardı.
+2. **Exe başkasına verilirse sahibinin bakiyesi harcanır.** Uygulama tek bir
+   OpenRouter anahtarı kullanıyor. Dağıtım hedefi olursa "her kullanıcı kendi
+   anahtarını girer" akışı ayrıca tasarlanmalı — şu an yok.
+3. **İmzasız exe SmartScreen uyarısı verir.** Kaldırmanın tek yolu ücretli kod
+   imzalama sertifikası. Kişisel kullanımda sorun değil, dağıtımda sorun.
 
 ---
 
