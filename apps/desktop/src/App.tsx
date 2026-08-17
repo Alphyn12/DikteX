@@ -3,6 +3,7 @@ import type { AppView, EngineStatus, Locale } from '@shared/ipc'
 import { TitleBar } from './components/TitleBar'
 import { Sidebar } from './components/Sidebar'
 import { Panel } from './screens/Panel'
+import { History } from './screens/History'
 import { Settings } from './screens/Settings'
 import { I18nProvider, useI18n } from './i18n/useI18n'
 import { useEngine } from './hooks/useEngine'
@@ -34,7 +35,11 @@ function Shell(): React.JSX.Element {
 
       <div className={styles.body}>
         <Sidebar view={view} onNavigate={setView} vaultKeyCount={configuredKeys} />
-        <main className={styles.content}>{view === 'panel' ? <Panel /> : <Settings />}</main>
+        <main className={styles.content}>
+          {view === 'panel' && <Panel onNavigate={setView} />}
+          {view === 'history' && <History />}
+          {view === 'settings' && <Settings />}
+        </main>
       </div>
 
       <StatusBar />

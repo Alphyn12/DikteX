@@ -238,6 +238,10 @@
   border: 0;
   background: transparent;
   padding: 0;
+  cursor: default;
+  border: 0;
+  background: transparent;
+  padding: 0;
   font: var(--text-caption);
   color: var(--text-label);
   cursor: default;

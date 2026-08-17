@@ -10,6 +10,7 @@ export const en: Messages = {
 
   // ── Navigation ───────────────────────────────────────────────────────────
   'nav.panel': 'Dashboard',
+  'nav.history': 'History',
   'nav.settings': 'Settings',
   'nav.modules': 'MODULES',
   'nav.label': 'Main navigation',
@@ -136,6 +137,17 @@ export const en: Messages = {
   'aside.undo': 'Undo',
 
   // ── Settings ─────────────────────────────────────────────────────────────
+  'history.eyebrow': 'HISTORY',
+  'history.title': 'Search dictations',
+  'history.subtitle': 'Search runs entirely locally — SQLite full-text index, nothing leaves the device',
+  'history.search': 'Search history',
+  'history.placeholder': 'search…',
+  'history.clear': 'Clear search',
+  'history.searching': 'searching…',
+  'history.results': '{count} records',
+  'history.empty': 'No dictations yet',
+  'history.noMatch': 'No matching records',
+
   'settings.eyebrow': 'SETTINGS',
   'settings.title': 'Models & Shortcuts',
   'settings.subtitle': 'Each mode carries its own model, provider and global shortcut',

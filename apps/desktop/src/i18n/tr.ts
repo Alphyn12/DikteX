@@ -16,6 +16,7 @@ export const tr = {
 
   // ── Gezinme ──────────────────────────────────────────────────────────────
   'nav.panel': 'Panel',
+  'nav.history': 'Geçmiş',
   'nav.settings': 'Ayarlar',
   'nav.modules': 'MODÜLLER',
   'nav.label': 'Ana gezinme',
@@ -143,6 +144,17 @@ export const tr = {
   'aside.undo': 'Geri al',
 
   // ── Ayarlar ──────────────────────────────────────────────────────────────
+  'history.eyebrow': 'GEÇMİŞ',
+  'history.title': 'Dikte Arama',
+  'history.subtitle': 'Arama tamamen yerel — SQLite tam metin dizini, hiçbir şey buluta gitmez',
+  'history.search': 'Geçmişte ara',
+  'history.placeholder': 'kelime ara… (Türkçe karakter şart değil)',
+  'history.clear': 'Aramayı temizle',
+  'history.searching': 'aranıyor…',
+  'history.results': '{count} kayıt',
+  'history.empty': 'Henüz dikte yok',
+  'history.noMatch': 'Eşleşen kayıt bulunamadı',
+
   'settings.eyebrow': 'AYARLAR',
   'settings.title': 'Modeller & Kısayollar',
   'settings.subtitle': 'Her mod kendi modelini, sağlayıcısını ve global kısayolunu taşır',

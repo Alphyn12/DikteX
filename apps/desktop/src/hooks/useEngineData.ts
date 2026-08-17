@@ -1,29 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { EngineStats } from '@shared/ipc'
+import type { EngineStats, HistoryRow } from '@shared/ipc'
 import { useDictation } from './useDictation'
 import { useEngine } from './useEngine'
 
-/** Motordan gelen bir dikte kaydı (SQLite satırı). */
-export interface HistoryItem {
-  id: number
-  created_at: string
-  raw_text: string
-  final_text: string
-  app_name: string | null
-  window_title: string | null
-  language: string | null
-  stt_provider: string | null
-  stt_model: string | null
-  llm_provider: string | null
-  llm_model: string | null
-  audio_seconds: number
-  fillers_removed: number
-  stt_ms: number
-  llm_ms: number
-  total_ms: number
-  cost_usd: number
-  pasted: number
-}
+/**
+ * Motordan gelen bir dikte kaydı.
+ *
+ * Paylaşılan sözleşmeden geliyor. Burada ayrı bir kopya vardı ve çağrı
+ * `as unknown as` ile dönüştürülüyordu; o çift dönüşüm tip sistemini tam da
+ * işe yarayacağı yerde devre dışı bırakıyordu. `history:search` dönüş şekli
+ * değiştiğinde derleme sessiz kaldı, hata ancak çalışma anında görünecekti.
+ */
+export type HistoryItem = HistoryRow
 
 interface EngineData {
   stats: EngineStats | null
@@ -60,7 +48,7 @@ export function useEngineData(): EngineData {
         window.omnivoice.invoke('history:search', ''),
       ])
       setStats(nextStats)
-      setHistory(nextHistory as unknown as HistoryItem[])
+      setHistory(nextHistory.items)
       setError(null)
     } catch (cause) {
       // Motor bağlı değilse veri yok; panel boş durumunu gösterir.

@@ -272,7 +272,7 @@ Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
 | # | Madde | Kaynak | Durum |
 |---|---|---|---|
 | 6.1 | Hassas veri maskeleme (PII: TC kimlik, kart, IBAN, API anahtarı) | VI | ✅ |
-| 6.2 | Prompt geçmişi arama motoru (tam metin arama) | VI | ⬜ |
+| 6.2 | Prompt geçmişi arama motoru (tam metin arama) | VI | ✅ |
 | 6.3 | Sesli not defteri (Daily Scratchpad) + gün sonu derleme | VI | ❌ kapsam dışı |
 | 6.4 | Yerel REST / Webhook sunucusu (`localhost:8756`) | VI | ❌ kapsam dışı |
 | 6.5 | Otomatik başlatma (güncelleme kontrolü kapsam dışı) | — | ⬜ |
@@ -356,7 +356,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 
 | # | Madde | Not | Durum |
 |---|---|---|---|
-| 6.2 | Prompt geçmişi arama (FTS5) | Altındaki üç madde buna bağımlı, o yüzden başta. | ⬜ |
+| 6.2 | Prompt geçmişi arama (FTS5) | Altındaki üç madde buna bağımlı, o yüzden başta. | ✅ |
 | 7.12 | Geçmişten yeniden yapıştır | Veri SQLite'ta duruyor, düğme yok. | ⬜ |
 | 7.13 | Sesli geçmiş arama | "geçen hafta Docker hakkında ne demiştim". | ⬜ |
 | 7.14 | Geçmişi dışa aktarma (Markdown / JSON) | Veri sahipliği. | ⬜ |

@@ -27,6 +27,11 @@ export function Sidebar({
     <nav className={styles.sidebar} aria-label={t('nav.label')}>
       <NavItem label={t('nav.panel')} active={view === 'panel'} onClick={() => onNavigate('panel')} />
       <NavItem
+        label={t('nav.history')}
+        active={view === 'history'}
+        onClick={() => onNavigate('history')}
+      />
+      <NavItem
         label={t('nav.settings')}
         active={view === 'settings'}
         onClick={() => onNavigate('settings')}

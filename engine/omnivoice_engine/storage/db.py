@@ -19,7 +19,27 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+#: Türkçe'ye özgü, Unicode'un katlamadığı harf çiftleri.
+#:
+#: FTS5'in `remove_diacritics 2` ayarı ö→o, ü→u, ç→c, ş→s, ğ→g yapıyor —
+#: bunlar aksanlı harfler. Ama **ı** (U+0131) aksanlı bir i değil, ayrı bir
+#: harf; Unicode onu i'ye katlamaz. Aynı şekilde **İ** (U+0130) küçültülünce
+#: i + birleşen nokta veriyor.
+#:
+#: Ölçtük: "veritabanı" kayıtlıyken "veritabani" araması 0 sonuç veriyordu.
+#: Türkçe klavyesi olmayan biri tam da öyle yazar.
+_FOLD_MAP = str.maketrans({"ı": "i", "İ": "i", "̇": ""})
+
+
+def search_fold(text: str) -> str:
+    """Aramada kullanılan katlanmış biçim.
+
+    Yalnız FTS5'in kendi başına yapamadığını yapıyor; aksan temizliğini
+    tokenizer'a bırakıyoruz.
+    """
+    return text.lower().translate(_FOLD_MAP)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS dictations (
@@ -41,7 +61,14 @@ CREATE TABLE IF NOT EXISTS dictations (
     llm_ms          INTEGER NOT NULL DEFAULT 0,
     total_ms        INTEGER NOT NULL DEFAULT 0,
     cost_usd        REAL    NOT NULL DEFAULT 0,
-    pasted          INTEGER NOT NULL DEFAULT 0
+    pasted          INTEGER NOT NULL DEFAULT 0,
+    -- Aramada kullanılan katlanmış metin (bkz. `search_fold`).
+    --
+    -- FTS5'in `remove_diacritics 2` ayarı ö→o, ü→u, ş→s yapıyor ama Türkçe
+    -- **ı** ayrı bir harf, aksanlı bir i değil — Unicode onu katlamıyor.
+    -- Ölçtük: "veritabanı" kayıtlıyken "veritabani" araması 0 sonuç
+    -- veriyordu. Türkçe klavyesi olmayan biri tam da öyle yazar.
+    folded          TEXT    NOT NULL DEFAULT ''
 );
 
 CREATE INDEX IF NOT EXISTS idx_dictations_created
@@ -53,26 +80,27 @@ CREATE VIRTUAL TABLE IF NOT EXISTS dictations_fts USING fts5 (
     raw_text,
     final_text,
     app_name,
+    folded,
     content='dictations',
     content_rowid='id',
     tokenize='unicode61 remove_diacritics 2'
 );
 
 CREATE TRIGGER IF NOT EXISTS dictations_ai AFTER INSERT ON dictations BEGIN
-    INSERT INTO dictations_fts (rowid, raw_text, final_text, app_name)
-    VALUES (new.id, new.raw_text, new.final_text, new.app_name);
+    INSERT INTO dictations_fts (rowid, raw_text, final_text, app_name, folded)
+    VALUES (new.id, new.raw_text, new.final_text, new.app_name, new.folded);
 END;
 
 CREATE TRIGGER IF NOT EXISTS dictations_ad AFTER DELETE ON dictations BEGIN
-    INSERT INTO dictations_fts (dictations_fts, rowid, raw_text, final_text, app_name)
-    VALUES ('delete', old.id, old.raw_text, old.final_text, old.app_name);
+    INSERT INTO dictations_fts (dictations_fts, rowid, raw_text, final_text, app_name, folded)
+    VALUES ('delete', old.id, old.raw_text, old.final_text, old.app_name, old.folded);
 END;
 
 CREATE TRIGGER IF NOT EXISTS dictations_au AFTER UPDATE ON dictations BEGIN
-    INSERT INTO dictations_fts (dictations_fts, rowid, raw_text, final_text, app_name)
-    VALUES ('delete', old.id, old.raw_text, old.final_text, old.app_name);
-    INSERT INTO dictations_fts (rowid, raw_text, final_text, app_name)
-    VALUES (new.id, new.raw_text, new.final_text, new.app_name);
+    INSERT INTO dictations_fts (dictations_fts, rowid, raw_text, final_text, app_name, folded)
+    VALUES ('delete', old.id, old.raw_text, old.final_text, old.app_name, old.folded);
+    INSERT INTO dictations_fts (rowid, raw_text, final_text, app_name, folded)
+    VALUES (new.id, new.raw_text, new.final_text, new.app_name, new.folded);
 END;
 
 -- Sağlayıcı çağrısı başına harcama. Dikte kaydı silinse de maliyet geçmişi
@@ -177,7 +205,21 @@ class Database:
 
     def _migrate(self) -> None:
         with self._lock:
+            upgraded = self._upgrade_to_v2()
             self._conn.executescript(_SCHEMA)
+
+            if upgraded:
+                # FTS tablosu şema betiğiyle YENİ kuruldu ve boş. İçeriği
+                # asıl tablodan yeniden üretmek zorundayız; yoksa göçten
+                # sonra eski kayıtlar aranamaz hâle gelir.
+                #
+                # Bu satır bir testle korunuyor: ilk yazımda unutulmuştu ve
+                # göç, kullanıcının tüm geçmişini aramanın dışında bırakıyordu.
+                self._conn.execute(
+                    "INSERT INTO dictations_fts (dictations_fts) VALUES ('rebuild')"
+                )
+                log.info("Arama dizini yeniden üretildi")
+
             self._conn.execute(
                 "INSERT INTO meta (key, value) VALUES ('schema_version', ?) "
                 "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -185,6 +227,66 @@ class Database:
             )
             self._conn.commit()
         log.info("Veritabanı hazır: %s", self.path)
+
+    def _upgrade_to_v2(self) -> bool:
+        """v1 → v2: aramaya katlanmış metin sütunu ekler.
+
+        Yükseltme yapıldıysa `True` döner; çağıran taraf FTS dizinini yeniden
+        üretmek zorunda.
+
+        Şema betiği `IF NOT EXISTS` kullandığı için var olan tabloları
+        değiştirmiyor; sütun ve FTS tablosu burada elle yükseltiliyor.
+
+        Yükseltme **sessizce atlanmıyor**: başarısız olursa arama yalnız
+        Türkçe ı/i durumunda eksik çalışır, uygulama çalışmaya devam eder.
+        """
+        try:
+            tables = {
+                row["name"]
+                for row in self._conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type IN ('table','view')"
+                )
+            }
+            if "dictations" not in tables:
+                return False  # Yeni veritabanı; şema betiği doğrusunu kuracak.
+
+            columns = {
+                row["name"] for row in self._conn.execute("PRAGMA table_info(dictations)")
+            }
+            if "folded" in columns:
+                return False  # Zaten yükseltilmiş.
+
+            log.info("Veritabanı v2'ye yükseltiliyor (arama katlaması)")
+            self._conn.execute(
+                "ALTER TABLE dictations ADD COLUMN folded TEXT NOT NULL DEFAULT ''"
+            )
+
+            # Eski kayıtları doldur. Tetikleyiciler FTS'i güncelleyecek, ama
+            # FTS tablosu eski sütun düzeninde olduğu için önce onu atıyoruz.
+            self._conn.execute("DROP TRIGGER IF EXISTS dictations_ai")
+            self._conn.execute("DROP TRIGGER IF EXISTS dictations_ad")
+            self._conn.execute("DROP TRIGGER IF EXISTS dictations_au")
+            self._conn.execute("DROP TABLE IF EXISTS dictations_fts")
+
+            rows = self._conn.execute(
+                "SELECT id, raw_text, final_text, app_name FROM dictations"
+            ).fetchall()
+            for row in rows:
+                self._conn.execute(
+                    "UPDATE dictations SET folded = ? WHERE id = ?",
+                    (
+                        search_fold(
+                            f"{row['raw_text']} {row['final_text']} {row['app_name'] or ''}"
+                        ),
+                        row["id"],
+                    ),
+                )
+            self._conn.commit()
+            log.info("Yükseltme tamam: %d kayıt katlandı", len(rows))
+            return True
+        except sqlite3.Error:
+            log.warning("Veritabanı yükseltmesi başarısız", exc_info=True)
+            return False
 
     def close(self) -> None:
         with self._lock:
@@ -201,8 +303,8 @@ class Database:
                     created_at, raw_text, final_text, mode, app_name, window_title,
                     language, stt_provider, stt_model, llm_provider, llm_model,
                     audio_seconds, fillers_removed, stt_ms, llm_ms, total_ms,
-                    cost_usd, pasted
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    cost_usd, pasted, folded
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,
                 (
                     now,
@@ -223,6 +325,9 @@ class Database:
                     record.total_ms,
                     record.cost_usd,
                     int(record.pasted),
+                    search_fold(
+                        f"{record.raw_text} {record.final_text} {record.app_name or ''}"
+                    ),
                 ),
             )
             self._conn.commit()
@@ -249,7 +354,9 @@ class Database:
 
         # FTS5 sorgu sözdizimindeki özel karakterler kullanıcı metninde
         # olabilir; tırnak içine alıp önek eşleşmesi ekliyoruz.
-        escaped = query.replace('"', '""')
+        # Sorgu da katlanıyor: dizin katlanmış metni taşıyor, sorgu
+        # taşımazsa "veritabani" araması "veritabanı" kaydını bulamaz.
+        escaped = search_fold(query).replace('"', '""')
         fts_query = f'"{escaped}"*'
 
         with self._lock:

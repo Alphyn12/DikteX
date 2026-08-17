@@ -1,4 +1,4 @@
-import type { EngineStats } from '@shared/ipc'
+import type { AppView, EngineStats } from '@shared/ipc'
 import { useI18n } from '../i18n/useI18n'
 import { getContent, type ModuleId } from '../mock/data'
 import { QueueCard } from '../components/QueueCard'
@@ -16,7 +16,12 @@ import styles from './Panel.module.css'
  * Sağ sütundaki action items / not defteri / sözlük kartları hâlâ örnek
  * veriyle çalışıyor; onların kaynağı Faz 4 ve Faz 6'da bağlanacak.
  */
-export function Panel(): React.JSX.Element {
+export function Panel({
+  onNavigate,
+}: {
+  /** Geçmiş ekranına geçiş — "Tümü" bağlantısı için. */
+  onNavigate?: (view: AppView) => void
+}): React.JSX.Element {
   const { t, locale, formatDate } = useI18n()
   const content = getContent(locale)
   const { stats, history, error } = useEngineData()
@@ -53,7 +58,7 @@ export function Panel(): React.JSX.Element {
         <div className={styles.main}>
           <Stats stats={stats} />
           <EngineStrip stats={stats} />
-          <Feed items={history} error={error} />
+          <Feed items={history} error={error} onNavigate={onNavigate} />
         </div>
 
         <aside className={styles.aside}>
@@ -218,9 +223,11 @@ function EngineStrip({ stats }: { stats: EngineStats | null }): React.JSX.Elemen
 function Feed({
   items,
   error,
+  onNavigate,
 }: {
   items: HistoryItem[]
   error: string | null
+  onNavigate?: (view: AppView) => void
 }): React.JSX.Element {
   const { t, formatNumber } = useI18n()
 
@@ -229,7 +236,15 @@ function Feed({
       <div className={styles.feedHeader}>
         <h2 className={styles.feedTitle}>{t('feed.title')}</h2>
         <span className={styles.rule} />
-        <span className={styles.feedAll}>{t('feed.viewAll')}</span>
+        {/* Tıklanabilir görünüp hiçbir şey yapmayan bir metin bırakmıyoruz:
+            artık gerçek bir arama ekranı var. */}
+        <button
+          type="button"
+          className={styles.feedAll}
+          onClick={() => onNavigate?.('history')}
+        >
+          {t('feed.viewAll')}
+        </button>
       </div>
 
       <div className={styles.feedList}>

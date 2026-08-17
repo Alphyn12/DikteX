@@ -1,0 +1,150 @@
+/* Geçmiş arama ekranı (Faz 6.2). */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-5) var(--space-5) 0;
+}
+
+.header {
+  flex: none;
+}
+
+.eyebrow {
+  font: var(--mono-tag);
+  color: var(--text-faint);
+  letter-spacing: 0.08em;
+}
+
+.title {
+  margin-top: 4px;
+  font: var(--text-title);
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin-top: 4px;
+  font: var(--text-caption);
+  color: var(--text-subtle);
+}
+
+.searchRow {
+  flex: none;
+  position: relative;
+  margin-top: var(--space-4);
+}
+
+.search {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  background: rgba(0, 0, 0, 0.24);
+  color: var(--text-primary);
+  font: 500 13px/1 var(--font-ui);
+  outline: none;
+}
+
+.search:focus {
+  border-color: color-mix(in srgb, var(--mod-audio) 60%, transparent);
+}
+
+.search::placeholder {
+  color: var(--text-faint);
+}
+
+.clear {
+  position: absolute;
+  inset-inline-end: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  padding: 0 4px;
+  color: var(--text-subtle);
+  font-size: 16px;
+  line-height: 1;
+  cursor: default;
+}
+
+.clear:hover {
+  color: var(--text-primary);
+}
+
+.meta {
+  flex: none;
+  margin-top: 8px;
+  font: var(--mono-tag);
+  color: var(--text-faint);
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--space-3);
+  padding-bottom: var(--space-5);
+}
+
+.item {
+  padding: 11px 13px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app {
+  font: var(--mono-badge);
+  color: var(--mod-audio-soft);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.time {
+  font: var(--mono-tag);
+  color: var(--text-faint);
+}
+
+.body {
+  margin-top: 7px;
+  font: 400 13px/1.55 var(--font-ui);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+/* Ham transkript — yalnız işlenmiş metinden farklıysa görünür. */
+.raw {
+  margin-top: 5px;
+  padding-inline-start: 9px;
+  border-inline-start: 2px solid var(--border-card);
+  font: 400 11.5px/1.5 var(--font-ui);
+  color: var(--text-faint);
+  white-space: pre-wrap;
+}
+
+.stats {
+  margin-top: 7px;
+  font: var(--mono-tag);
+  color: var(--text-faint);
+}
+
+.empty {
+  padding: var(--space-5) 0;
+  text-align: center;
+  font: var(--text-caption);
+  color: var(--text-subtle);
+}

@@ -6,6 +6,7 @@ import type { HotkeyRegistration } from './hotkeys'
 import type {
   AudioDeviceList,
   EngineStats,
+  HistoryRow,
   Locale,
   LoopbackDeviceList,
   MeetingHistoryItem,
@@ -296,11 +297,13 @@ export function registerIpc({
   })
 
   ipcMain.handle('history:search', async (_event, query: string) => {
-    const response = await engine.request<{ items: Record<string, unknown>[] }>({
+    const response = await engine.request<{ items: HistoryRow[] }>({
       type: 'history:search',
       query,
     })
-    return response.items ?? []
+    // Motor `items` alanını her zaman gönderiyor; yine de savunmalı
+    // davranıyoruz — arayüz `undefined` üzerinde `map` çağırırsa donar.
+    return { items: response.items ?? [] }
   })
 
   // ── Olay yayınları ─────────────────────────────────────────────────────

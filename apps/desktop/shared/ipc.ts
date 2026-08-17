@@ -6,6 +6,7 @@
  * tipi yakalanır.
  */
 
+import type { HistoryRow } from './history'
 import type {
   AppModeMap,
   AudioDeviceList,
@@ -81,6 +82,7 @@ export type {
   VocabularyTerm,
 } from './dictation'
 export { INITIAL_DICTATION_STATE } from './dictation'
+export type { HistoryRow } from './history'
 
 /** Python motorunun yaşam döngüsü durumu. */
 export type EngineStatus =
@@ -102,7 +104,7 @@ export interface EngineState {
 }
 
 /** Uygulama penceresinin hangi ekranı gösterdiği. */
-export type AppView = 'panel' | 'settings'
+export type AppView = 'panel' | 'history' | 'settings'
 
 export type Locale = 'tr' | 'en'
 
@@ -233,7 +235,13 @@ export interface IpcInvokeMap {
   // ── Veri ───────────────────────────────────────────────────────────────
   'stats:get': { args: []; result: EngineStats }
   'vault:list': { args: []; result: VaultEntry[] }
-  'history:search': { args: [query: string]; result: Record<string, unknown>[] }
+  /**
+   * Geçmişte tam metin arama (Faz 6.2).
+   *
+   * Boş sorgu son kayıtları döndürür — arama kutusu temizlenince liste
+   * boş kalmasın.
+   */
+  'history:search': { args: [query: string]; result: { items: HistoryRow[] } }
 }
 
 /**
