@@ -338,6 +338,7 @@ export const en: Messages = {
   'profile.browser': 'browser',
   'profile.plain': 'plain text',
   'table.shortcutConflict': 'conflict',
+  'table.shortcutMoved': '{from} taken → moved',
   'hud.format.plain': 'plain',
   'hud.format.markdown': 'Markdown',
   'hud.format.plain_from_markdown': 'strip to plain',

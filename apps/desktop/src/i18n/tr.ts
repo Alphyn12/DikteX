@@ -345,6 +345,7 @@ export const tr = {
   'profile.browser': 'tarayıcı',
   'profile.plain': 'düz metin',
   'table.shortcutConflict': 'çakışma',
+  'table.shortcutMoved': '{from} alınmış → taşındı',
   'hud.format.plain': 'düz',
   'hud.format.markdown': 'Markdown',
   'hud.format.plain_from_markdown': 'düz metne indir',

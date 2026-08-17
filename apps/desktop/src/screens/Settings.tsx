@@ -140,7 +140,7 @@ function ModeTableRow({
 
       <span className={styles.shortcutCell} role="cell">
         {mode.accelerator ? (
-          <Key>{mode.accelerator.replace(/Control/g, 'Ctrl').replace(/\+/g, '+')}</Key>
+          <Key>{formatAccelerator(mode.accelerator)}</Key>
         ) : (
           <span className={styles.noShortcut}>—</span>
         )}
@@ -151,6 +151,16 @@ function ModeTableRow({
         {mode.conflicted && (
           <Badge module="automation" variant="tone">
             {t('table.shortcutConflict')}
+          </Badge>
+        )}
+        {/*
+          Yedeğe düşülmüşse kullanıcı bunu bilmeli: Ctrl+Alt+K bekleyip
+          Ctrl+Shift+Alt+K'ya düşmüşse ve haberi yoksa kısayolun
+          "çalışmadığını" düşünür.
+        */}
+        {mode.reassignedFrom && (
+          <Badge module="system" variant="tone">
+            {t('table.shortcutMoved', { from: formatAccelerator(mode.reassignedFrom) })}
           </Badge>
         )}
       </span>
@@ -257,6 +267,11 @@ function Switches(): React.JSX.Element {
       )}
     </div>
   )
+}
+
+/** Electron hızlandırıcısını okunur hâle getirir: `Control+Alt+K` → `Ctrl+Alt+K`. */
+function formatAccelerator(accelerator: string): string {
+  return accelerator.replace(/Control/g, 'Ctrl').replace(/Super/g, 'Win')
 }
 
 function SwitchRow({

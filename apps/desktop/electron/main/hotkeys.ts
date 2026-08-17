@@ -53,58 +53,90 @@ const MODE_ACCELERATORS: ReadonlyArray<{ mode: string; key: string }> = [
 
 export interface HotkeyRegistration {
   modes: ModeBinding[]
-  /** Kaydedilemeyen kısayollar — arayüzde uyarı olarak gösterilir. */
+  /** Hiçbir alternatifi de tutmayan kısayollar — gerçekten kayıp olanlar. */
   conflicts: string[]
+  /**
+   * Çakışma yüzünden yedeğe düşen kısayollar (Faz 7.17).
+   *
+   * Arayüzün bunu göstermesi şart: kullanıcı Ctrl+Alt+K bekleyip
+   * Ctrl+Shift+Alt+K'ya düşmüşse ve bunu bilmiyorsa, kısayolun "çalışmadığını"
+   * düşünür.
+   */
+  reassigned: { intended: string; actual: string }[]
+}
+
+/**
+ * Bir kısayolu kaydeder; tutmazsa alternatifleri dener (Faz 7.17).
+ *
+ * Eskiden çakışma yalnız **bildiriliyordu**: "bu kısayol alınmış". Kullanıcıya
+ * düşen iş, çakışan uygulamayı bulup ayarını değiştirmekti — çoğu zaman
+ * yapılmayacak bir iş. Artık çalışan bir alternatif bulunuyor.
+ *
+ * Sıra deterministik: aynı ortamda her açılışta aynı kısayol seçiliyor, yoksa
+ * kullanıcı her gün başka bir tuşa basmak zorunda kalırdı.
+ */
+function registerWithFallback(
+  intended: string,
+  handler: () => void,
+  outcome: { conflicts: string[]; reassigned: { intended: string; actual: string }[] },
+): { accelerator: string; registered: boolean } {
+  if (globalShortcut.register(intended, handler)) {
+    return { accelerator: intended, registered: true }
+  }
+
+  // `Control+Alt+X` → `Control+Shift+Alt+X` → `Control+Alt+Shift+F<n>` yerine
+  // yalnız değiştirici ekliyoruz: tuşun kendisini değiştirmek kullanıcının
+  // kas hafızasını tamamen bozardı.
+  const key = intended.replace(/^Control\+Alt\+/, '')
+  const alternatives = [`Control+Shift+Alt+${key}`, `Super+Alt+${key}`]
+
+  for (const candidate of alternatives) {
+    if (globalShortcut.register(candidate, handler)) {
+      console.warn(`[kısayol] ${intended} alınmış; ${candidate} kullanılıyor`)
+      outcome.reassigned.push({ intended, actual: candidate })
+      return { accelerator: candidate, registered: true }
+    }
+  }
+
+  console.warn(`[kısayol] ${intended} ve alternatifleri kaydedilemedi`)
+  outcome.conflicts.push(intended)
+  return { accelerator: intended, registered: false }
 }
 
 export function registerHotkeys(dictation: DictationController): HotkeyRegistration {
   const modes: ModeBinding[] = []
-  const conflicts: string[] = []
+  const outcome = {
+    conflicts: [] as string[],
+    reassigned: [] as { intended: string; actual: string }[],
+  }
 
   for (const { mode, key } of MODE_ACCELERATORS) {
-    const accelerator = `Control+Alt+${key}`
-    const registered = globalShortcut.register(accelerator, () => {
-      void dictation.toggle(mode)
-    })
-
-    if (!registered) {
-      conflicts.push(accelerator)
-      console.warn(
-        `[kısayol] ${accelerator} kaydedilemedi — başka bir uygulama kullanıyor olabilir`,
-      )
-    }
-    modes.push({ mode, accelerator, registered })
+    const result = registerWithFallback(
+      `Control+Alt+${key}`,
+      () => void dictation.toggle(mode),
+      outcome,
+    )
+    // Arayüz GERÇEKTEN bağlanan kısayolu göstermeli, istenen değil.
+    modes.push({ mode, accelerator: result.accelerator, registered: result.registered })
   }
 
   // Sesli geçmiş araması (Faz 7.13). Kendi kısayolu var çünkü sonucu
   // yapıştırılmıyor — akışı diğer modlardan farklı.
-  const searchAccelerator = 'Control+Alt+A'
-  if (!globalShortcut.register(searchAccelerator, () => void dictation.toggle('search'))) {
-    conflicts.push(searchAccelerator)
-  }
+  registerWithFallback('Control+Alt+A', () => void dictation.toggle('search'), outcome)
 
   // Yeniden yapıştırma (Faz 7.16). Global olmak ZORUNDA: pencere içi bir
   // düğmeye tıklamak OmniVoice'u öne getirir ve metin kendi penceremize
   // yapışırdı. Kullanıcı hedef pencereye tıklayıp buna basıyor.
-  const retryAccelerator = 'Control+Alt+V'
-  if (!globalShortcut.register(retryAccelerator, () => dictation.retryPaste())) {
-    conflicts.push(retryAccelerator)
-  }
+  registerWithFallback('Control+Alt+V', () => dictation.retryPaste(), outcome)
 
   // İptal her modda aynı.
-  const cancelAccelerator = 'Control+Alt+Escape'
-  if (!globalShortcut.register(cancelAccelerator, () => dictation.cancel())) {
-    conflicts.push(cancelAccelerator)
-  }
+  registerWithFallback('Control+Alt+Escape', () => dictation.cancel(), outcome)
 
   // Duraklat/devam (Faz 7.4). Global olmak zorunda: kayıt sırasında HUD
   // bilinçli olarak odak almıyor, o yüzden pencere içi bir tuş buraya ulaşmaz.
-  const pauseAccelerator = 'Control+Alt+P'
-  if (!globalShortcut.register(pauseAccelerator, () => void dictation.togglePause())) {
-    conflicts.push(pauseAccelerator)
-  }
+  registerWithFallback('Control+Alt+P', () => void dictation.togglePause(), outcome)
 
-  return { modes, conflicts }
+  return { modes, conflicts: outcome.conflicts, reassigned: outcome.reassigned }
 }
 
 export function unregisterHotkeys(): void {

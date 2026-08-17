@@ -124,10 +124,14 @@ export function registerIpc({
     // birleştiriyoruz ki arayüz tek bir kaynaktan okusun.
     const modes = (response.modes ?? []).map((mode) => {
       const binding = hotkeys.modes.find((entry) => entry.mode === mode.id)
+      const reassigned = hotkeys.reassigned.find(
+        (entry) => entry.actual === binding?.accelerator,
+      )
       return {
         ...mode,
         accelerator: binding?.accelerator,
         conflicted: binding ? !binding.registered : false,
+        reassignedFrom: reassigned?.intended,
       }
     })
     return { modes, defaultModel: response.defaultModel ?? '' }

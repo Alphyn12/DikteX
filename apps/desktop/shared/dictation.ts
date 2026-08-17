@@ -109,8 +109,16 @@ export interface ModeInfo {
   usesSelection: boolean
   /** Electron tarafında kaydedilen global kısayol. */
   accelerator?: string
-  /** Kısayol başka bir uygulama tarafından kapılmış mı? */
+  /** Kısayol ve tüm alternatifleri kapılmış mı? */
   conflicted?: boolean
+  /**
+   * Çakışma yüzünden yedeğe düşüldüyse ASIL istenen kısayol (Faz 7.17).
+   *
+   * Arayüzün bunu göstermesi şart: kullanıcı Ctrl+Alt+K bekleyip
+   * Ctrl+Shift+Alt+K'ya düşmüşse ve bunu bilmiyorsa kısayolun
+   * “çalışmadığını” düşünür.
+   */
+  reassignedFrom?: string
 }
 
 export interface ModeList {
