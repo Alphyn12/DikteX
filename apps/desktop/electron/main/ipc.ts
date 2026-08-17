@@ -16,6 +16,7 @@ import type {
   PushToTalkState,
   ReplacementList,
   ReplacementTest,
+  StyleState,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -159,6 +160,16 @@ export function registerIpc({
 
   ipcMain.handle('snippets:test', (_event, text: string) =>
     engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
+  )
+
+  ipcMain.handle('style:get', () => engine.request<StyleState>({ type: 'style:get' }))
+
+  ipcMain.handle('style:set-enabled', (_event, enabled: boolean) =>
+    engine.request<StyleState>({ type: 'style:set-enabled', enabled }),
+  )
+
+  ipcMain.handle('style:clear', () =>
+    engine.request<StyleState>({ type: 'style:clear' }),
   )
 
   ipcMain.handle('replacements:list', () =>

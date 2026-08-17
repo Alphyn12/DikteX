@@ -35,11 +35,12 @@ from omnivoice_engine.pipeline.layout import apply_layout_commands
 from omnivoice_engine.pipeline.modes import Mode, ModeId, get_mode
 from omnivoice_engine.pipeline.numbers import normalize_numbers
 from omnivoice_engine.pipeline.replacements import ReplacementLibrary
+from omnivoice_engine.pipeline.style import StyleLibrary
 from omnivoice_engine.pipeline.prompts import build_prompt, sanitize_output
 from omnivoice_engine.pipeline.vision_prompts import screen_question_prompt
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database, DictationRecord
-from omnivoice_engine.privacy.masking import MaskResult, mask_all
+from omnivoice_engine.privacy.masking import MaskResult, mask, mask_all
 from omnivoice_engine.storage.queue import ClipQueue
 from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
@@ -236,6 +237,7 @@ class DictationPipeline:
         app_modes: dict[str, str] | None = None,
         replacements: ReplacementLibrary | None = None,
         normalize_numbers_enabled: bool = True,
+        style: StyleLibrary | None = None,
     ) -> None:
         self._mic = mic
         self._stt = stt
@@ -253,6 +255,7 @@ class DictationPipeline:
         self._app_modes = dict(app_modes or {})
         self._replacements = replacements
         self._normalize_numbers = normalize_numbers_enabled
+        self._style = style
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
@@ -723,6 +726,9 @@ class DictationPipeline:
                         git_diff=masked_diff,
                         git_summary=git_summary,
                         snippet=snippet.body if snippet else None,
+                        style=self._style.prompt_block(mode=mode.id.value)
+                        if self._style
+                        else None,
                     )
                 completion = await self._llm.complete(prompt, model=mode.model)
                 # Yer tutucular gerçek değerlere geri çevriliyor: değer buluta
@@ -817,6 +823,23 @@ class DictationPipeline:
 
         # Kullanıcı önizlemede düzenlemiş olabilir.
         content = text if text is not None else result.final_text
+
+        # Stil sinyali (Faz 3.13): kullanıcının pre-flight'ta yaptığı düzenleme
+        # onun gerçek üslubu. BİÇİM DÖNÜŞÜMÜNDEN ÖNCE yakalanıyor — dönüşüm
+        # kullanıcının tercihi değil, makine işi ve stil örneği olarak
+        # saklanması modele yanlış hedef gösterirdi.
+        #
+        # Örnek maskelemeden geçiyor: bu metin sonraki isteklere taşınacak ve
+        # içinde bir anahtar varsa her seferinde yeniden gönderilirdi.
+        if self._style is not None and text is not None and text != result.final_text:
+            masked_before = mask(result.final_text) if self._mask_pii else None
+            masked_after = mask(text) if self._mask_pii else None
+            await asyncio.to_thread(
+                self._style.observe,
+                masked_before.text if masked_before else result.final_text,
+                masked_after.text if masked_after else text,
+                mode=result.mode,
+            )
 
         # Biçim dönüşümü yapıştırma anında uygulanır, üretim anında değil:
         # kullanıcı pre-flight'ta metni düzenlerse dönüşüm ona da uygulanmalı.

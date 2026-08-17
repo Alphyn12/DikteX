@@ -74,6 +74,12 @@ class UserSettings:
     #: Arayüz dili.
     locale: str | None = None
 
+    #: Öğrenen kişisel stil açık mı (Faz 3.13).
+    #:
+    #: Varsayılan KAPALI: özellik geçmiş dikte içeriğini yeni isteklere
+    #: taşıyor ve bu, kullanıcının beklemediği bir veri akışı.
+    style_learning: bool | None = None
+
     #: Türkçe sayıları rakama çevirme (Faz 7.9).
     normalize_numbers: bool | None = None
 
@@ -101,6 +107,7 @@ class UserSettings:
             "autoStopSeconds": self.auto_stop_seconds,
             "maskPii": self.mask_pii,
             "locale": self.locale,
+            "styleLearning": self.style_learning,
             "normalizeNumbers": self.normalize_numbers,
             "pushToTalk": self.push_to_talk,
             "appModes": dict(self.app_modes),
@@ -117,6 +124,7 @@ _FIELD_MAP = {
     "autoStopSeconds": "auto_stop_seconds",
     "maskPii": "mask_pii",
     "locale": "locale",
+    "styleLearning": "style_learning",
     "normalizeNumbers": "normalize_numbers",
     "pushToTalk": "push_to_talk",
     "appModes": "app_modes",
@@ -213,7 +221,12 @@ def _coerce(field_name: str, value: Any) -> Any:
         }
     if field_name == "auto_stop_seconds":
         return max(0.0, min(float(value), 10.0))
-    if field_name in {"mask_pii", "push_to_talk", "normalize_numbers"}:
+    if field_name in {
+        "mask_pii",
+        "push_to_talk",
+        "normalize_numbers",
+        "style_learning",
+    }:
         return bool(value)
     if field_name == "locale":
         text = str(value)

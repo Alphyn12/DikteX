@@ -43,6 +43,7 @@ def build_prompt(
     git_diff: str | None = None,
     git_summary: str | None = None,
     snippet: str | None = None,
+    style: str | None = None,
 ) -> Prompt:
     """Katmanları birleştirip istemi kurar."""
     resolved = mode if isinstance(mode, Mode) else get_mode(mode)
@@ -93,6 +94,12 @@ def build_prompt(
             "Örnek: “bu function'ın performance'ı” → “bu function'ın performance'ı”, "
             "“bu fonksiyonun performansı” DEĞİL.",
         ]
+
+    if style and style.strip():
+        # Stil örnekleri kuralların ÜSTÜNDE değil altında: yasaklı kalıplar
+        # (FORBIDDEN_RULES) her durumda geçerli ve bir örnek onları
+        # gevşetmemeli.
+        parts += ["", style.strip()]
 
     parts += ["", FORBIDDEN_RULES]
 

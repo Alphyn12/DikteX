@@ -15,6 +15,7 @@ import {
 import { MicrophonePicker } from '../components/MicrophonePicker'
 import { AppModeCard } from '../components/AppModeCard'
 import { ReplacementCard } from '../components/ReplacementCard'
+import { StyleCard } from '../components/StyleCard'
 import { ModelPicker } from '../components/ModelPicker'
 import { usePrivacy } from '../hooks/useModes'
 import { usePushToTalk } from '../hooks/usePushToTalk'
@@ -56,6 +57,7 @@ export function Settings(): React.JSX.Element {
           <VocabularyEditor />
           <ReplacementCard />
           <SnippetEditor />
+          <StyleCard />
           <ChordedShortcut />
           <ApiVault />
           <LocalServer />

@@ -23,6 +23,7 @@ import type {
   ReplacementList,
   ReplacementTest,
   Snippet,
+  StyleState,
   SnippetList,
   VaultEntry,
   VocabularyList,
@@ -69,6 +70,8 @@ export type {
   ReplacementRule,
   ReplacementTest,
   RoleModel,
+  StyleExample,
+  StyleState,
   Snippet,
   SnippetList,
   SpendStats,
@@ -169,6 +172,11 @@ export interface IpcInvokeMap {
    * canlı dikte sırasında sınayabilir.
    */
   'snippets:test': { args: [text: string]; result: { match: Snippet | null } }
+
+  // ── Öğrenen kişisel stil (Faz 3.13) ────────────────────────────────────
+  'style:get': { args: []; result: StyleState }
+  'style:set-enabled': { args: [enabled: boolean]; result: StyleState }
+  'style:clear': { args: []; result: StyleState }
 
   // ── Otomatik değiştirme (Faz 7.8 / 7.9) ────────────────────────────────
   'replacements:list': { args: []; result: ReplacementList }

@@ -60,6 +60,20 @@ export const tr = {
   'feed.title': 'Son dikteler',
   'feed.viewAll': 'Tümü · yerel SQLite arama',
 
+  'style.title': 'KİŞİSEL STİL',
+  'style.on': 'açık',
+  'style.off': 'kapalı',
+  'style.desc':
+    'Pre-flight’ta yaptığınız düzeltmeler saklanır ve sonraki istemlere örnek olarak eklenir; model zamanla sizin gibi yazar.',
+  'style.privacy':
+    'Bu kip geçmiş dikte içeriğinizi yeni isteklere taşır — dün yazdığınız bir not, ' +
+    'bugünkü diktenizin isteminde yer alabilir. Bu yüzden varsayılan olarak kapalı. ' +
+    'Açıkken saklanan her örnek aşağıda görünür, hassas veriler maskelenir ve tek düğmeyle silinir.',
+  'style.count': '{count} örnek saklı',
+  'style.clear': 'hepsini sil',
+  'style.empty': 'Henüz örnek yok — pre-flight’ta bir metni düzenleyin',
+  'style.hint': 'İsteme en yeni {count} örnek ekleniyor.',
+
   'replace.title': 'OTOMATİK DÜZELTME',
   'replace.count': '{count} kural',
   'replace.find': 'Aranan',

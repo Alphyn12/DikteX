@@ -54,6 +54,20 @@ export const en: Messages = {
   'feed.title': 'Recent dictations',
   'feed.viewAll': 'All · local SQLite search',
 
+  'style.title': 'PERSONAL STYLE',
+  'style.on': 'on',
+  'style.off': 'off',
+  'style.desc':
+    'Edits you make in pre-flight are stored and added to later prompts as examples, so the model gradually writes like you.',
+  'style.privacy':
+    'This mode carries past dictation content into new requests — a note you wrote ' +
+    'yesterday can appear in today’s prompt. That is why it is off by default. ' +
+    'While on, every stored example is listed below, sensitive data is masked, and one button clears them.',
+  'style.count': '{count} examples stored',
+  'style.clear': 'clear all',
+  'style.empty': 'No examples yet — edit some text in pre-flight',
+  'style.hint': 'The {count} most recent examples are added to the prompt.',
+
   'replace.title': 'AUTO-CORRECT',
   'replace.count': '{count} rules',
   'replace.find': 'Find',

@@ -154,7 +154,7 @@ kaydedilen ses, ölçülen gecikme, gerçek harcama ve SQLite'tan gelen geçmiş
 | 3.10 | Negative prompting & yasaklı kalıplar | II | ✅ |
 | 3.11 | Kritik prompt denetçisi (Prompt Linter) | II | ❌ kapsam dışı |
 | 3.12 | Meta-prompt & çoklu format çevirici (Midjourney, SQL, regex…) | II | ✅ |
-| 3.13 | Öğrenen kişisel stil (Style Refiner) | II | ⬜ |
+| 3.13 | Öğrenen kişisel stil (Style Refiner) | II | ✅ |
 | 3.13b | Gemini sağlayıcısı — yalnız düşük riskli arka plan işleri + STT yedeği | — | ⬜ |
 | 3.14 | Floating Command Bar (mockup 1b) | IV | ❌ kapsam dışı |
 | 3.15 | **Model seçici** — rol başına (STT / LLM / görsel) elle seçim + ayar kalıcılığı | I | ⬜ |
@@ -342,7 +342,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 | 7.6 | Aygıt tak-çıkar otomatik geçişi | Kulaklık takılınca geç, çıkarılınca geri dön. | ✅ |
 | 7.7 | Push-to-talk (basılı tut) | Düşük seviyeli klavye kancası (`WH_KEYBOARD_LL`) gerektiriyor — Faz 2'de bu yüzden ertelenmişti. | ✅ |
 
-### 7.C — Metin kalitesi
+### 7.C — Metin kalitesi ✅ TAMAMLANDI
 
 | # | Madde | Not | Durum |
 |---|---|---|---|

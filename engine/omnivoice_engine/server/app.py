@@ -35,6 +35,7 @@ from omnivoice_engine.pipeline.meeting import MeetingPipeline
 from omnivoice_engine.pipeline.modes import MODES, get_mode
 from omnivoice_engine.pipeline.numbers import normalize_numbers
 from omnivoice_engine.pipeline.replacements import ReplacementLibrary
+from omnivoice_engine.pipeline.style import StyleLibrary
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database
 from omnivoice_engine.input.hotkey_hook import PushToTalkHook
@@ -71,6 +72,9 @@ class EngineContext:
         self.vocabulary = Vocabulary.load()
         self.snippets = SnippetLibrary.load()
         self.replacements = ReplacementLibrary.load()
+        self.style = StyleLibrary.load(
+            enabled=bool(self.user_settings.settings.style_learning)
+        )
         self.queue = ClipQueue()
         self.budget_usd = settings.budget_usd
         #: Basılı tut kancası — yalnız kip açıkken kuruluyor (Faz 7.7).
@@ -104,6 +108,7 @@ class EngineContext:
             ),
             app_modes=saved.app_modes,
             replacements=self.replacements,
+            style=self.style,
             normalize_numbers_enabled=(
                 True if saved.normalize_numbers is None else saved.normalize_numbers
             ),
@@ -538,6 +543,25 @@ async def _handle_message(
         case "queue:clear":
             count = await asyncio.to_thread(context.queue.clear)
             await reply({"type": "queue:clear", "cleared": count, **context.queue.to_payload()})
+
+        # ── Öğrenen kişisel stil (Faz 3.13) ───────────────────────────────
+        case "style:get":
+            await reply({"type": "style:get", **context.style.to_payload()})
+
+        case "style:set-enabled":
+            enabled = bool(message.get("enabled", False))
+            context.style.enabled = enabled
+            await asyncio.to_thread(
+                context.user_settings.update, style_learning=enabled
+            )
+            log.info("Stil öğrenme %s", "açık" if enabled else "KAPALI")
+            await reply({"type": "style:get", **context.style.to_payload()})
+
+        case "style:clear":
+            cleared = await asyncio.to_thread(context.style.clear)
+            await reply(
+                {"type": "style:get", "cleared": cleared, **context.style.to_payload()}
+            )
 
         # ── Değiştirme kuralları (Faz 7.8) ────────────────────────────────
         case "replacements:list":

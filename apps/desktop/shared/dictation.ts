@@ -154,6 +154,30 @@ export interface PrivacyState {
   autoStopSeconds: number
 }
 
+// ── Öğrenen kişisel stil (Faz 3.13) ─────────────────────────────────────
+
+export interface StyleExample {
+  /** Modelin yazdığı. */
+  before: string
+  /** Kullanıcının pre-flight'ta düzelttiği hâli. */
+  after: string
+  mode: ModeId
+  createdAt: number
+}
+
+export interface StyleState {
+  enabled: boolean
+  /**
+   * Saklanan örnekler — **tek tek görünmesi şart**.
+   *
+   * Bu özellik geçmiş dikte içeriğini yeni isteklere taşıyor. Kullanıcının
+   * neyin taşındığını görebilmesi ve silebilmesi, kipin varsayılan kapalı
+   * olmasının yanındaki ikinci güvence.
+   */
+  examples: StyleExample[]
+  count: number
+}
+
 // ── Otomatik değiştirme (Faz 7.8) ───────────────────────────────────────
 
 export interface ReplacementRule {

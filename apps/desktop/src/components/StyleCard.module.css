@@ -1,0 +1,120 @@
+/* Öğrenen kişisel stil — Ayarlar sağ sütunu. */
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--mono-tag);
+  color: var(--text-subtle);
+  cursor: default;
+}
+
+.desc {
+  margin-top: var(--space-2);
+  font: 400 11.5px/1.5 var(--font-ui);
+  color: var(--text-subtle);
+}
+
+/* Gizlilik notu kalıcı: kip kapalıyken de görünmesi gerekiyor. */
+.privacy {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: rgba(124, 92, 255, 0.1);
+  font: 400 11.5px/1.5 var(--font-ui);
+  color: var(--text-subtle);
+}
+
+.countRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.count {
+  font: var(--mono-tag);
+  color: var(--text-faint);
+}
+
+.clear {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--mod-automation-soft);
+  font: var(--mono-tag);
+  cursor: default;
+}
+
+.clear:hover {
+  text-decoration: underline;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--space-2);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.item {
+  padding: 7px 9px;
+  border-radius: var(--radius-control);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mode {
+  font: var(--mono-tag);
+  color: var(--mod-prompt-soft);
+}
+
+.before,
+.after {
+  margin-top: 3px;
+  font: 400 11.5px/1.45 var(--font-ui);
+  /* Uzun örnekler kartı taşırmasın; tamamı motorda duruyor. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.before {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.2);
+}
+
+.after {
+  color: var(--text-primary);
+}
+
+.empty {
+  margin-top: var(--space-2);
+  font: var(--text-caption);
+  color: var(--text-subtle);
+}
+
+.hint {
+  margin-top: var(--space-3);
+  padding-top: 11px;
+  border-top: 1px solid var(--border-card);
+  font: 400 11.5px/1.5 var(--font-ui);
+  color: var(--text-faint);
+}
+
+.error {
+  margin-top: var(--space-2);
+  font: var(--text-caption);
+  color: var(--mod-automation-soft);
+}
