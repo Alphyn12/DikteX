@@ -6,6 +6,7 @@ import { Panel } from './screens/Panel'
 import { Settings } from './screens/Settings'
 import { I18nProvider, useI18n } from './i18n/useI18n'
 import { useEngine } from './hooks/useEngine'
+import { useDeviceWatcher } from './hooks/useDeviceWatcher'
 import { VAULT_KEYS } from './mock/data'
 import type { MessageKey } from './i18n/tr'
 import styles from './App.module.css'
@@ -21,6 +22,10 @@ export function App(): React.JSX.Element {
 
 function Shell(): React.JSX.Element {
   const [view, setView] = useState<AppView>('panel')
+  // Kulaklık takılıp çıkarıldığında motorun haberi olsun (Faz 7.6).
+  // Ana pencerede dinleniyor: HUD kısa ömürlü ve kapalıyken de olayı
+  // yakalamamız gerekiyor.
+  useDeviceWatcher()
   const configuredKeys = VAULT_KEYS.filter((key) => key.masked !== null).length
 
   return (

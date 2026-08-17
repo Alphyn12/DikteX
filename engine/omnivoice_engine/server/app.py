@@ -22,6 +22,7 @@ from omnivoice_engine.audio.capture import (
     AudioDeviceError,
     MicrophoneCapture,
     list_input_devices,
+    refresh_devices,
 )
 from omnivoice_engine.config import get_settings
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
@@ -482,6 +483,11 @@ async def _handle_message(
             count = await asyncio.to_thread(context.queue.clear)
             await reply({"type": "queue:clear", "cleared": count, **context.queue.to_payload()})
 
+        # ── Aygıt tak-çıkar (Faz 7.6) ─────────────────────────────────────
+        case "devices:changed":
+            result = await _handle_device_change(context)
+            await reply({"type": "devices:changed", **result})
+
         # ── Uygulama başına mod (Faz 7.5) ─────────────────────────────────
         case "appmodes:get":
             await reply(_app_modes_payload(context))
@@ -688,3 +694,72 @@ def _app_modes_payload(context: EngineContext) -> dict[str, Any]:
             else None
         ),
     }
+
+
+async def _handle_device_change(context: EngineContext) -> dict[str, Any]:
+    """Ses aygıtları değiştiğinde mikrofonu düzeltir (Faz 7.6).
+
+    Sinyal arayüzden geliyor: Chromium'un `navigator.mediaDevices.devicechange`
+    olayı. Motor tarafında yoklama yapmak mümkün değil — PortAudio'nun aygıt
+    listesini tazelemek (`refresh_devices`) kütüphaneyi yeniden başlatıyor ve
+    **açık akışları geçersiz kılıyor**. Saniyede bir bunu yapmak mikrofonu
+    sürekli kesintiye uğratırdı.
+
+    İki iş yapılıyor:
+
+    1. **Tercih edilen aygıt geri geldiyse ona dönülür.** Kullanıcı kulaklığını
+       çıkarıp taktığında elle yeniden seçmek zorunda kalmamalı.
+    2. **Kullanılan aygıt kaybolduysa** sistem varsayılanına düşülür. Aksi
+       hâlde akış ölü kalır ve bu ancak boş bir kayıtla fark edilir.
+    """
+    # Kayıt sürerken aygıt değiştirmek kaydı bozar; kullanıcı konuşmasını
+    # bitirsin, sonraki dikte doğru aygıtla başlar.
+    if context.pipeline.state is not DictationState.IDLE:
+        log.info("Aygıt değişikliği ertelendi: dikte sürüyor")
+        return {"applied": False, "reason": "busy"}
+
+    preferred = context.user_settings.settings.microphone_name
+    current = context.mic.device
+
+    try:
+        # Akışı kapatmak zorundayız: `refresh_devices` PortAudio'yu yeniden
+        # başlatıyor ve açık akış geçersiz hâle geliyor.
+        was_streaming = context.mic.is_streaming
+        if was_streaming:
+            await asyncio.to_thread(context.mic.stop_stream)
+        await asyncio.to_thread(refresh_devices)
+
+        target: int | None = None
+        if preferred:
+            target = await asyncio.to_thread(context.mic.resolve_device_by_name, preferred)
+            if target is None:
+                log.info("Tercih edilen mikrofon hâlâ yok: %s", preferred)
+
+        # `set_device` akış kapalıyken yalnız indeksi ayarlıyor.
+        await asyncio.to_thread(context.mic.set_device, target)
+        if was_streaming:
+            context.mic.start_stream()
+
+        applied = target != current
+        if applied:
+            log.info("Aygıt değişikliği uygulandı: %s → %s", current, target)
+            await context.broadcast(
+                {
+                    "type": "devices:list",
+                    "devices": await asyncio.to_thread(list_input_devices),
+                    "current": context.mic.device,
+                    "streaming": context.mic.is_streaming,
+                }
+            )
+        return {"applied": applied, "current": context.mic.device}
+
+    except AudioDeviceError as exc:
+        # Hedef açılamadı; sistem varsayılanına düşüp kullanıcıyı mikrofonsuz
+        # bırakmıyoruz.
+        log.warning("Aygıt değişikliği sonrası mikrofon açılamadı: %s", exc)
+        try:
+            await asyncio.to_thread(context.mic.set_device, None)
+            context.mic.start_stream()
+        except AudioDeviceError:
+            log.warning("Sistem varsayılanı da açılamadı", exc_info=True)
+        return {"applied": False, "reason": str(exc)}

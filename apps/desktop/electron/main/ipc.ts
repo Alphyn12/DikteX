@@ -158,6 +158,10 @@ export function registerIpc({
     engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
   )
 
+  ipcMain.handle('audio:devices-changed', () =>
+    engine.request<{ applied: boolean }>({ type: 'devices:changed' }),
+  )
+
   ipcMain.handle('appmodes:get', () =>
     engine.request<AppModeMap>({ type: 'appmodes:get' }),
   )

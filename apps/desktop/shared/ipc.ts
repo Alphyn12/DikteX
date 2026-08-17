@@ -190,6 +190,14 @@ export interface IpcInvokeMap {
   // ── Mikrofon ───────────────────────────────────────────────────────────
   'audio:list-devices': { args: []; result: AudioDeviceList }
   'audio:set-device': { args: [device: number | null]; result: AudioDeviceList }
+  /**
+   * Ses aygıtları değişti (Faz 7.6).
+   *
+   * Sinyal renderer'dan geliyor: motor tarafında yoklama yapmak mümkün
+   * değil, çünkü PortAudio'nun aygıt listesini tazelemek kütüphaneyi
+   * yeniden başlatıyor ve açık akışları geçersiz kılıyor.
+   */
+  'audio:devices-changed': { args: []; result: { applied: boolean } }
 
   // ── Veri ───────────────────────────────────────────────────────────────
   'stats:get': { args: []; result: EngineStats }

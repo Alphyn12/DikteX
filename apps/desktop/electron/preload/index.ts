@@ -46,6 +46,7 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'snippets:add',
   'snippets:remove',
   'snippets:test',
+  'audio:devices-changed',
   'appmodes:get',
   'appmodes:set',
   'models:catalog',
