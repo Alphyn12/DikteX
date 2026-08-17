@@ -130,6 +130,14 @@ export interface IpcInvokeMap {
   'dictation:cancel': { args: []; result: void }
   /** Kaydı duraklatır veya sürdürür. */
   'dictation:toggle-pause': { args: []; result: void }
+  /**
+   * Pre-flight'taki güncel metni motora bildirir (Faz 7.15).
+   *
+   * Sesli düzeltme global bir kısayolla başlıyor; motorun o anda
+   * arayüzden metin istemesinin yolu yok. Bu olmadan kullanıcının
+   * pre-flight'ta yaptığı düzenleme sessizce kaybolurdu.
+   */
+  'dictation:draft': { args: [text: string]; result: void }
   /** Pre-flight'taki metni yapıştırır. Kullanıcı düzenlemişse düzenlenmiş hâli. */
   'dictation:paste': { args: [text: string]; result: void }
 

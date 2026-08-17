@@ -345,6 +345,11 @@ async def _handle_message(
         case "dictation:cancel":
             await context.pipeline.cancel()
 
+        case "dictation:draft":
+            # Pre-flight'taki güncel metin (Faz 7.15). Sesli düzeltme global
+            # kısayolla başlıyor ve o an arayüzden metin istemenin yolu yok.
+            context.pipeline.set_draft(message.get("text"))
+
         case "dictation:paste":
             await context.pipeline.paste(message.get("text"))
 

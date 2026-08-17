@@ -53,6 +53,14 @@ export class DictationController {
         this.applyStatus(event)
         break
 
+      case 'dictation:refine-listening':
+        this.patch({ refine: event['listening'] ? 'listening' : 'idle' })
+        break
+
+      case 'dictation:refining':
+        this.patch({ refine: 'working' })
+        break
+
       case 'history:query':
         // Sesli arama sonucu (Faz 7.13). Yapıştırılmıyor; ana pencereye
         // gidiyor ve orada geçmiş ekranı açılıyor.
@@ -124,6 +132,9 @@ export class DictationController {
           status,
           step: null,
           result: (event['result'] as DictationResult | undefined) ?? null,
+          // Düzeltme bitti; göstergeyi sıfırlıyoruz. Kalırsa kullanıcı
+          // hâlâ çalışıyor sanır.
+          refine: 'idle',
         })
         break
 
@@ -196,6 +207,12 @@ export class DictationController {
   togglePause(): void {
     if (this.state.status !== 'listening') return
     this.engine.send({ type: 'dictation:pause' })
+  }
+
+  /** Pre-flight'taki güncel metni motora bildirir (Faz 7.15). */
+  setDraft(text: string): void {
+    if (this.state.status !== 'preflight') return
+    this.engine.send({ type: 'dictation:draft', text })
   }
 
   cancel(): void {

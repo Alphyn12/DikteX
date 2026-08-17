@@ -369,6 +369,14 @@ export interface DictationState {
    * bitmiş bir kayıtla karıştırılırdı.
    */
   paused: boolean
+  /**
+   * Pre-flight'ta sesli düzeltme durumu (Faz 7.15).
+   *
+   * `listening` = talimat kaydediliyor · `working` = model yeniden yazıyor.
+   * Ayrı bir `status` DEĞİL: pre-flight'tan çıkmıyoruz, metin ekranda kalmalı
+   * ve kullanıcı istediği an yapıştırabilmeli.
+   */
+  refine: 'idle' | 'listening' | 'working'
 }
 
 export const INITIAL_DICTATION_STATE: DictationState = {
@@ -390,6 +398,7 @@ export const INITIAL_DICTATION_STATE: DictationState = {
   deadMicrophone: false,
   clipboardChars: 0,
   paused: false,
+  refine: 'idle',
 }
 
 // ── Mikrofon ────────────────────────────────────────────────────────────

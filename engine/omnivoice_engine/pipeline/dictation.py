@@ -37,6 +37,7 @@ from omnivoice_engine.pipeline.numbers import normalize_numbers
 from omnivoice_engine.pipeline.replacements import ReplacementLibrary
 from omnivoice_engine.pipeline.style import StyleLibrary
 from omnivoice_engine.pipeline.prompts import build_prompt, sanitize_output
+from omnivoice_engine.pipeline.refine_prompts import refine_prompt
 from omnivoice_engine.pipeline.vision_prompts import screen_question_prompt
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database, DictationRecord
@@ -256,6 +257,15 @@ class DictationPipeline:
         self._replacements = replacements
         self._normalize_numbers = normalize_numbers_enabled
         self._style = style
+        #: Pre-flight'ta sesli düzeltme talimatı kaydediliyor mu (Faz 7.15).
+        self._refining = False
+        #: Kullanıcının pre-flight'ta düzenlediği metin.
+        #:
+        #: Sesli düzeltme global bir kısayolla başlıyor ve o anda arayüzden
+        #: metin istemenin yolu yok. Arayüz her düzenlemede burayı
+        #: güncelliyor; düzeltme kaynağı olarak bu kullanılıyor, yoksa
+        #: kullanıcının düzenlemesi sessizce kaybolurdu.
+        self._draft: str | None = None
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
@@ -831,6 +841,133 @@ class DictationPipeline:
 
         return result
 
+    def set_draft(self, text: str | None) -> None:
+        """Pre-flight'taki güncel metni saklar (Faz 7.15)."""
+        self._draft = text
+
+    async def _start_refine_capture(self) -> None:
+        """Pre-flight'tayken düzeltme talimatını kaydetmeye başlar."""
+        if self._refining:
+            # İkinci basış kaydı bitirir — tıpkı normal diktedeki gibi.
+            await self._stop_refine_capture()
+            return
+
+        self._mic.start_recording()
+        self._refining = True
+        log.info("Sesli düzeltme kaydı başladı")
+        await self._emit({"type": "dictation:refine-listening", "listening": True})
+
+    async def _stop_refine_capture(self) -> None:
+        """Düzeltme talimatını çözüp uygular."""
+        if not self._refining:
+            return
+        self._refining = False
+        clip = self._mic.stop_recording()
+        await self._emit({"type": "dictation:refine-listening", "listening": False})
+
+        if clip.is_silent():
+            log.info("Düzeltme kaydı sessiz; yok sayıldı")
+            await self._emit(
+                {"type": "dictation:warning", "message": "Düzeltme duyulmadı"}
+            )
+            return
+
+        try:
+            transcript = await self._stt.transcribe(clip, language=None)
+        except ProviderError as exc:
+            log.warning("Düzeltme talimatı çözülemedi: %s", exc)
+            await self._emit(
+                {"type": "dictation:warning", "message": f"Düzeltme duyulmadı: {exc}"}
+            )
+            return
+
+        # Kullanıcının pre-flight'ta yaptığı düzenleme kaynak alınıyor.
+        await self.refine(strip_fillers(transcript.text).text, text=self._draft)
+
+    async def refine(self, instruction: str, *, text: str | None = None) -> None:
+        """Pre-flight'taki metni sesli bir talimata göre yeniden yazar (Faz 7.15).
+
+        Kullanıcının pre-flight'ta yaptığı düzenlemeler korunuyor: `text`
+        verilmişse ondan devam ediliyor. Düzenlemeyi yok sayıp özgün çıktıya
+        dönmek, kullanıcının emeğini silmek olurdu.
+
+        Başarısızlıkta metin **değişmiyor**. Pre-flight'ta kalıyoruz ve
+        kullanıcı yapıştırabiliyor; bir düzeltme denemesinin başarısız olması
+        dikteyi kaybettirmemeli.
+        """
+        result = self._result
+        if self.state is not DictationState.PREFLIGHT or result is None:
+            return
+
+        cleaned = instruction.strip()
+        if not cleaned:
+            return
+
+        source = text if text is not None else result.final_text
+        if not source.strip():
+            return
+
+        if not self._llm.is_available():
+            await self._emit(
+                {"type": "dictation:warning", "message": "Düzeltme için LLM gerekiyor"}
+            )
+            return
+
+        await self._emit({"type": "dictation:refining", "instruction": cleaned})
+
+        # Maskeleme burada da geçerli: metin yeniden buluta gidiyor.
+        masked = mask(source) if self._mask_pii else None
+        prompt = refine_prompt(
+            masked.text if masked else source,
+            cleaned,
+            language=result.language,
+        )
+
+        try:
+            completion = await self._llm.complete(prompt, model=None)
+        except ProviderError as exc:
+            log.warning("Sesli düzeltme başarısız: %s", exc)
+            await self._emit(
+                {"type": "dictation:warning", "message": f"Düzeltme yapılamadı: {exc}"}
+            )
+            # Pre-flight'ta kalıyoruz; metin dokunulmadan duruyor.
+            await self._set_state(
+                DictationState.PREFLIGHT, result=result.to_payload()
+            )
+            return
+
+        refined = sanitize_output(completion.text)
+        if masked:
+            refined = masked.unmask(refined)
+
+        if not refined.strip():
+            # Boş çıktı metni silmemeli.
+            log.warning("Sesli düzeltme boş döndü; metin korunuyor")
+            await self._set_state(
+                DictationState.PREFLIGHT, result=result.to_payload()
+            )
+            return
+
+        self._db.add_spend(
+            provider=completion.provider,
+            model=completion.model,
+            kind="llm",
+            cost_usd=completion.usage.cost_usd,
+            latency_ms=completion.usage.latency_ms,
+            meta={"kind": "refine"},
+        )
+
+        result.final_text = refined
+        # Taslak da tazeleniyor: arka arkaya iki düzeltme yapılırsa ikincisi
+        # birincinin sonucundan devam etmeli.
+        self._draft = refined
+        result.llm_ms += completion.usage.latency_ms
+        result.cost_usd += completion.usage.cost_usd or 0.0
+        self._result = result
+
+        log.info("Sesli düzeltme uygulandı: %r", cleaned)
+        await self._set_state(DictationState.PREFLIGHT, result=result.to_payload())
+
     async def paste(self, text: str | None = None) -> None:
         """Pre-flight'taki metni hedef pencereye yapıştırır."""
         result = self._result
@@ -880,6 +1017,7 @@ class DictationPipeline:
             self._db.mark_pasted(result.record_id)
 
         self._result = None
+        self._draft = None
 
         # Panoya düşmek hata DEĞİL: kullanıcı konuşmasını kaybetmedi. Ama
         # Ctrl+V'ye basması gerektiğini bilmeli, yoksa metin kaybolmuş sanır.
@@ -1013,6 +1151,8 @@ class DictationPipeline:
             if self._session and self._session.level_task:
                 self._session.level_task.cancel()
             self._mic.cancel_recording()
+            self._refining = False
+            self._draft = None
             self._session = None
             self._result = None
             await self._set_state(DictationState.IDLE, cancelled=True)
@@ -1021,6 +1161,13 @@ class DictationPipeline:
         self, mode: ModeId | str = ModeId.QUICK, *, region: dict[str, int] | None = None
     ) -> None:
         """Kısayolun davranışı: boştaysa başlat, dinliyorsa bitir."""
+        # Pre-flight'ta kısayol SESLİ DÜZELTME başlatıyor (Faz 7.15):
+        # kullanıcı çıktıyı görüyor ve "daha kısa yaz" diyebilmeli. Yeni bir
+        # dikte başlatmak, henüz onaylanmamış çıktıyı sessizce atardı.
+        if self.state is DictationState.PREFLIGHT:
+            await self._start_refine_capture()
+            return
+
         # SILENT, CLIPBOARD ve ERROR birer bilgilendirme durumu; kısayola
         # tekrar basmak yeni bir dikte başlatmalı, kullanıcıyı önce kapatmaya
         # zorlamamalı.

@@ -58,7 +58,13 @@ export function Hud(): React.JSX.Element | null {
         {state.status === 'listening' && <Listening state={state} />}
         {state.status === 'processing' && <Processing state={state} />}
         {state.status === 'preflight' && state.result && (
-          <Preflight result={state.result} warning={state.warning} onPaste={paste} onCancel={cancel} />
+          <Preflight
+            result={state.result}
+            warning={state.warning}
+            refine={state.refine}
+            onPaste={paste}
+            onCancel={cancel}
+          />
         )}
         {state.status === 'silent' && (
           <Silent deadMicrophone={state.deadMicrophone} onDismiss={cancel} />
@@ -310,11 +316,14 @@ function Step({
 function Preflight({
   result,
   warning,
+  refine,
   onPaste,
   onCancel,
 }: {
   result: DictationResult
   warning: string | null
+  /** Sesli düzeltme durumu (Faz 7.15). */
+  refine: DictationState['refine']
   onPaste: (text: string) => void
   onCancel: () => void
 }): React.JSX.Element {
@@ -324,6 +333,22 @@ function Preflight({
 
   // Yeni bir sonuç geldiğinde düzenleme alanını tazele.
   useEffect(() => setText(result.finalText), [result.finalText])
+
+  /*
+   * Düzenlemeyi motora bildiriyoruz (Faz 7.15).
+   *
+   * Sesli düzeltme global bir kısayolla başlıyor ve motorun o anda buradan
+   * metin istemesinin yolu yok. Bu olmadan kullanıcının düzenlemesi sessizce
+   * kaybolurdu — "şunu düzelttim, bir de kısalt" dediğinde düzeltmesi giderdi.
+   *
+   * Geciktiriliyor: her tuş vuruşunda IPC mesajı göndermenin karşılığı yok.
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void window.omnivoice.invoke('dictation:draft', text)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [text])
 
   // Alanı odakla ama imleci sona koy — kullanıcı hemen Enter'a basabilsin
   // ya da düzenlemeye başlayabilsin.
@@ -347,7 +372,13 @@ function Preflight({
   return (
     <>
       <div className={styles.head}>
-        <span className={styles.title}>{t('hud.readyToPaste')}</span>
+        <span className={styles.title}>
+          {refine === 'listening'
+            ? t('hud.refine.listening')
+            : refine === 'working'
+              ? t('hud.refine.working')
+              : t('hud.readyToPaste')}
+        </span>
         <div className={styles.spacer} />
         {result.language && <span className={styles.detail}>{result.language}</span>}
       </div>
@@ -363,6 +394,14 @@ function Preflight({
       />
 
       {warning && <div className={styles.warning}>{warning}</div>}
+
+      {/*
+        Sesli düzeltme ipucu (Faz 7.15). Sesli bir uygulamada sonucu fareyle
+        düzeltmek tuhaftı; kısayola basıp "daha kısa yaz" demek doğal olan.
+      */}
+      {refine === 'idle' && (
+        <div className={styles.refineHint}>{t('hud.refine.hint')}</div>
+      )}
 
       <div className={styles.actions}>
         <button type="button" className={styles.primary} onClick={submit}>

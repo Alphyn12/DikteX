@@ -28,6 +28,7 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'dictation:toggle',
   'dictation:cancel',
   'dictation:toggle-pause',
+  'dictation:draft',
   'dictation:paste',
   'audio:list-devices',
   'audio:set-device',

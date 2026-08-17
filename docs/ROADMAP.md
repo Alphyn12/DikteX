@@ -365,7 +365,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 
 | # | Madde | Not | Durum |
 |---|---|---|---|
-| 7.15 | Sesle düzeltme (pre-flight) | "daha kısa yaz", "resmi olsun" deyip yeniden ürettirmek. Sesli bir uygulamada sonucu fareyle düzeltmek tuhaf. | ⬜ |
+| 7.15 | Sesle düzeltme (pre-flight) | "daha kısa yaz", "resmi olsun" deyip yeniden ürettirmek. Sesli bir uygulamada sonucu fareyle düzeltmek tuhaf. | ✅ |
 | 7.16 | Dikte kutusu | Yapıştırılamayan uygulamalar için ayrı pencere. 7.1 ile kısmen çakışıyor, o yüzden ondan sonra. | ⬜ |
 | 7.17 | Kısayol çakışma çözücü | Çakışma tespiti var, çözüm önerisi yok. | ⬜ |
 | 3.13b | Gemini sağlayıcısı (yedek) | Groq düşerse dikte tamamen durmasın. | ⬜ |
