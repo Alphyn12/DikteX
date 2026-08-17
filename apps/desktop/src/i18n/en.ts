@@ -133,6 +133,15 @@ export const en: Messages = {
   'toggle.autoStop.desc':
     'Recording ends by itself when silence follows speech — no need to reach for the keyboard',
   'toggle.autoStop.meta': '{seconds} s threshold',
+  'toggle.ptt': 'Push to talk',
+  'toggle.ptt.desc':
+    'Records while Ctrl+Alt+Space is held and stops on release. When off, the shortcut toggles.',
+  'toggle.ptt.meta': 'installs a keyboard hook',
+  'toggle.ptt.failed': 'Hook could not be installed — security software may be blocking it.',
+  'toggle.ptt.privacy':
+    'This mode installs a low-level keyboard hook that sees every key on the system. ' +
+    'OmniVoice only tracks whether Ctrl, Alt and Space are held; no other key is stored, ' +
+    'logged, or swallowed. The hook is never installed while the mode is off.',
   'toggle.pii': 'PII masking',
   'toggle.pii.desc':
     'National ID, card, IBAN and API keys are redacted before text processing',

@@ -13,6 +13,7 @@ import type {
   VaultEntry,
   AppModeMap,
   ModeId,
+  PushToTalkState,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -156,6 +157,12 @@ export function registerIpc({
 
   ipcMain.handle('snippets:test', (_event, text: string) =>
     engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
+  )
+
+  ipcMain.handle('ptt:get', () => engine.request<PushToTalkState>({ type: 'ptt:get' }))
+
+  ipcMain.handle('ptt:set', (_event, enabled: boolean) =>
+    engine.request<PushToTalkState>({ type: 'ptt:set', enabled }),
   )
 
   ipcMain.handle('audio:devices-changed', () =>

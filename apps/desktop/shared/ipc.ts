@@ -13,6 +13,7 @@ import type {
   ModeId,
   AppModeMap,
   ModeList,
+  PushToTalkState,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -54,6 +55,7 @@ export type {
   OutputProfile,
   AppModeMap,
   CatalogModel,
+  PushToTalkState,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -162,6 +164,10 @@ export interface IpcInvokeMap {
    * canlı dikte sırasında sınayabilir.
    */
   'snippets:test': { args: [text: string]; result: { match: Snippet | null } }
+
+  // ── Basılı tut kipi (Faz 7.7) ──────────────────────────────────────────
+  'ptt:get': { args: []; result: PushToTalkState }
+  'ptt:set': { args: [enabled: boolean]; result: PushToTalkState }
 
   // ── Uygulama başına mod (Faz 7.5) ──────────────────────────────────────
   'appmodes:get': { args: []; result: AppModeMap }

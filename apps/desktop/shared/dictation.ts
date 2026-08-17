@@ -154,6 +154,21 @@ export interface PrivacyState {
   autoStopSeconds: number
 }
 
+// ── Basılı tut kipi (Faz 7.7) ───────────────────────────────────────────
+
+export interface PushToTalkState {
+  /**
+   * Kanca GERÇEKTEN çalışıyor mu.
+   *
+   * `requested` ile ayrı tutuluyor: kanca kurulamamış olabilir (güvenlik
+   * yazılımı engelliyor, başka bir uygulama çakışıyor). Kullanıcıya "açık"
+   * demek ama çalışmamak, olabileceklerin en kötüsü.
+   */
+  enabled: boolean
+  /** Kullanıcının istediği durum. */
+  requested: boolean
+}
+
 // ── Uygulama başına mod (Faz 7.5) ───────────────────────────────────────
 
 export interface AppModeMap {

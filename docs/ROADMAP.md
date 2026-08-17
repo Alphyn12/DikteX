@@ -329,7 +329,7 @@ göre belirlendi.
 | 7.3 | **Sessizlikte otomatik durdurma (VAD)** | Kaydı bitirmek için klavyeye dönmek gerekiyor; bu "eller serbest" vaadini yarıda kesiyor. Altyapı hazır (`voiced_seconds`). | ✅ |
 | 7.4 | **Duraklat / devam** | Şu an tek seçenek bitirmek ya da iptal. Telefon çalınca kayıt çöpe gidiyor. | ✅ |
 
-### 7.B — Ayar kalıcılığı ve ona bağlı olanlar
+### 7.B — Ayar kalıcılığı ve ona bağlı olanlar ✅ TAMAMLANDI
 
 3.15 buraya alındı çünkü **ayar kalıcılığı altyapısını o getiriyor** ve
 altındaki üç madde ona bağımlı. Ayrıca bilinen bir hatayı da kapatıyor:
@@ -340,7 +340,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 | 3.15 | **Model seçici + ayar kalıcılığı** | Model listesi OpenRouter `/api/v1/models`'tan canlı çekilecek; gömülü liste bir model kalkınca yalan söylerdi. | ✅ |
 | 7.5 | Uygulama başına varsayılan mod | VS Code'a geçince otomatik "kod" modu. Profil altyapısı var, mod hâlâ elle seçiliyor. | ✅ |
 | 7.6 | Aygıt tak-çıkar otomatik geçişi | Kulaklık takılınca geç, çıkarılınca geri dön. | ✅ |
-| 7.7 | Push-to-talk (basılı tut) | Düşük seviyeli klavye kancası (`WH_KEYBOARD_LL`) gerektiriyor — Faz 2'de bu yüzden ertelenmişti. | ⬜ |
+| 7.7 | Push-to-talk (basılı tut) | Düşük seviyeli klavye kancası (`WH_KEYBOARD_LL`) gerektiriyor — Faz 2'de bu yüzden ertelenmişti. | ✅ |
 
 ### 7.C — Metin kalitesi
 

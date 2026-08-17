@@ -140,6 +140,15 @@ export const tr = {
   'toggle.autoStop.desc':
     'Konuştuktan sonra sessizlik sürerse kayıt kendiliğinden biter — klavyeye dönmeye gerek kalmaz',
   'toggle.autoStop.meta': 'eşik {seconds} sn',
+  'toggle.ptt': 'Basılı tut (bas-konuş)',
+  'toggle.ptt.desc':
+    'Ctrl+Alt+Space basılı tutulduğu sürece kaydeder, bırakınca biter. Kapalıyken aç/kapa çalışır.',
+  'toggle.ptt.meta': 'klavye kancası kurar',
+  'toggle.ptt.failed': 'Kanca kurulamadı — bir güvenlik yazılımı engelliyor olabilir.',
+  'toggle.ptt.privacy':
+    'Bu kip düşük seviyeli bir klavye kancası kurar ve o kanca sistemdeki tüm tuşları görür. ' +
+    'OmniVoice yalnız Ctrl, Alt ve Boşluk tuşlarının basılı olup olmadığını izler; başka hiçbir ' +
+    'tuş saklanmaz, günlüğe yazılmaz ve hiçbir tuş yutulmaz. Kip kapalıyken kanca hiç kurulmaz.',
   'toggle.pii': 'PII maskeleme',
   'toggle.pii.desc':
     'TC kimlik, kart no, IBAN ve API anahtarı metin işlemeye gitmeden sansürlenir',

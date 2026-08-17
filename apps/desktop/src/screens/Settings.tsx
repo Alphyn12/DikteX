@@ -16,6 +16,7 @@ import { MicrophonePicker } from '../components/MicrophonePicker'
 import { AppModeCard } from '../components/AppModeCard'
 import { ModelPicker } from '../components/ModelPicker'
 import { usePrivacy } from '../hooks/useModes'
+import { usePushToTalk } from '../hooks/usePushToTalk'
 import { SnippetEditor } from '../components/SnippetEditor'
 import { VocabularyEditor } from '../components/VocabularyEditor'
 import { useModes } from '../hooks/useModes'
@@ -173,6 +174,7 @@ function Switches(): React.JSX.Element {
   // PII anahtarı artık motordaki gerçek bayrağa bağlı. Diğer ikisi hâlâ
   // yerel durum — karşılıkları henüz yok (3.15 ve mod başına pre-flight).
   const { privacy, setMasking, setAutoStop } = usePrivacy()
+  const ptt = usePushToTalk()
 
   return (
     <div className={styles.switches}>
@@ -207,6 +209,23 @@ function Switches(): React.JSX.Element {
         on={(privacy?.autoStopSeconds ?? 0) > 0}
         onChange={(next) => void setAutoStop(next ? 1.6 : 0)}
       />
+      {/*
+        Basılı tut varsayılan olarak KAPALI ve öyle kalmalı: kip sistemdeki
+        her tuşu gören bir kanca kuruyor. Ne yaptığı ve ne yapmadığı
+        anahtarın hemen altında yazıyor — bunu gizlemek savunulamazdı.
+      */}
+      <SwitchRow
+        title={t('toggle.ptt')}
+        description={t('toggle.ptt.desc')}
+        meta={t('toggle.ptt.meta')}
+        module="prompt"
+        on={ptt.state?.enabled ?? false}
+        onChange={(next) => void ptt.setEnabled(next)}
+      />
+      {ptt.failed && <p className={styles.privacyLimit}>{t('toggle.ptt.failed')}</p>}
+      {ptt.state?.enabled && (
+        <p className={styles.privacyLimit}>{t('toggle.ptt.privacy')}</p>
+      )}
       <SwitchRow
         title={t('toggle.pii')}
         description={t('toggle.pii.desc')}

@@ -74,6 +74,14 @@ class UserSettings:
     #: Arayüz dili.
     locale: str | None = None
 
+    #: Basılı tut (push-to-talk) kipi açık mı (Faz 7.7).
+    #:
+    #: Varsayılan KAPALI ve bu bilinçli: kip düşük seviyeli bir klavye kancası
+    #: kuruyor ve o kanca sistemdeki her tuşu görüyor. Böyle bir şeyin
+    #: varsayılan olarak açık gelmesi savunulamaz — kullanıcı bilerek
+    #: açmalı.
+    push_to_talk: bool | None = None
+
     #: Uygulama başına varsayılan mod (Faz 7.5): süreç adı → mod kimliği.
     #:
     #: Anahtar küçük harfe indirilmiş, `.exe` eki atılmış süreç adı —
@@ -90,6 +98,7 @@ class UserSettings:
             "autoStopSeconds": self.auto_stop_seconds,
             "maskPii": self.mask_pii,
             "locale": self.locale,
+            "pushToTalk": self.push_to_talk,
             "appModes": dict(self.app_modes),
         }
 
@@ -104,6 +113,7 @@ _FIELD_MAP = {
     "autoStopSeconds": "auto_stop_seconds",
     "maskPii": "mask_pii",
     "locale": "locale",
+    "pushToTalk": "push_to_talk",
     "appModes": "app_modes",
 }
 
@@ -198,7 +208,7 @@ def _coerce(field_name: str, value: Any) -> Any:
         }
     if field_name == "auto_stop_seconds":
         return max(0.0, min(float(value), 10.0))
-    if field_name == "mask_pii":
+    if field_name in {"mask_pii", "push_to_talk"}:
         return bool(value)
     if field_name == "locale":
         text = str(value)

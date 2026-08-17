@@ -35,6 +35,7 @@ from omnivoice_engine.pipeline.meeting import MeetingPipeline
 from omnivoice_engine.pipeline.modes import MODES, get_mode
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database
+from omnivoice_engine.input.hotkey_hook import PushToTalkHook
 from omnivoice_engine.llm.catalog import ModelCatalog
 from omnivoice_engine.storage.queue import ClipQueue
 from omnivoice_engine.storage.settings_store import SettingsStore
@@ -69,6 +70,8 @@ class EngineContext:
         self.snippets = SnippetLibrary.load()
         self.queue = ClipQueue()
         self.budget_usd = settings.budget_usd
+        #: Basılı tut kancası — yalnız kip açıkken kuruluyor (Faz 7.7).
+        self.ptt: PushToTalkHook | None = None
 
         saved = self.user_settings.settings
         self.llm.set_default_model(saved.llm_model)
@@ -110,6 +113,41 @@ class EngineContext:
             mask_pii=True if saved.mask_pii is None else saved.mask_pii,
         )
 
+    # ── Basılı tut kipi (Faz 7.7) ─────────────────────────────────────────
+
+    def set_push_to_talk(self, enabled: bool) -> bool:
+        """Kancayı kurar veya kaldırır. Kurulamadıysa `False` döner.
+
+        Kanca **yalnız kip açıkken** yaşıyor. Kapalıyken hiç yüklenmiyor:
+        sistemdeki her tuşu gören bir kancayı kullanılmadığı hâlde taşımanın
+        savunması yok.
+        """
+        if not enabled:
+            if self.ptt is not None:
+                self.ptt.stop()
+                self.ptt = None
+            return True
+
+        if self.ptt is not None and self.ptt.is_running:
+            return True
+
+        loop = asyncio.get_running_loop()
+
+        def fire(coro_factory: Any) -> None:
+            # Kanca geri çağrımı Windows'un iş parçacığında ve **300 ms
+            # içinde dönmek zorunda**; geç dönen kanca sessizce kaldırılıyor.
+            # Bu yüzden burada yalnız olay döngüsüne iş bırakılıyor.
+            loop.call_soon_threadsafe(lambda: asyncio.ensure_future(coro_factory()))
+
+        self.ptt = PushToTalkHook(
+            on_press=lambda: fire(lambda: self.pipeline.start()),
+            on_release=lambda: fire(lambda: self.pipeline.stop()),
+        )
+        if not self.ptt.start():
+            self.ptt = None
+            return False
+        return True
+
     async def broadcast(self, message: dict[str, Any]) -> None:
         """Olayı bağlı tüm istemcilere gönderir."""
         if not self._clients:
@@ -130,6 +168,11 @@ class EngineContext:
         self._clients.discard(websocket)
 
     def shutdown(self) -> None:
+        if self.ptt is not None:
+            # Kanca kaldırılmazsa süreç kapansa bile Windows bir süre
+            # tutmaya devam ediyor.
+            self.ptt.stop()
+            self.ptt = None
         self.mic.stop_stream()
         self.db.close()
 
@@ -190,6 +233,12 @@ def create_app() -> FastAPI:
                 # Mikrofonsuz da açılabilmeli: kullanıcı geçmişe bakmak veya
                 # ayarları değiştirmek için uygulamayı açmış olabilir.
                 log.warning("Mikrofon akışı açılamadı; dikte devre dışı — %s", exc)
+        # Basılı tut kipi kaydedilmişse kancayı kur (Faz 7.7). Olay döngüsü
+        # burada çalışıyor; `set_push_to_talk` ona ihtiyaç duyuyor.
+        if context.user_settings.settings.push_to_talk:
+            if not context.set_push_to_talk(True):
+                log.warning("Basılı tut kipi kurulamadı; kip kapalı kalıyor")
+
         yield
         context.shutdown()
 
@@ -483,6 +532,18 @@ async def _handle_message(
             count = await asyncio.to_thread(context.queue.clear)
             await reply({"type": "queue:clear", "cleared": count, **context.queue.to_payload()})
 
+        # ── Basılı tut kipi (Faz 7.7) ─────────────────────────────────────
+        case "ptt:get":
+            await reply(_ptt_payload(context))
+
+        case "ptt:set":
+            enabled = bool(message.get("enabled", False))
+            ok = context.set_push_to_talk(enabled)
+            await asyncio.to_thread(
+                context.user_settings.update, push_to_talk=enabled and ok
+            )
+            await reply(_ptt_payload(context))
+
         # ── Aygıt tak-çıkar (Faz 7.6) ─────────────────────────────────────
         case "devices:changed":
             result = await _handle_device_change(context)
@@ -763,3 +824,18 @@ async def _handle_device_change(context: EngineContext) -> dict[str, Any]:
         except AudioDeviceError:
             log.warning("Sistem varsayılanı da açılamadı", exc_info=True)
         return {"applied": False, "reason": str(exc)}
+
+
+def _ptt_payload(context: EngineContext) -> dict[str, Any]:
+    """Basılı tut kipinin gerçek durumu.
+
+    `enabled` ile `available` ayrı: kanca kurulamamış olabilir (başka bir
+    uygulama engelliyor, güvenlik yazılımı vb.). Kullanıcıya "açık" demek ama
+    çalışmamak, en kötü ikisi.
+    """
+    running = context.ptt is not None and context.ptt.is_running
+    return {
+        "type": "ptt:get",
+        "enabled": running,
+        "requested": bool(context.user_settings.settings.push_to_talk),
+    }
