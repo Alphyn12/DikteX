@@ -14,6 +14,7 @@ import {
 } from '../components/primitives'
 import { MicrophonePicker } from '../components/MicrophonePicker'
 import { AppModeCard } from '../components/AppModeCard'
+import { ReplacementCard } from '../components/ReplacementCard'
 import { ModelPicker } from '../components/ModelPicker'
 import { usePrivacy } from '../hooks/useModes'
 import { usePushToTalk } from '../hooks/usePushToTalk'
@@ -53,6 +54,7 @@ export function Settings(): React.JSX.Element {
           <ModelPicker />
           <AppModeCard />
           <VocabularyEditor />
+          <ReplacementCard />
           <SnippetEditor />
           <ChordedShortcut />
           <ApiVault />
@@ -173,7 +175,8 @@ function Switches(): React.JSX.Element {
   const [preflight, setPreflight] = useState(true)
   // PII anahtarı artık motordaki gerçek bayrağa bağlı. Diğer ikisi hâlâ
   // yerel durum — karşılıkları henüz yok (3.15 ve mod başına pre-flight).
-  const { privacy, setMasking, setAutoStop } = usePrivacy()
+  const { privacy, setMasking, setAutoStop, normalizeNumbers, setNormalizeNumbers } =
+    usePrivacy()
   const ptt = usePushToTalk()
 
   return (
@@ -214,6 +217,14 @@ function Switches(): React.JSX.Element {
         her tuşu gören bir kanca kuruyor. Ne yaptığı ve ne yapmadığı
         anahtarın hemen altında yazıyor — bunu gizlemek savunulamazdı.
       */}
+      <SwitchRow
+        title={t('toggle.numbers')}
+        description={t('toggle.numbers.desc')}
+        meta={t('toggle.numbers.meta')}
+        module="audio"
+        on={normalizeNumbers}
+        onChange={(next) => void setNormalizeNumbers(next)}
+      />
       <SwitchRow
         title={t('toggle.ptt')}
         description={t('toggle.ptt.desc')}

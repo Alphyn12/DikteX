@@ -60,6 +60,24 @@ export const tr = {
   'feed.title': 'Son dikteler',
   'feed.viewAll': 'Tümü · yerel SQLite arama',
 
+  'replace.title': 'OTOMATİK DÜZELTME',
+  'replace.count': '{count} kural',
+  'replace.find': 'Aranan',
+  'replace.findPlaceholder': 'omni voice',
+  'replace.replace': 'Yerine',
+  'replace.replacePlaceholder': 'OmniVoice',
+  'replace.wholeWord': 'Tam kelime ara (ekler korunur)',
+  'replace.duplicate': 'Bu kural zaten var ya da aranan ile yerine aynı',
+  'replace.empty': 'Henüz kural yok',
+  'replace.remove': 'Kuralı sil',
+  'replace.used': '{count}×',
+  'replace.try': 'Dene',
+  'replace.tryPlaceholder': 'bir cümle yaz, sonucu gör',
+  'replace.hint':
+    'Sözlükten farklı: sözlük konuşma tanımaya ipucu verir, buradaki kurallar ' +
+    'kesin olarak uygulanır. Whisper bazı özel adları hep aynı biçimde yanlış ' +
+    'yazıyorsa burada bir kez düzeltin.',
+
   'appModes.title': 'UYGULAMA BAŞINA MOD',
   'appModes.refresh': 'yenile',
   'appModes.empty': 'Henüz kural yok',
@@ -140,6 +158,10 @@ export const tr = {
   'toggle.autoStop.desc':
     'Konuştuktan sonra sessizlik sürerse kayıt kendiliğinden biter — klavyeye dönmeye gerek kalmaz',
   'toggle.autoStop.meta': 'eşik {seconds} sn',
+  'toggle.numbers': 'Sayıları rakama çevir',
+  'toggle.numbers.desc':
+    '“on beş dakika” → “15 dakika”. Yerel ve belirlenimci; sıra sayıları (“birinci”) değişmez.',
+  'toggle.numbers.meta': 'yerel',
   'toggle.ptt': 'Basılı tut (bas-konuş)',
   'toggle.ptt.desc':
     'Ctrl+Alt+Space basılı tutulduğu sürece kaydeder, bırakınca biter. Kapalıyken aç/kapa çalışır.',

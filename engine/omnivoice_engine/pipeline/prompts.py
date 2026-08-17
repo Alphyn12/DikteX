@@ -79,6 +79,19 @@ def build_prompt(
             f"Çıktıyı da {language} dilinde ver. Başka bir dile ÇEVİRME. "
             "Bu talimatın Türkçe yazılmış olması çıktının Türkçe olacağı "
             "anlamına gelmez.",
+            "",
+            # Ölçüldü (Faz 7.11): bu kural olmadan model karışık dilli
+            # cümlelerde bazı terimleri çeviriyordu — "bu function'in
+            # performance'i" girdisi "Bu fonksiyonun performansı" çıkıyor,
+            # ama aynı cümledeki "return value" ve "cache" korunuyordu.
+            # Tutarsızlık, çevirmenin kendisinden daha rahatsız edici:
+            # kullanıcı hangi teriminin sağ kalacağını bilemiyor.
+            "KARIŞIK DİLLİ METİN:",
+            "Kullanıcı cümle içinde başka bir dilden terim kullanmış olabilir "
+            "(özellikle teknik terimler). Bu terimleri **söylendiği dilde bırak**, "
+            "karşılığına çevirme. Yalnız cümlenin dilbilgisini ve yazımını düzelt. "
+            "Örnek: “bu function'ın performance'ı” → “bu function'ın performance'ı”, "
+            "“bu fonksiyonun performansı” DEĞİL.",
         ]
 
     parts += ["", FORBIDDEN_RULES]

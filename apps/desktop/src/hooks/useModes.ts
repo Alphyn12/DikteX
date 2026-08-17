@@ -170,6 +170,8 @@ export function usePrivacy(): {
   error: string | null
   setMasking: (enabled: boolean) => Promise<void>
   setAutoStop: (seconds: number) => Promise<void>
+  normalizeNumbers: boolean
+  setNormalizeNumbers: (enabled: boolean) => Promise<void>
 } {
   const [privacy, setPrivacy] = useState<PrivacyState | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -196,6 +198,24 @@ export function usePrivacy(): {
     }
   }, [])
 
+  // Sayı normalizasyonu ayrı bir uç noktada; durumu burada tutuyoruz ki
+  // anahtar iyimser güncellensin ve tıklama anlık hissedilsin.
+  const [normalizeNumbers, setNormalize] = useState(true)
+
+  const setNormalizeNumbers = useCallback(async (enabled: boolean) => {
+    setNormalize(enabled)
+    try {
+      const result = await window.omnivoice.invoke('replacements:set-numbers', enabled)
+      setNormalize(result.enabled)
+      setError(null)
+    } catch (cause) {
+      // Motor reddettiyse gerçek duruma dönüyoruz; yanlış bir anahtar
+      // konumu, ayarın çalıştığını sandırırdı.
+      setNormalize(!enabled)
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [])
+
   const setAutoStop = useCallback(async (seconds: number) => {
     try {
       setPrivacy(await window.omnivoice.invoke('dictation:set-auto-stop', seconds))
@@ -205,7 +225,14 @@ export function usePrivacy(): {
     }
   }, [])
 
-  return { privacy, error, setMasking, setAutoStop }
+  return {
+    privacy,
+    error,
+    setMasking,
+    setAutoStop,
+    normalizeNumbers,
+    setNormalizeNumbers,
+  }
 }
 
 /**

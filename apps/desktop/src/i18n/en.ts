@@ -54,6 +54,24 @@ export const en: Messages = {
   'feed.title': 'Recent dictations',
   'feed.viewAll': 'All · local SQLite search',
 
+  'replace.title': 'AUTO-CORRECT',
+  'replace.count': '{count} rules',
+  'replace.find': 'Find',
+  'replace.findPlaceholder': 'omni voice',
+  'replace.replace': 'Replace with',
+  'replace.replacePlaceholder': 'OmniVoice',
+  'replace.wholeWord': 'Match whole word (suffixes preserved)',
+  'replace.duplicate': 'This rule already exists, or find and replace are identical',
+  'replace.empty': 'No rules yet',
+  'replace.remove': 'Delete rule',
+  'replace.used': '{count}×',
+  'replace.try': 'Test',
+  'replace.tryPlaceholder': 'type a sentence to see the result',
+  'replace.hint':
+    'Different from the vocabulary: the vocabulary is a hint to speech recognition, ' +
+    'these rules always apply. If Whisper keeps misspelling a name the same way, ' +
+    'fix it here once.',
+
   'appModes.title': 'MODE PER APP',
   'appModes.refresh': 'refresh',
   'appModes.empty': 'No rules yet',
@@ -133,6 +151,10 @@ export const en: Messages = {
   'toggle.autoStop.desc':
     'Recording ends by itself when silence follows speech — no need to reach for the keyboard',
   'toggle.autoStop.meta': '{seconds} s threshold',
+  'toggle.numbers': 'Convert numbers to digits',
+  'toggle.numbers.desc':
+    '“fifteen minutes” → “15 minutes”. Local and deterministic; ordinals are left alone.',
+  'toggle.numbers.meta': 'local',
   'toggle.ptt': 'Push to talk',
   'toggle.ptt.desc':
     'Records while Ctrl+Alt+Space is held and stops on release. When off, the shortcut toggles.',

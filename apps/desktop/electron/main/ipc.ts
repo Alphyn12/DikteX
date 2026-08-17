@@ -14,6 +14,8 @@ import type {
   AppModeMap,
   ModeId,
   PushToTalkState,
+  ReplacementList,
+  ReplacementTest,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -157,6 +159,33 @@ export function registerIpc({
 
   ipcMain.handle('snippets:test', (_event, text: string) =>
     engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
+  )
+
+  ipcMain.handle('replacements:list', () =>
+    engine.request<ReplacementList>({ type: 'replacements:list' }),
+  )
+
+  ipcMain.handle(
+    'replacements:add',
+    (_event, find: string, replace: string, wholeWord: boolean) =>
+      engine.request<ReplacementList & { added: boolean }>({
+        type: 'replacements:add',
+        find,
+        replace,
+        wholeWord,
+      }),
+  )
+
+  ipcMain.handle('replacements:remove', (_event, find: string) =>
+    engine.request<ReplacementList>({ type: 'replacements:remove', find }),
+  )
+
+  ipcMain.handle('replacements:test', (_event, text: string) =>
+    engine.request<ReplacementTest>({ type: 'replacements:test', text }),
+  )
+
+  ipcMain.handle('replacements:set-numbers', (_event, enabled: boolean) =>
+    engine.request<{ enabled: boolean }>({ type: 'replacements:set-numbers', enabled }),
   )
 
   ipcMain.handle('ptt:get', () => engine.request<PushToTalkState>({ type: 'ptt:get' }))

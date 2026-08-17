@@ -31,7 +31,10 @@ from omnivoice_engine.output.formats import PasteFormat, apply_format, detect_fo
 from omnivoice_engine.output.paste import PasteError, paste_text, read_clipboard_text
 from omnivoice_engine.output.window import WindowInfo, get_foreground_window
 from omnivoice_engine.pipeline.fillers import strip_fillers
+from omnivoice_engine.pipeline.layout import apply_layout_commands
 from omnivoice_engine.pipeline.modes import Mode, ModeId, get_mode
+from omnivoice_engine.pipeline.numbers import normalize_numbers
+from omnivoice_engine.pipeline.replacements import ReplacementLibrary
 from omnivoice_engine.pipeline.prompts import build_prompt, sanitize_output
 from omnivoice_engine.pipeline.vision_prompts import screen_question_prompt
 from omnivoice_engine.providers import ProviderError
@@ -231,6 +234,8 @@ class DictationPipeline:
         queue: ClipQueue | None = None,
         auto_stop_seconds: float = DEFAULT_AUTO_STOP_SECONDS,
         app_modes: dict[str, str] | None = None,
+        replacements: ReplacementLibrary | None = None,
+        normalize_numbers_enabled: bool = True,
     ) -> None:
         self._mic = mic
         self._stt = stt
@@ -246,6 +251,8 @@ class DictationPipeline:
         self._auto_stop_seconds = auto_stop_seconds
         #: Süreç adı → mod kimliği (Faz 7.5).
         self._app_modes = dict(app_modes or {})
+        self._replacements = replacements
+        self._normalize_numbers = normalize_numbers_enabled
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
@@ -278,6 +285,15 @@ class DictationPipeline:
 
     def set_app_modes(self, mapping: dict[str, str]) -> None:
         self._app_modes = dict(mapping)
+
+    # ── Sayı normalizasyonu (Faz 7.9) ─────────────────────────────────────
+
+    @property
+    def normalize_numbers(self) -> bool:
+        return self._normalize_numbers
+
+    def set_normalize_numbers(self, enabled: bool) -> None:
+        self._normalize_numbers = enabled
 
     def set_auto_stop_seconds(self, seconds: float) -> None:
         # Üst sınır var: 10 saniyeden uzun bir eşik, özelliği kapatmakla
@@ -562,12 +578,37 @@ class DictationPipeline:
             meta={"audioSeconds": round(clip_seconds, 2)},
         )
 
-        # 2) Yerel dolgu temizliği — anlık ve bedava
+        # 2) Yerel metin düzeltmeleri — anlık, bedava ve belirlenimci.
+        #
+        # Sıra önemli: önce dolgu temizliği, sonra değiştirme kuralları, en son
+        # sayı normalizasyonu.
+        #   * Dolgu önce, çünkü "şey, es kü el" içindeki "şey" kural
+        #     eşleşmesini bozabilir.
+        #   * Sayılar en son, çünkü bir değiştirme kuralı sayı kelimesi
+        #     üretebilir ("iki bin yirmi altı" yazan bir kural gibi).
         local = strip_fillers(transcript.text)
+
+        replaced = None
+        if self._replacements is not None:
+            replaced = self._replacements.apply(local.text)
+            if replaced.changed:
+                log.info("Değiştirme kuralı uygulandı: %s", ", ".join(replaced.applied))
+                await asyncio.to_thread(self._replacements.mark_used, replaced.applied)
+
+        cleaned_text = replaced.text if replaced else local.text
+        if self._normalize_numbers:
+            cleaned_text = normalize_numbers(cleaned_text)
+
+        # Düzen komutları en sonda: sayı normalizasyonu ya da bir değiştirme
+        # kuralı komut ifadesi üretmiş olabilir.
+        layout = apply_layout_commands(cleaned_text)
+        cleaned_text = layout.text
+        if layout.applied:
+            log.info("Düzen komutu uygulandı: %d", layout.applied)
 
         # 3) Bağlam: seçili metin ve dinamik değişkenler
         selection = ""
-        wants_selection = mode.uses_selection or mentions_selection(local.text)
+        wants_selection = mode.uses_selection or mentions_selection(cleaned_text)
         if wants_selection and session.target:
             # Ctrl+C göndermek bloklayıcı Win32 çağrıları içeriyor.
             selection = await asyncio.to_thread(read_selection, session.target.handle)
@@ -597,7 +638,7 @@ class DictationPipeline:
         # Snippet tetikleme (Properties V.3). HAM metinden değil, dolgu
         # temizlenmiş metinden aranıyor: "şey, kod inceleme yap" içindeki
         # "şey" eşleşme oranını gereksiz yere düşürürdü.
-        snippet = self._snippets.find(local.text) if self._snippets else None
+        snippet = self._snippets.find(cleaned_text) if self._snippets else None
         if snippet is not None:
             log.info("Snippet tetiklendi: %s", snippet.name)
 
@@ -608,7 +649,7 @@ class DictationPipeline:
             selected_text=selection,
             clipboard=await asyncio.to_thread(read_clipboard_text) or "",
         )
-        injected = inject(local.text, variables)
+        injected = inject(cleaned_text, variables)
 
         # PII maskeleme (Properties VI.1) — buluta çıkmadan HEMEN önce.
         #

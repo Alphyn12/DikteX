@@ -74,6 +74,9 @@ class UserSettings:
     #: Arayüz dili.
     locale: str | None = None
 
+    #: Türkçe sayıları rakama çevirme (Faz 7.9).
+    normalize_numbers: bool | None = None
+
     #: Basılı tut (push-to-talk) kipi açık mı (Faz 7.7).
     #:
     #: Varsayılan KAPALI ve bu bilinçli: kip düşük seviyeli bir klavye kancası
@@ -98,6 +101,7 @@ class UserSettings:
             "autoStopSeconds": self.auto_stop_seconds,
             "maskPii": self.mask_pii,
             "locale": self.locale,
+            "normalizeNumbers": self.normalize_numbers,
             "pushToTalk": self.push_to_talk,
             "appModes": dict(self.app_modes),
         }
@@ -113,6 +117,7 @@ _FIELD_MAP = {
     "autoStopSeconds": "auto_stop_seconds",
     "maskPii": "mask_pii",
     "locale": "locale",
+    "normalizeNumbers": "normalize_numbers",
     "pushToTalk": "push_to_talk",
     "appModes": "app_modes",
 }
@@ -208,7 +213,7 @@ def _coerce(field_name: str, value: Any) -> Any:
         }
     if field_name == "auto_stop_seconds":
         return max(0.0, min(float(value), 10.0))
-    if field_name in {"mask_pii", "push_to_talk"}:
+    if field_name in {"mask_pii", "push_to_talk", "normalize_numbers"}:
         return bool(value)
     if field_name == "locale":
         text = str(value)

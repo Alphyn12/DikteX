@@ -154,6 +154,34 @@ export interface PrivacyState {
   autoStopSeconds: number
 }
 
+// ── Otomatik değiştirme (Faz 7.8) ───────────────────────────────────────
+
+export interface ReplacementRule {
+  find: string
+  /** Yerine yazılacak metin — **olduğu gibi** yazılır. */
+  replace: string
+  /**
+   * Kelime sınırı aransın mı.
+   *
+   * Açıkken `kod` kuralı `kodlama`yı bozmaz ama `OmniVoice'u` içindeki eki
+   * korur: Türkçe ekler sona geldiği için sol sınır katı, sağ serbest.
+   */
+  wholeWord: boolean
+  used: number
+}
+
+export interface ReplacementList {
+  path: string
+  rules: ReplacementRule[]
+}
+
+/** Kural denemesinin sonucu — kullanıcı canlı diktede sınamak zorunda kalmasın. */
+export interface ReplacementTest {
+  input: string
+  output: string
+  applied: string[]
+}
+
 // ── Basılı tut kipi (Faz 7.7) ───────────────────────────────────────────
 
 export interface PushToTalkState {

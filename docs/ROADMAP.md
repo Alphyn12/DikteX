@@ -346,10 +346,10 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 
 | # | Madde | Not | Durum |
 |---|---|---|---|
-| 7.8 | Otomatik değiştirme sözlüğü | Sözlükten farklı: sözlük STT'ye *ipucu*, bu kesin bul-değiştir. Whisper bazı özel adları hep aynı biçimde yanlış yazıyor; bir kez tanımlayıp kurtulmak etkili. | ⬜ |
-| 7.9 | Türkçe sayı / tarih / birim normalizasyonu | "on beş dakika" → "15 dakika". | ⬜ |
-| 7.10 | Sesli düzen komutları | "yeni satır", "paragraf", "madde işareti". Whisper noktalama koyuyor ama düzen kuramıyor. | ⬜ |
-| 7.11 | Karışık dil (TR+EN) davranışı | **Önce ölçüm**: "bu component'i refactor et" gibi cümlelerde mevcut davranış bilinmiyor. Ölçmeden kod yazılmayacak. | ⬜ |
+| 7.8 | Otomatik değiştirme sözlüğü | Sözlükten farklı: sözlük STT'ye *ipucu*, bu kesin bul-değiştir. Whisper bazı özel adları hep aynı biçimde yanlış yazıyor; bir kez tanımlayıp kurtulmak etkili. | ✅ |
+| 7.9 | Türkçe sayı / tarih / birim normalizasyonu | "on beş dakika" → "15 dakika". | ✅ |
+| 7.10 | Sesli düzen komutları | "yeni satır", "paragraf", "madde işareti". Whisper noktalama koyuyor ama düzen kuramıyor. | ✅ |
+| 7.11 | Karışık dil (TR+EN) davranışı | **Önce ölçüm**: "bu component'i refactor et" gibi cümlelerde mevcut davranış bilinmiyor. Ölçmeden kod yazılmayacak. | ✅ |
 | 3.13 | Öğrenen kişisel stil (Style Refiner) | Pre-flight zaten bedava eğitim sinyali üretiyor: model ne yazdı vs. kullanıcı ne yapıştırdı. O fark şu an çöpe gidiyor. | ⬜ |
 
 ### 7.D — Geçmiş ve erişim

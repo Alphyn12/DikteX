@@ -33,6 +33,8 @@ from omnivoice_engine.pipeline.dictation import (
 )
 from omnivoice_engine.pipeline.meeting import MeetingPipeline
 from omnivoice_engine.pipeline.modes import MODES, get_mode
+from omnivoice_engine.pipeline.numbers import normalize_numbers
+from omnivoice_engine.pipeline.replacements import ReplacementLibrary
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database
 from omnivoice_engine.input.hotkey_hook import PushToTalkHook
@@ -68,6 +70,7 @@ class EngineContext:
         self.db = Database()
         self.vocabulary = Vocabulary.load()
         self.snippets = SnippetLibrary.load()
+        self.replacements = ReplacementLibrary.load()
         self.queue = ClipQueue()
         self.budget_usd = settings.budget_usd
         #: Basılı tut kancası — yalnız kip açıkken kuruluyor (Faz 7.7).
@@ -100,6 +103,10 @@ class EngineContext:
                 else saved.auto_stop_seconds
             ),
             app_modes=saved.app_modes,
+            replacements=self.replacements,
+            normalize_numbers_enabled=(
+                True if saved.normalize_numbers is None else saved.normalize_numbers
+            ),
         )
 
         # Toplantı boru hattı aynı mikrofonu paylaşıyor; ikisi aynı anda
@@ -531,6 +538,64 @@ async def _handle_message(
         case "queue:clear":
             count = await asyncio.to_thread(context.queue.clear)
             await reply({"type": "queue:clear", "cleared": count, **context.queue.to_payload()})
+
+        # ── Değiştirme kuralları (Faz 7.8) ────────────────────────────────
+        case "replacements:list":
+            await reply({"type": "replacements:list", **context.replacements.to_payload()})
+
+        case "replacements:add":
+            added = await asyncio.to_thread(
+                context.replacements.add,
+                str(message.get("find", "")),
+                str(message.get("replace", "")),
+                whole_word=bool(message.get("wholeWord", True)),
+            )
+            await reply(
+                {
+                    "type": "replacements:add",
+                    "added": added,
+                    **context.replacements.to_payload(),
+                }
+            )
+
+        case "replacements:remove":
+            removed = await asyncio.to_thread(
+                context.replacements.remove, str(message.get("find", ""))
+            )
+            await reply(
+                {
+                    "type": "replacements:remove",
+                    "removed": removed,
+                    **context.replacements.to_payload(),
+                }
+            )
+
+        case "replacements:test":
+            # Kural metni doğrudan değiştirdiği için deneme alanı şart:
+            # kullanıcı kuralını canlı diktede sınamak zorunda kalmamalı.
+            probe = str(message.get("text", ""))
+            outcome = context.replacements.apply(probe)
+            normalized = (
+                normalize_numbers(outcome.text)
+                if context.pipeline.normalize_numbers
+                else outcome.text
+            )
+            await reply(
+                {
+                    "type": "replacements:test",
+                    "input": probe,
+                    "output": normalized,
+                    "applied": list(outcome.applied),
+                }
+            )
+
+        case "replacements:set-numbers":
+            enabled = bool(message.get("enabled", True))
+            context.pipeline.set_normalize_numbers(enabled)
+            await asyncio.to_thread(
+                context.user_settings.update, normalize_numbers=enabled
+            )
+            await reply({"type": "replacements:set-numbers", "enabled": enabled})
 
         # ── Basılı tut kipi (Faz 7.7) ─────────────────────────────────────
         case "ptt:get":

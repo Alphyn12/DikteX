@@ -7,19 +7,21 @@
  */
 
 import type {
+  AppModeMap,
   AudioDeviceList,
   DictationState,
   EngineStats,
   ModeId,
-  AppModeMap,
   ModeList,
-  PushToTalkState,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
   PrivacyState,
+  PushToTalkState,
   QueueFlushResult,
   QueueList,
+  ReplacementList,
+  ReplacementTest,
   Snippet,
   SnippetList,
   VaultEntry,
@@ -43,8 +45,10 @@ export type {
 export { INITIAL_MEETING_STATE } from './meeting'
 
 export type {
+  AppModeMap,
   AudioDevice,
   AudioDeviceList,
+  CatalogModel,
   DictationResult,
   DictationState,
   DictationStatus,
@@ -52,17 +56,18 @@ export type {
   ModeId,
   ModeInfo,
   ModeList,
-  OutputProfile,
-  AppModeMap,
-  CatalogModel,
-  PushToTalkState,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
+  OutputProfile,
   PrivacyState,
+  PushToTalkState,
   QueueFlushResult,
   QueueList,
   QueuedClip,
+  ReplacementList,
+  ReplacementRule,
+  ReplacementTest,
   RoleModel,
   Snippet,
   SnippetList,
@@ -164,6 +169,18 @@ export interface IpcInvokeMap {
    * canlı dikte sırasında sınayabilir.
    */
   'snippets:test': { args: [text: string]; result: { match: Snippet | null } }
+
+  // ── Otomatik değiştirme (Faz 7.8 / 7.9) ────────────────────────────────
+  'replacements:list': { args: []; result: ReplacementList }
+  'replacements:add': {
+    args: [find: string, replace: string, wholeWord: boolean]
+    result: ReplacementList & { added: boolean }
+  }
+  'replacements:remove': { args: [find: string]; result: ReplacementList }
+  /** Kuralı canlı diktede sınamadan denemek için. */
+  'replacements:test': { args: [text: string]; result: ReplacementTest }
+  /** Türkçe sayıları rakama çevirme (Faz 7.9). */
+  'replacements:set-numbers': { args: [enabled: boolean]; result: { enabled: boolean } }
 
   // ── Basılı tut kipi (Faz 7.7) ──────────────────────────────────────────
   'ptt:get': { args: []; result: PushToTalkState }
