@@ -368,7 +368,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 | 7.15 | Sesle düzeltme (pre-flight) | "daha kısa yaz", "resmi olsun" deyip yeniden ürettirmek. Sesli bir uygulamada sonucu fareyle düzeltmek tuhaf. | ✅ |
 | 7.16 | Dikte kutusu | Yapıştırılamayan uygulamalar için ayrı pencere. 7.1 ile kısmen çakışıyor, o yüzden ondan sonra. | ✅ |
 | 7.17 | Kısayol çakışma çözücü | Çakışma tespiti var, çözüm önerisi yok. | ✅ |
-| 3.13b | Gemini sağlayıcısı (yedek) | Groq düşerse dikte tamamen durmasın. | ⬜ |
+| 3.13b | Gemini sağlayıcısı (yedek) | Groq düşerse dikte tamamen durmasın. | ❌ kapsam dışı |
 | 6.5 | Otomatik başlatma | Arka planda çalışan bir araç için gerekli. | ⬜ |
 
 ### 7.F — En son
@@ -411,7 +411,29 @@ API maliyeti ne, (3) mevcut bir şey aynı işi zaten yapıyor mu.
 | 5.6 | Otomatik makro & API tetikleyici | Kullanıcı Notion / Zapier / n8n kullanmıyor. Dinleyeni olmayan bir webhook yazmak ölü kod. |
 | 5.7 | Görsel prompt akış editörü | Sürükle-bırak node canvas + graf yürütme motoru **tek başına küçük bir uygulama**. Tek kullanıcı için bir şablon yazmaya kıyasla kazancı yok; **5.2 şablon kütüphanesi bu ihtiyacın büyük kısmını zaten karşılıyor**. |
 | 6.3 | Sesli not defteri (Scratchpad) | Değeri tamamen çalışma alışkanlığına bağlı ve kullanıcının böyle bir alışkanlığı yok. Altyapı (SQLite) duruyor; sonradan istenirse eklenebilir. |
+| 3.13b | Gemini sağlayıcısı (STT yedeği) | **ÖLÇÜLDÜ, GEREKSİZ ÇIKTI.** Amacı "Groq düşerse dikte durmasın"dı; o yedeklilik Faz 2.5'ten beri var ve ölçüldü: Groq'a 503 verdirildiğinde OpenRouter 1664 ms'de doğru transkriptle devraldı. Gemini eklemek redundans değil karmaşıklık olurdu — aynı kaliteyi 3.5 kat yavaş veriyor. Ayrıntılı ölçüm aşağıda. |
 | 6.4 | Yerel REST / Webhook sunucusu | Kullanıcının tetikleyecek betiği yok. Ayrıca **yapıştırma tetikleyebilen açık bir localhost portu gerçek bir saldırı yüzeyi**: tarayıcıda açık kötü niyetli bir sayfa `localhost:8756`'ya istek atıp aktif pencereye metin yapıştırabilir. Yapılacak olsaydı token + `Origin` doğrulaması zorunlu olurdu; ihtiyaç olmadığı için port kapalı kalıyor. |
+
+### 3.13b ölçümü — Türkçe STT karşılaştırması
+
+Hedef cümle: _"Bu bir konuşma tanıma testidir. Veritabanı migration işlemini
+tamamladık."_ (Microsoft Tolga TTS ile üretilmiş gerçek ses)
+
+| Sağlayıcı | Gecikme | Çıktı |
+|---|---|---|
+| groq `whisper-large-v3-turbo` | **956 ms** | "Veritabanı Migrati 10 işlemini" |
+| openrouter `gpt-4o-mini-transcribe` | **1381 ms** | "Veri tabanı migrasyonu işlemini" ✓ |
+| gemini-3.5-flash-lite | 3353 ms | "Veritabanı migrate 10 işlemini" |
+| gemini-3.6-flash | 19843 ms | doğru, ama 20 saniye |
+
+**Ölçüm yöntemi hatası ve düzeltilmesi.** İlk turda test cümlesi aksansız
+yazılmıştı ("konusma tanima") ve TTS onu yanlış telaffuz etti; **bütün**
+sağlayıcılar bozuk çıktı verdi ve Gemini haksız yere "berbat" göründü.
+Ses düzeltilince tablo tamamen değişti. Ölçüm aracının kendisi de ölçülmeli.
+
+**Sonuç:** yedeklilik ihtiyacı zaten karşılanmış. Groq'a 503 verdirildiğinde
+zincir OpenRouter'a geçiyor ve doğru sonucu veriyor; ikisi de düşerse hata
+`retryable=True` olarak yayılıyor ve kayıt kuyruğa giriyor (Faz 7.2).
 
 **Kalan 7 madde** (öncelik sırasıyla): 6.1 PII maskeleme · **3.15 model seçici**
 · 3.13 Style Refiner · 6.2 geçmiş arama · 3.13b Gemini yedeği ·
