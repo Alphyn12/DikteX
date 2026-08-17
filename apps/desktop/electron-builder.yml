@@ -1,0 +1,72 @@
+# electron-builder yapılandırması (Faz 6.6).
+#
+# Kurulum iki parçayı bir araya getiriyor:
+#   * Electron kabuğu — `out/` içindeki derlenmiş ana/preload/renderer kodu
+#   * Python motoru   — PyInstaller'ın ürettiği `engine/dist/omnivoice-engine`
+#
+# Motor `extraResources` olarak kopyalanıyor, `files` içine değil: Electron'un
+# asar arşivine giren bir `.exe` çalıştırılamaz. `engine.ts` onu tam olarak
+# `resources/engine/omnivoice-engine.exe` yolunda arıyor.
+
+# electron-builder tam sürüm istiyor: platforma özel ikilileri indirmek için
+# aralık (`^43.4.0`) çözülemiyor. `package.json`'daki aralığı bozmadan
+# burada sabitliyoruz.
+electronVersion: 43.4.0
+
+appId: dev.bariskirli.omnivoice
+productName: OmniVoice
+copyright: © 2026 Baris Kirli
+
+directories:
+  output: ../../release
+  # `resources/` sürüm kontrolünde; `build/` ise `.gitignore`'da. İkonu
+  # oraya koymak, temiz bir checkout'ta derlemeyi patlatırdı.
+  buildResources: resources
+
+files:
+  - out/**/*
+  - package.json
+
+extraResources:
+  # Tepsi ikonu: `tray.ts` paketlenmiş sürümde onu `resources/tray.png`
+  # yolunda arıyor.
+  - from: resources/tray.png
+    to: tray.png
+  # PyInstaller çıktısının TAMAMI: `.exe` tek başına çalışmıyor, yanındaki
+  # `_internal` klasörüne (PortAudio, libsndfile, pywin32 DLL'leri) ihtiyaç
+  # duyuyor.
+  - from: ../../engine/dist/omnivoice-engine
+    to: engine
+    filter:
+      - '**/*'
+
+asar: true
+# Motor zaten asar dışında; başka bir istisnaya gerek yok.
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  # 256×256 PNG; electron-builder bunu kendisi `.ico`'ya çeviriyor.
+  icon: resources/icon.png
+  # İmzalama sertifikamız yok. İmzasız kurulumda Windows SmartScreen
+  # "bilinmeyen yayıncı" uyarısı verir; kullanıcı "Yine de çalıştır" demeli.
+  # Bunu kaldırmanın tek yolu ücretli kod imzalama sertifikası.
+  signAndEditExecutable: false
+
+nsis:
+  # Kullanıcı başına kurulum: yönetici hakkı istemiyor. Uygulama zaten
+  # yalnız kendi profilinde veri tutuyor (SQLite, ayarlar, kasa).
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: OmniVoice
+  # Kaldırma sırasında kullanıcı verisi SİLİNMİYOR: dikte geçmişi ve ayarlar
+  # kullanıcının kendi verisi. Yeniden kurulumda yerinde duruyor.
+  deleteAppDataOnUninstall: false
+  artifactName: OmniVoice-Kurulum-${version}.${ext}
+
+# Otomatik güncelleme kapalı: dağıtım kanalı yok (bkz. ROADMAP 6.5).
+publish: null

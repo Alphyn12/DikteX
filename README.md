@@ -40,6 +40,44 @@ Tüm özellik listesi: [`docs/PROPERTIES.md`](docs/PROPERTIES.md)
 
 Ayrıntılı mimari: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
+## Kurulum (kullanım)
+
+[`release/OmniVoice-Kurulum-<sürüm>.exe`](release/) dosyasını çalıştırın.
+Python veya Node.js kurulu olmasına gerek yok — motor da kurulumun içinde.
+
+İlk açılışta **API anahtarlarınızı girin**: Ayarlar → API KASASI. Anahtarlar
+Windows Kimlik Bilgisi Yöneticisi'ne yazılır, kuruluma gömülmez ve başka bir
+bilgisayara taşınmaz.
+
+> **SmartScreen uyarısı.** Kurulum imzasız olduğu için Windows "bilinmeyen
+> yayıncı" diyecek; **Ek bilgi → Yine de çalıştır** ile devam edin. Bunu
+> kaldırmanın tek yolu ücretli bir kod imzalama sertifikası.
+
+### Kurulum dosyasını kendiniz üretmek
+
+```bash
+npm run dist          # arayüz + motor + NSIS kurulumu → release/
+```
+
+Üç adımı ayrı ayrı çalıştırmak isterseniz:
+
+```bash
+npm run build           # Electron kabuğu
+npm run engine:package  # Python motoru → engine/dist/ (PyInstaller)
+npm run dist:app        # NSIS kurulumu → release/
+```
+
+**Paketlemenin bilinen tuzağı.** PyInstaller Python `import`larını takip
+ediyor ama **çalışma anında yol üzerinden açılan** dosyaları göremiyor.
+`engine/omnivoice-engine.spec` bunları elle ekliyor: PortAudio DLL'i
+(mikrofon), libsndfile (FLAC), `soundcard`'ın cffi başlıkları (sistem sesi)
+ve pywin32 DLL'leri (COM, pano). Biri eksik olduğunda motor sessizce ya da
+anlaşılmaz bir hatayla düşüyor.
+
+Paketin taşınabilirliği ölçülerek doğrulandı: çalışan motorun yüklediği
+DLL'ler tarandı ve paket dışından **yalnız Windows'un kendi kütüphaneleri**
+kullanılıyor. Yani kurulum başka bir makinede de çalışır.
+
 ## Kurulum (geliştirme)
 
 ```bash

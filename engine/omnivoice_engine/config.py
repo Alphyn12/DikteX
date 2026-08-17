@@ -13,6 +13,15 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+#: `.env.example` içindeki yer tutucu. Kullanıcı silmemiş olabilir ve onu
+#: gerçek bir anahtar saymak, sağlayıcıyı hazır göstermek olurdu.
+_PLACEHOLDER = "BURAYA_YAPISTIR"
+
+
+def _is_real_key(key: str | None) -> bool:
+    return bool(key and key.strip() and key.strip() != _PLACEHOLDER)
+
+
 def _repo_root() -> Path:
     """engine/omnivoice_engine/config.py → depo kökü."""
     return Path(__file__).resolve().parents[2]
@@ -60,18 +69,32 @@ class Settings(BaseSettings):
 
     @property
     def configured_providers(self) -> list[str]:
-        """Anahtarı girilmiş sağlayıcılar. Anahtarın kendisi asla döndürülmez."""
+        """Anahtarı girilmiş sağlayıcılar. Anahtarın kendisi asla döndürülmez.
+
+        **Kasa da okunuyor**, yalnız ortam değişkenleri değil. Ölçtük:
+        paketlenmiş motorda `.env.local` yok (ve olmamalı — anahtarlar
+        Windows Kimlik Bilgisi Yöneticisi'nde). Yalnız ortama bakıldığında
+        `/health` boş liste dönüyordu ve kullanıcı, her şey çalışırken
+        arayüzde "anahtar yok" görüyordu.
+        """
         present = {
             "groq": self.groq_api_key,
             "openrouter": self.openrouter_api_key,
             "gemini": self.gemini_api_key,
         }
-        # Kullanıcı yer tutucuyu silmemiş olabilir; onu girilmiş sayma.
-        return sorted(
-            name
-            for name, key in present.items()
-            if key and key.strip() and key.strip() != "BURAYA_YAPISTIR"
-        )
+
+        # Döngüsel import'tan kaçınmak için burada içe aktarılıyor: `vault`
+        # modülü de ayarları okuyor.
+        try:
+            from omnivoice_engine.vault import get_key  # noqa: PLC0415
+
+            for name in present:
+                if not _is_real_key(present[name]):
+                    present[name] = get_key(name)
+        except Exception:  # noqa: BLE001 - kasa okunamazsa ortama düşülür
+            pass
+
+        return sorted(name for name, key in present.items() if _is_real_key(key))
 
 
 @lru_cache(maxsize=1)

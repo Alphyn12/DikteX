@@ -15,7 +15,10 @@
     "lint": "npm run lint --workspace=@omnivoice/desktop",
     "engine:install": "python -m venv engine/.venv && engine/.venv/Scripts/pip install -e engine[dev]",
     "engine:dev": "engine/.venv/Scripts/python -m omnivoice_engine",
-    "engine:test": "engine/.venv/Scripts/python -m pytest engine -q"
+    "engine:test": "engine/.venv/Scripts/python -m pytest engine -q",
+    "engine:package": "engine\\.venv\\Scripts\\python -m PyInstaller engine/omnivoice-engine.spec --noconfirm --distpath engine/dist --workpath engine/build",
+    "dist": "npm run build && npm run engine:package && npm run dist:app",
+    "dist:app": "npm run dist --workspace=@omnivoice/desktop"
   },
   "engines": {
     "node": ">=20"

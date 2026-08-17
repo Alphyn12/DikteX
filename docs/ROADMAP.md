@@ -276,7 +276,7 @@ Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
 | 6.3 | Sesli not defteri (Daily Scratchpad) + gün sonu derleme | VI | ❌ kapsam dışı |
 | 6.4 | Yerel REST / Webhook sunucusu (`localhost:8756`) | VI | ❌ kapsam dışı |
 | 6.5 | Otomatik başlatma (güncelleme kontrolü kapsam dışı) | — | ✅ |
-| 6.6 | Windows kurulum paketi (installer) | — | ⬜ |
+| 6.6 | Windows kurulum paketi (installer) | — | ✅ |
 
 ### 6.6 hakkında — dağıtımın bilinen riskleri
 
@@ -371,11 +371,11 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 | 3.13b | Gemini sağlayıcısı (yedek) | Groq düşerse dikte tamamen durmasın. | ❌ kapsam dışı |
 | 6.5 | Otomatik başlatma | Arka planda çalışan bir araç için gerekli. | ✅ |
 
-### 7.F — En son
+### 7.F — En son ✅ TAMAMLANDI
 
 | # | Madde | Not | Durum |
 |---|---|---|---|
-| 6.6 | **Windows kurulum paketi** | Kullanıcı kararı: tüm özellikler bitmeden buraya geçilmeyecek. En riskli madde; riskleri Faz 6 bölümünde yazılı. | ⬜ |
+| 6.6 | **Windows kurulum paketi** | Kullanıcı kararı: tüm özellikler bitmeden buraya geçilmeyecek. En riskli madde; riskleri Faz 6 bölümünde yazılı. | ✅ |
 
 ### Reddedilen 3 öneri
 
