@@ -296,6 +296,13 @@ export function registerIpc({
     return response.entries ?? []
   })
 
+  ipcMain.handle('history:copy', (_event, recordId: number) =>
+    engine.request<{ ok: boolean; chars: number }>({
+      type: 'history:paste',
+      recordId,
+    }),
+  )
+
   ipcMain.handle('history:search', async (_event, query: string) => {
     const response = await engine.request<{ items: HistoryRow[] }>({
       type: 'history:search',

@@ -45,6 +45,7 @@ from omnivoice_engine.storage.settings_store import SettingsStore
 from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
+from omnivoice_engine.output.paste import write_clipboard_text
 from omnivoice_engine.output.window import get_foreground_window
 from omnivoice_engine.vault import list_entries
 
@@ -766,6 +767,32 @@ async def _handle_message(
                         "callCount": spend.call_count,
                         "budgetUsd": context.budget_usd,
                     },
+                }
+            )
+
+        case "history:paste":
+            # Geçmişten yeniden yapıştırma (Faz 7.12).
+            #
+            # Dikte akışının aksine burada HEDEF PENCERE YOK: kullanıcı
+            # uygulamanın içinde, arama ekranında. Metin o an odaktaki
+            # pencereye gönderilemez — odakta OmniVoice var. Bu yüzden
+            # doğrudan panoya yazılıyor ve kullanıcı istediği yere
+            # Ctrl+V ile koyuyor.
+            # `recordId`, `id` DEĞİL: `id` alanı istek/yanıt eşleştirmesi için
+            # ayrılmış (bkz. `reply`). Kayıt kimliğini oraya koymak yanıtın
+            # yanlış isteğe eşlenmesine yol açardı.
+            record_id = int(message.get("recordId", 0) or 0)
+            row = await asyncio.to_thread(context.db.get_dictation, record_id)
+            if row is None:
+                await reply({"type": "history:paste", "ok": False, "error": "kayıt yok"})
+                return
+            ok = await asyncio.to_thread(write_clipboard_text, str(row["final_text"]))
+            log.info("Geçmiş kaydı panoya kopyalandı: %s", record_id)
+            await reply(
+                {
+                    "type": "history:paste",
+                    "ok": ok,
+                    "chars": len(str(row["final_text"])),
                 }
             )
 

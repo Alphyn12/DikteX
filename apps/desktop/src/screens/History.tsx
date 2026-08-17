@@ -25,6 +25,23 @@ export function History(): React.JSX.Element {
   const [items, setItems] = useState<HistoryRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState<number | null>(null)
+
+  const copyItem = useCallback(async (id: number) => {
+    try {
+      const result = await window.omnivoice.invoke('history:copy', id)
+      if (!result.ok) {
+        setError(t('history.copyFailed'))
+        return
+      }
+      setCopied(id)
+      // Geri bildirim kalıcı olmamalı; kullanıcı başka bir kaydı
+      // kopyaladığında eskisi hâlâ "kopyalandı" görünmesin.
+      setTimeout(() => setCopied((current) => (current === id ? null : current)), 1600)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [t])
 
   // Her tuş vuruşunda sorgu atmak, SQLite yerel olsa da gereksiz iş.
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -124,11 +141,26 @@ export function History(): React.JSX.Element {
               <p className={cx(styles.raw, 'selectable')}>{item.raw_text}</p>
             )}
 
-            <div className={cx(styles.stats, 'tabular')}>
-              {formatNumber(item.total_ms)} ms
-              {item.cost_usd > 0 && ` · $${item.cost_usd.toFixed(5)}`}
-              {item.audio_seconds > 0 &&
-                ` · ${formatNumber(item.audio_seconds, { maximumFractionDigits: 1 })}${t('unit.seconds')}`}
+            <div className={styles.footer}>
+              <div className={cx(styles.stats, 'tabular')}>
+                {formatNumber(item.total_ms)} ms
+                {item.cost_usd > 0 && ` · $${item.cost_usd.toFixed(5)}`}
+                {item.audio_seconds > 0 &&
+                  ` · ${formatNumber(item.audio_seconds, { maximumFractionDigits: 1 })}${t('unit.seconds')}`}
+              </div>
+
+              {/*
+                Yeniden yapıştırma panoya yazıyor, doğrudan bir pencereye
+                değil: kullanıcı bu ekranda olduğu için odakta OmniVoice var
+                ve "yapıştır" diyecek bir hedef yok.
+              */}
+              <button
+                type="button"
+                className={cx(styles.copy, copied === item.id && styles.copied)}
+                onClick={() => void copyItem(item.id)}
+              >
+                {copied === item.id ? t('history.copied') : t('history.copy')}
+              </button>
             </div>
           </article>
         ))}

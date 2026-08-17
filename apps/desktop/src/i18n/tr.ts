@@ -154,6 +154,9 @@ export const tr = {
   'history.results': '{count} kayıt',
   'history.empty': 'Henüz dikte yok',
   'history.noMatch': 'Eşleşen kayıt bulunamadı',
+  'history.copy': 'Panoya kopyala',
+  'history.copied': 'Kopyalandı — Ctrl+V',
+  'history.copyFailed': 'Pano kilitli — başka bir uygulama kullanıyor olabilir',
 
   'settings.eyebrow': 'AYARLAR',
   'settings.title': 'Modeller & Kısayollar',

@@ -147,6 +147,9 @@ export const en: Messages = {
   'history.results': '{count} records',
   'history.empty': 'No dictations yet',
   'history.noMatch': 'No matching records',
+  'history.copy': 'Copy to clipboard',
+  'history.copied': 'Copied — press Ctrl+V',
+  'history.copyFailed': 'Clipboard is locked — another app may be using it',
 
   'settings.eyebrow': 'SETTINGS',
   'settings.title': 'Models & Shortcuts',

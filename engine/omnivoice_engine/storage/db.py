@@ -347,6 +347,14 @@ class Database:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def get_dictation(self, record_id: int) -> dict[str, Any] | None:
+        """Tek bir kaydı kimliğine göre getirir."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM dictations WHERE id = ?", (record_id,)
+            ).fetchone()
+        return dict(row) if row else None
+
     def search_dictations(self, query: str, limit: int = 50) -> list[dict[str, Any]]:
         """Tam metin arama. Boş sorgu son kayıtları döndürür."""
         if not query.strip():
