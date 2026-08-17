@@ -30,10 +30,53 @@
   color: var(--text-subtle);
 }
 
+.exportRow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-4);
+}
+
+.exportLabel {
+  font: var(--mono-tag);
+  color: var(--text-faint);
+}
+
+.exportButton {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-subtle);
+  font: 500 11.5px/1 var(--font-ui);
+  cursor: default;
+  transition: background-color 120ms ease;
+}
+
+.exportButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.exportDone {
+  font: var(--mono-tag);
+  color: var(--mod-vault-soft);
+}
+
+/* Dosyanın maskelenmemiş metin taşıdığı uyarısı. */
+.exportNote {
+  flex: none;
+  margin-top: 5px;
+  font: 400 11px/1.45 var(--font-ui);
+  color: var(--text-faint);
+}
+
 .searchRow {
   flex: none;
   position: relative;
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
 }
 
 .search {

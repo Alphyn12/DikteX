@@ -73,6 +73,7 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'vault:list',
   'history:search',
   'history:copy',
+  'history:export',
 ])
 
 const EVENT_CHANNELS = new Set<IpcEventChannel>([

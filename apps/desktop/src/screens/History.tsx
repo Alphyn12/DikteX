@@ -31,6 +31,20 @@ export function History({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState<number | null>(null)
+  const [exported, setExported] = useState<string | null>(null)
+
+  const exportHistory = useCallback(
+    async (format: 'markdown' | 'json') => {
+      try {
+        const result = await window.omnivoice.invoke('history:export', format)
+        // İptal bir hata değil; sessizce geçiyoruz.
+        if (result.saved) setExported(t('history.exported', { count: result.count }))
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : String(cause))
+      }
+    },
+    [t],
+  )
 
   const copyItem = useCallback(async (id: number) => {
     try {
@@ -89,6 +103,29 @@ export function History({
         <h1 className={styles.title}>{t('history.title')}</h1>
         <p className={styles.subtitle}>{t('history.subtitle')}</p>
       </header>
+
+      <div className={styles.exportRow}>
+        <span className={styles.exportLabel}>{t('history.export')}</span>
+        <button
+          type="button"
+          className={styles.exportButton}
+          onClick={() => void exportHistory('markdown')}
+        >
+          {t('history.exportMd')}
+        </button>
+        <button
+          type="button"
+          className={styles.exportButton}
+          onClick={() => void exportHistory('json')}
+        >
+          {t('history.exportJson')}
+        </button>
+        {exported && <span className={styles.exportDone}>{exported}</span>}
+      </div>
+
+      {/* Dosyanın ham metin içerdiği söyleniyor: kullanıcı onu başka bir
+          yere taşıyacaksa içinde ne olduğunu bilmeli. */}
+      <p className={styles.exportNote}>{t('history.exportNote')}</p>
 
       <div className={styles.searchRow}>
         <input

@@ -147,6 +147,12 @@ export const en: Messages = {
   'history.results': '{count} records',
   'history.empty': 'No dictations yet',
   'history.noMatch': 'No matching records',
+  'history.export': 'Export',
+  'history.exportMd': 'Markdown',
+  'history.exportJson': 'JSON',
+  'history.exported': '{count} records saved',
+  'history.exportNote':
+    'The exported file contains raw text — no masking is applied. Know what is inside before moving it elsewhere.',
   'history.copy': 'Copy to clipboard',
   'history.copied': 'Copied — press Ctrl+V',
   'history.copyFailed': 'Clipboard is locked — another app may be using it',

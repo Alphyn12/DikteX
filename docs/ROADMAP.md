@@ -352,14 +352,14 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 | 7.11 | Karışık dil (TR+EN) davranışı | **Önce ölçüm**: "bu component'i refactor et" gibi cümlelerde mevcut davranış bilinmiyor. Ölçmeden kod yazılmayacak. | ✅ |
 | 3.13 | Öğrenen kişisel stil (Style Refiner) | Pre-flight zaten bedava eğitim sinyali üretiyor: model ne yazdı vs. kullanıcı ne yapıştırdı. O fark şu an çöpe gidiyor. | ⬜ |
 
-### 7.D — Geçmiş ve erişim
+### 7.D — Geçmiş ve erişim ✅ TAMAMLANDI
 
 | # | Madde | Not | Durum |
 |---|---|---|---|
 | 6.2 | Prompt geçmişi arama (FTS5) | Altındaki üç madde buna bağımlı, o yüzden başta. | ✅ |
 | 7.12 | Geçmişten yeniden yapıştır | Veri SQLite'ta duruyor, düğme yok. | ✅ |
 | 7.13 | Sesli geçmiş arama | "geçen hafta Docker hakkında ne demiştim". | ✅ |
-| 7.14 | Geçmişi dışa aktarma (Markdown / JSON) | Veri sahipliği. | ⬜ |
+| 7.14 | Geçmişi dışa aktarma (Markdown / JSON) | Veri sahipliği. | ✅ |
 
 ### 7.E — Toplama
 

@@ -1,4 +1,5 @@
-import { app, ipcMain, type BrowserWindow } from 'electron'
+import { app, dialog, ipcMain, type BrowserWindow } from 'electron'
+import { writeFile } from 'node:fs/promises'
 import type { EngineSupervisor } from './engine'
 import type { DictationController } from './dictation'
 import type { MeetingController } from './meeting'
@@ -294,6 +295,40 @@ export function registerIpc({
   ipcMain.handle('vault:list', async (): Promise<VaultEntry[]> => {
     const response = await engine.request<{ entries: VaultEntry[] }>({ type: 'vault:list' })
     return response.entries ?? []
+  })
+
+  /**
+   * Geçmişi dosyaya aktarır (Faz 7.14).
+   *
+   * İçeriği motor üretiyor, dosyayı Electron yazıyor: kaydetme yeri
+   * kullanıcının kararı ve yerli dosya penceresi burada.
+   */
+  ipcMain.handle('history:export', async (_event, format: 'markdown' | 'json') => {
+    const response = await engine.request<{ count: number; content: string }>({
+      type: 'history:export',
+      format,
+    })
+
+    const stamp = new Date().toISOString().slice(0, 10)
+    const extension = format === 'json' ? 'json' : 'md'
+    const result = await dialog.showSaveDialog(getMainWindow(), {
+      defaultPath: `omnivoice-gecmis-${stamp}.${extension}`,
+      filters: [
+        {
+          name: format === 'json' ? 'JSON' : 'Markdown',
+          extensions: [extension],
+        },
+      ],
+    })
+
+    // İptal bir hata değil; çağıran taraf ayırt edebilsin diye `saved`
+    // alanı var.
+    if (result.canceled || !result.filePath) {
+      return { saved: false, count: response.count, path: null }
+    }
+
+    await writeFile(result.filePath, response.content, 'utf-8')
+    return { saved: true, count: response.count, path: result.filePath }
   })
 
   ipcMain.handle('history:copy', (_event, recordId: number) =>

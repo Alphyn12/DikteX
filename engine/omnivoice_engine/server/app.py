@@ -38,6 +38,7 @@ from omnivoice_engine.pipeline.replacements import ReplacementLibrary
 from omnivoice_engine.pipeline.style import StyleLibrary
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database
+from omnivoice_engine.storage.export import to_json, to_markdown
 from omnivoice_engine.input.hotkey_hook import PushToTalkHook
 from omnivoice_engine.llm.catalog import ModelCatalog
 from omnivoice_engine.storage.queue import ClipQueue
@@ -767,6 +768,25 @@ async def _handle_message(
                         "callCount": spend.call_count,
                         "budgetUsd": context.budget_usd,
                     },
+                }
+            )
+
+        case "history:export":
+            # Dosyayı motor DEĞİL, Electron yazıyor: kaydetme yeri kullanıcının
+            # kararı ve yerli dosya penceresi orada. Motor yalnız içeriği
+            # üretiyor.
+            fmt = str(message.get("format", "markdown"))
+            rows = await asyncio.to_thread(context.db.all_dictations)
+            content = (
+                to_json(rows) if fmt == "json" else to_markdown(rows)
+            )
+            log.info("Geçmiş dışa aktarıldı: %d kayıt, %s", len(rows), fmt)
+            await reply(
+                {
+                    "type": "history:export",
+                    "format": fmt,
+                    "count": len(rows),
+                    "content": content,
                 }
             )
 

@@ -414,6 +414,19 @@ class Database:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def all_dictations(self) -> list[dict[str, Any]]:
+        """Tüm kayıtlar, eskiden yeniye. Dışa aktarma için (Faz 7.14).
+
+        Sınır yok: dışa aktarmanın anlamı **her şeyi** vermek. Sınır koymak,
+        kullanıcının yedeğinde olduğunu sandığı bir şeyin aslında olmaması
+        demek olurdu.
+        """
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM dictations ORDER BY created_at ASC"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def get_dictation(self, record_id: int) -> dict[str, Any] | None:
         """Tek bir kaydı kimliğine göre getirir."""
         with self._lock:

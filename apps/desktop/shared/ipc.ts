@@ -250,6 +250,16 @@ export interface IpcInvokeMap {
    * yere Ctrl+V ile koyuyor.
    */
   'history:copy': { args: [recordId: number]; result: { ok: boolean; chars: number } }
+  /**
+   * Tüm geçmişi dosyaya aktarır (Faz 7.14).
+   *
+   * `saved: false` kullanıcının kaydetme penceresini iptal ettiği anlamına
+   * gelir; hata değil, bu yüzden ayrı bir alan.
+   */
+  'history:export': {
+    args: [format: 'markdown' | 'json']
+    result: { saved: boolean; count: number; path: string | null }
+  }
 }
 
 /**
