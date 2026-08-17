@@ -50,6 +50,68 @@ EventSink = Callable[[dict[str, Any]], Awaitable[None]]
 #: WebSocket için hafif.
 _LEVEL_INTERVAL = 0.05
 
+#: Otomatik durdurma için "konuşma var" sayılan seviye (Faz 7.3).
+#:
+#: `is_silent()` ile aynı eşik değil ve olmamalı: orası "bu kaydı sağlayıcıya
+#: göndermeye değer mi" sorusunu yanıtlıyor, burası "kullanıcı hâlâ konuşuyor
+#: mu". Buradaki eşik daha yüksek, çünkü oda gürültüsünü konuşma sanıp kaydı
+#: sonsuza kadar açık tutmak, erken kapatmaktan daha can sıkıcı.
+_SPEECH_LEVEL = 0.012
+
+#: Sessizlik bu kadar sürerse kayıt kendiliğinden biter. 0 = kapalı.
+#:
+#: 1.6 sn ölçüyle değil, konuşma ritmiyle seçildi: normal bir cümle içi
+#: duraklamadan uzun, kullanıcıyı bekletmeyecek kadar kısa. Ayarlanabilir,
+#: çünkü doğru değeri ancak kullanan kişi bilir.
+DEFAULT_AUTO_STOP_SECONDS = 1.6
+
+
+class SilenceWatcher:
+    """Otomatik durdurma kararını veren durum makinesi (Faz 7.3).
+
+    Karar mantığı bilinçli olarak seviye döngüsünden ayrı: zamana bağlı bir
+    döngü içinde sınanması güvenilmez oluyor — ilk denemede iki test, döngü
+    hiç dönmediği için boş yere "geçmişti".
+
+    İki tuzak var ve ikisi de kaydı mahveder:
+
+    1. **Konuşmadan önce durmak.** Kullanıcı kısayola basıp bir an düşünürse
+       kayıt daha başlamadan biter. Sayaç bu yüzden ancak konuşma
+       duyulduktan sonra işlemeye başlıyor.
+    2. **Cümle arasında durmak.** İnsanlar cümle ortasında nefes alır ve
+       virgülde durur.
+    """
+
+    def __init__(self, *, threshold_seconds: float, speech_level: float = _SPEECH_LEVEL) -> None:
+        self.threshold_seconds = threshold_seconds
+        self.speech_level = speech_level
+        self.heard_speech = False
+        self.silent_for = 0.0
+
+    @property
+    def enabled(self) -> bool:
+        return self.threshold_seconds > 0
+
+    def observe(self, level: float, elapsed: float) -> bool:
+        """Bir ölçüm işler. Kaydın bitmesi gerekiyorsa `True` döner."""
+        if not self.enabled:
+            return False
+
+        if level >= self.speech_level:
+            self.heard_speech = True
+            self.silent_for = 0.0
+            return False
+
+        if not self.heard_speech:
+            # Henüz konuşma duyulmadı: kullanıcı düşünüyor olabilir.
+            return False
+
+        self.silent_for += elapsed
+        # Kayan nokta toleransı: 0.05 on kez toplanınca 0.4999999999999999
+        # çıkıyor ve eşik bir tur geç tetikleniyor. Tek başına 50 ms'lik bir
+        # gecikme ama adım hızı değişirse birikerek büyür.
+        return self.silent_for >= self.threshold_seconds - 1e-9
+
 
 class DictationState(Enum):
     IDLE = "idle"
@@ -167,6 +229,7 @@ class DictationPipeline:
         snippets: SnippetLibrary | None = None,
         mask_pii: bool = True,
         queue: ClipQueue | None = None,
+        auto_stop_seconds: float = DEFAULT_AUTO_STOP_SECONDS,
     ) -> None:
         self._mic = mic
         self._stt = stt
@@ -179,6 +242,7 @@ class DictationPipeline:
         #: olmalı, unutulan bir ayar değil.
         self._mask_pii = mask_pii
         self._queue = queue
+        self._auto_stop_seconds = auto_stop_seconds
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
@@ -195,6 +259,18 @@ class DictationPipeline:
 
     def set_pii_masking(self, enabled: bool) -> None:
         self._mask_pii = enabled
+
+    # ── Otomatik durdurma (Faz 7.3) ───────────────────────────────────────
+
+    @property
+    def auto_stop_seconds(self) -> float:
+        """Kaydı bitiren sessizlik süresi; 0 ise otomatik durdurma kapalı."""
+        return self._auto_stop_seconds
+
+    def set_auto_stop_seconds(self, seconds: float) -> None:
+        # Üst sınır var: 10 saniyeden uzun bir eşik, özelliği kapatmakla
+        # aynı şey ama kullanıcı açık sanmaya devam eder.
+        self._auto_stop_seconds = max(0.0, min(float(seconds), 10.0))
 
     # ── Durum yayını ──────────────────────────────────────────────────────
 
@@ -284,16 +360,41 @@ class DictationPipeline:
             )
 
     async def _stream_level(self) -> None:
-        """Ses seviyesini ve süreyi arayüze akıtır — dalga formu bunu kullanır."""
+        """Ses seviyesini akıtır ve sessizlikte kaydı bitirir (Faz 7.3).
+
+        Otomatik durdurmanın iki tuzağı var ve ikisi de kaydı mahveder:
+
+        1. **Konuşmadan önce durmak.** Kullanıcı kısayola basıp bir an
+           düşünürse kayıt daha başlamadan biter. Bu yüzden sayaç ancak
+           **konuşma duyulduktan sonra** işlemeye başlıyor.
+        2. **Cümle arasında durmak.** İnsanlar cümle ortasında nefes alır ve
+           virgülde durur. Eşik bu yüzden 1.6 sn — normal bir duraklamadan
+           uzun, ama "bitirdim" jestini beklemekten kısa.
+        """
+        watcher = SilenceWatcher(threshold_seconds=self._auto_stop_seconds)
+
         try:
             while self.state is DictationState.LISTENING:
+                level = self._mic.level
                 await self._emit(
                     {
                         "type": "dictation:level",
-                        "level": round(self._mic.level, 4),
+                        "level": round(level, 4),
                         "seconds": round(self._mic.recorded_seconds, 2),
                     }
                 )
+
+                if watcher.observe(level, _LEVEL_INTERVAL):
+                    log.info(
+                        "Sessizlik %.1f sn sürdü — kayıt otomatik bitiriliyor",
+                        watcher.silent_for,
+                    )
+                    await self._emit({"type": "dictation:auto-stop"})
+                    # `stop()` kilidi alıyor ve bu görevi iptal ediyor; ayrı bir
+                    # görevde çağırmak kendini iptal eden bir kilitlenmeyi önler.
+                    asyncio.create_task(self.stop())
+                    return
+
                 await asyncio.sleep(_LEVEL_INTERVAL)
         except asyncio.CancelledError:
             pass

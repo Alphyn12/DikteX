@@ -109,6 +109,10 @@ export const tr = {
   'toggle.preflight': 'Pre-flight önizleme',
   'toggle.preflight.desc': 'Çıktı yapıştırılmadan önce düzenleme penceresi açılır',
   'toggle.preflight.meta': 'mega-prompt’ta zorunlu',
+  'toggle.autoStop': 'Sessizlikte otomatik bitir',
+  'toggle.autoStop.desc':
+    'Konuştuktan sonra sessizlik sürerse kayıt kendiliğinden biter — klavyeye dönmeye gerek kalmaz',
+  'toggle.autoStop.meta': 'eşik {seconds} sn',
   'toggle.pii': 'PII maskeleme',
   'toggle.pii.desc':
     'TC kimlik, kart no, IBAN ve API anahtarı metin işlemeye gitmeden sansürlenir',

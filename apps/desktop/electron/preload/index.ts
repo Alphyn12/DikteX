@@ -51,6 +51,7 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'queue:clear',
   'privacy:get',
   'privacy:set-masking',
+  'dictation:set-auto-stop',
   'stats:get',
   'vault:list',
   'history:search',

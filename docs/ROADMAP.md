@@ -326,7 +326,7 @@ göre belirlendi.
 |---|---|---|---|
 | 7.1 | **Yapıştırmayı doğrulama + pano yedeği** | Yapıştırma başarısız olursa metin şu an **sessizce kayboluyor**. Teorik değil: yükseltilmiş ayrıcalıkla çalışan pencereler (Görev Yöneticisi, kurulum sihirbazları) Windows'un UIPI kuralı gereği normal bir süreçten gelen `SendInput`'u reddeder. Oyunlar ve bazı RDP oturumları da öyle. | ✅ |
 | 7.2 | **Çevrimdışı / hata kuyruğu** | İnternet kesikse veya sağlayıcı hata verirse konuşma tamamen kayboluyor. Ses zaten bellekte; diske alıp bağlantı gelince göndermek konuşmayı kurtarır. | ✅ |
-| 7.3 | **Sessizlikte otomatik durdurma (VAD)** | Kaydı bitirmek için klavyeye dönmek gerekiyor; bu "eller serbest" vaadini yarıda kesiyor. Altyapı hazır (`voiced_seconds`). | ⬜ |
+| 7.3 | **Sessizlikte otomatik durdurma (VAD)** | Kaydı bitirmek için klavyeye dönmek gerekiyor; bu "eller serbest" vaadini yarıda kesiyor. Altyapı hazır (`voiced_seconds`). | ✅ |
 | 7.4 | **Duraklat / devam** | Şu an tek seçenek bitirmek ya da iptal. Telefon çalınca kayıt çöpe gidiyor. | ⬜ |
 
 ### 7.B — Ayar kalıcılığı ve ona bağlı olanlar

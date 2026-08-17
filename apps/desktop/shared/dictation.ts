@@ -145,6 +145,13 @@ export interface PrivacyState {
   sttCovered: boolean
   /** LLM ayağı korunuyor mu — asıl sızıntı yolu burası. */
   llmCovered: boolean
+  /**
+   * Kaydı bitiren sessizlik süresi; 0 ise otomatik durdurma kapalı (Faz 7.3).
+   *
+   * Gizlilik durumuyla aynı mesajda taşınıyor çünkü ikisi de motorun canlı
+   * ayarları; ayrı bir tur atmanın karşılığı yok.
+   */
+  autoStopSeconds: number
 }
 
 // ── Başarısız kayıt kuyruğu ─────────────────────────────────────────────

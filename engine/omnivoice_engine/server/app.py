@@ -403,6 +403,10 @@ async def _handle_message(
         case "privacy:get":
             await reply(_privacy_payload(context))
 
+        case "dictation:set-auto-stop":
+            context.pipeline.set_auto_stop_seconds(float(message.get("seconds", 0)))
+            await reply(_privacy_payload(context))
+
         case "privacy:set-masking":
             enabled = bool(message.get("enabled", True))
             # Aynı bayrak iki boru hattında da var; ikisi ayrışırsa toplantı
@@ -468,6 +472,7 @@ def _privacy_payload(context: EngineContext) -> dict[str, Any]:
     return {
         "type": "privacy:get",
         "maskPii": context.pipeline.pii_masking,
+        "autoStopSeconds": context.pipeline.auto_stop_seconds,
         "sttCovered": False,
         "llmCovered": context.pipeline.pii_masking,
     }

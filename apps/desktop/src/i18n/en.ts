@@ -102,6 +102,10 @@ export const en: Messages = {
   'toggle.preflight': 'Pre-flight preview',
   'toggle.preflight.desc': 'Opens an edit window before the output is pasted',
   'toggle.preflight.meta': 'required for mega-prompt',
+  'toggle.autoStop': 'Auto-finish on silence',
+  'toggle.autoStop.desc':
+    'Recording ends by itself when silence follows speech — no need to reach for the keyboard',
+  'toggle.autoStop.meta': '{seconds} s threshold',
   'toggle.pii': 'PII masking',
   'toggle.pii.desc':
     'National ID, card, IBAN and API keys are redacted before text processing',

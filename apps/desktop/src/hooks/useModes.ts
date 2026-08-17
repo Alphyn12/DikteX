@@ -169,6 +169,7 @@ export function usePrivacy(): {
   privacy: PrivacyState | null
   error: string | null
   setMasking: (enabled: boolean) => Promise<void>
+  setAutoStop: (seconds: number) => Promise<void>
 } {
   const [privacy, setPrivacy] = useState<PrivacyState | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -195,7 +196,16 @@ export function usePrivacy(): {
     }
   }, [])
 
-  return { privacy, error, setMasking }
+  const setAutoStop = useCallback(async (seconds: number) => {
+    try {
+      setPrivacy(await window.omnivoice.invoke('dictation:set-auto-stop', seconds))
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [])
+
+  return { privacy, error, setMasking, setAutoStop }
 }
 
 /**

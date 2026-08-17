@@ -172,6 +172,10 @@ export function registerIpc({
     engine.request<PrivacyState>({ type: 'privacy:set-masking', enabled }),
   )
 
+  ipcMain.handle('dictation:set-auto-stop', (_event, seconds: number) =>
+    engine.request<PrivacyState>({ type: 'dictation:set-auto-stop', seconds }),
+  )
+
   // ── Mikrofon ───────────────────────────────────────────────────────────
 
   ipcMain.handle('audio:list-devices', async (): Promise<AudioDeviceList> => {

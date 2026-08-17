@@ -168,7 +168,7 @@ function Switches(): React.JSX.Element {
   const [preflight, setPreflight] = useState(true)
   // PII anahtarı artık motordaki gerçek bayrağa bağlı. Diğer ikisi hâlâ
   // yerel durum — karşılıkları henüz yok (3.15 ve mod başına pre-flight).
-  const { privacy, setMasking } = usePrivacy()
+  const { privacy, setMasking, setAutoStop } = usePrivacy()
 
   return (
     <div className={styles.switches}>
@@ -187,6 +187,21 @@ function Switches(): React.JSX.Element {
         module="prompt"
         on={preflight}
         onChange={setPreflight}
+      />
+      {/*
+        Otomatik durdurma varsayılan olarak AÇIK. Eşiği koda gömmek yerine
+        kapatılabilir yaptık: doğru değeri ancak konuşan kişi bilir ve yanlış
+        eşik kaydı yarıda keser.
+      */}
+      <SwitchRow
+        title={t('toggle.autoStop')}
+        description={t('toggle.autoStop.desc')}
+        meta={t('toggle.autoStop.meta', {
+          seconds: privacy?.autoStopSeconds ?? 1.6,
+        })}
+        module="audio"
+        on={(privacy?.autoStopSeconds ?? 0) > 0}
+        onChange={(next) => void setAutoStop(next ? 1.6 : 0)}
       />
       <SwitchRow
         title={t('toggle.pii')}

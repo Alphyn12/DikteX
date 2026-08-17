@@ -161,6 +161,8 @@ export interface IpcInvokeMap {
   // ── Gizlilik ───────────────────────────────────────────────────────────
   'privacy:get': { args: []; result: PrivacyState }
   'privacy:set-masking': { args: [enabled: boolean]; result: PrivacyState }
+  /** Sessizlikte otomatik durdurma eşiği; 0 kapatır. */
+  'dictation:set-auto-stop': { args: [seconds: number]; result: PrivacyState }
 
   // ── Mikrofon ───────────────────────────────────────────────────────────
   'audio:list-devices': { args: []; result: AudioDeviceList }
