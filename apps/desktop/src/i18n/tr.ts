@@ -60,6 +60,16 @@ export const tr = {
   'feed.title': 'Son dikteler',
   'feed.viewAll': 'Tümü · yerel SQLite arama',
 
+  'appModes.title': 'UYGULAMA BAŞINA MOD',
+  'appModes.refresh': 'yenile',
+  'appModes.empty': 'Henüz kural yok',
+  'appModes.remove': 'Kuralı kaldır',
+  'appModes.addFocused': 'Şu an açık: {app}',
+  'appModes.pickMode': 'mod seç…',
+  'appModes.hint':
+    'Kural yalnız genel kısayolda (Ctrl+Alt+Space) uygulanır. Bir mod kısayoluna ' +
+    'doğrudan bastığınızda seçiminiz korunur — kural onu ezmez.',
+
   'models.title': 'MODELLER',
   'models.role.llm': 'Metin işleme',
   'models.role.vision': 'Görsel (ekran gözü)',

@@ -230,6 +230,7 @@ class DictationPipeline:
         mask_pii: bool = True,
         queue: ClipQueue | None = None,
         auto_stop_seconds: float = DEFAULT_AUTO_STOP_SECONDS,
+        app_modes: dict[str, str] | None = None,
     ) -> None:
         self._mic = mic
         self._stt = stt
@@ -243,6 +244,8 @@ class DictationPipeline:
         self._mask_pii = mask_pii
         self._queue = queue
         self._auto_stop_seconds = auto_stop_seconds
+        #: Süreç adı → mod kimliği (Faz 7.5).
+        self._app_modes = dict(app_modes or {})
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
@@ -266,6 +269,15 @@ class DictationPipeline:
     def auto_stop_seconds(self) -> float:
         """Kaydı bitiren sessizlik süresi; 0 ise otomatik durdurma kapalı."""
         return self._auto_stop_seconds
+
+    # ── Uygulama başına mod (Faz 7.5) ─────────────────────────────────────
+
+    @property
+    def app_modes(self) -> dict[str, str]:
+        return dict(self._app_modes)
+
+    def set_app_modes(self, mapping: dict[str, str]) -> None:
+        self._app_modes = dict(mapping)
 
     def set_auto_stop_seconds(self, seconds: float) -> None:
         # Üst sınır var: 10 saniyeden uzun bir eşik, özelliği kapatmakla
@@ -303,6 +315,22 @@ class DictationPipeline:
             # başka bir pencereye geçerse metin yine doğru yere gitmeli.
             target = get_foreground_window()
             resolved_mode = get_mode(mode)
+
+            # Uygulama başına varsayılan mod (Faz 7.5).
+            #
+            # YALNIZ genel kısayoldan gelindiğinde uygulanıyor. Kullanıcı
+            # Ctrl+Alt+K ile kod modunu açıkça seçtiyse bunu ezmek, verdiği
+            # kararı görmezden gelmek olurdu — ve neden başka bir modda
+            # çalıştığını hiçbir yerde göremezdi.
+            if resolved_mode.id is ModeId.QUICK and target and self._app_modes:
+                key = target.process_name.lower().removesuffix(".exe").strip()
+                mapped = self._app_modes.get(key)
+                if mapped:
+                    try:
+                        resolved_mode = get_mode(mapped)
+                        log.info("Uygulama modu uygulandı: %s → %s", key, mapped)
+                    except (KeyError, ValueError):
+                        log.warning("Bilinmeyen uygulama modu yok sayıldı: %s", mapped)
             profile = profile_for(target.process_name if target else "")
 
             # Ekran görüntüsü kayıttan ÖNCE alınır: kullanıcı konuşurken ekran

@@ -11,6 +11,7 @@ import type {
   DictationState,
   EngineStats,
   ModeId,
+  AppModeMap,
   ModeList,
   ModelCatalogResult,
   ModelRole,
@@ -51,6 +52,7 @@ export type {
   ModeInfo,
   ModeList,
   OutputProfile,
+  AppModeMap,
   CatalogModel,
   ModelCatalogResult,
   ModelRole,
@@ -160,6 +162,11 @@ export interface IpcInvokeMap {
    * canlı dikte sırasında sınayabilir.
    */
   'snippets:test': { args: [text: string]; result: { match: Snippet | null } }
+
+  // ── Uygulama başına mod (Faz 7.5) ──────────────────────────────────────
+  'appmodes:get': { args: []; result: AppModeMap }
+  /** `mode: null` eşlemeyi kaldırır. */
+  'appmodes:set': { args: [app: string, mode: ModeId | null]; result: AppModeMap }
 
   // ── Modeller (Faz 3.15) ────────────────────────────────────────────────
   /** Canlı katalog. Koda gömülü liste bir model kalkınca yalan söylerdi. */

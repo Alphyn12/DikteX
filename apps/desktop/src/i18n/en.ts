@@ -54,6 +54,16 @@ export const en: Messages = {
   'feed.title': 'Recent dictations',
   'feed.viewAll': 'All · local SQLite search',
 
+  'appModes.title': 'MODE PER APP',
+  'appModes.refresh': 'refresh',
+  'appModes.empty': 'No rules yet',
+  'appModes.remove': 'Remove rule',
+  'appModes.addFocused': 'Currently open: {app}',
+  'appModes.pickMode': 'pick a mode…',
+  'appModes.hint':
+    'Rules apply only to the generic shortcut (Ctrl+Alt+Space). Pressing a mode ' +
+    'shortcut directly keeps your choice — the rule does not override it.',
+
   'models.title': 'MODELS',
   'models.role.llm': 'Text processing',
   'models.role.vision': 'Vision (screen eye)',

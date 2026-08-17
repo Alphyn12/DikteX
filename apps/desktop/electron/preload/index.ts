@@ -46,6 +46,8 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'snippets:add',
   'snippets:remove',
   'snippets:test',
+  'appmodes:get',
+  'appmodes:set',
   'models:catalog',
   'models:get',
   'models:set',

@@ -74,6 +74,13 @@ class UserSettings:
     #: Arayüz dili.
     locale: str | None = None
 
+    #: Uygulama başına varsayılan mod (Faz 7.5): süreç adı → mod kimliği.
+    #:
+    #: Anahtar küçük harfe indirilmiş, `.exe` eki atılmış süreç adı —
+    #: `context.apps.profile_for` ile aynı biçim. Aynı normalleştirmeyi
+    #: kullanmak şart: iki yer ayrışırsa eşleşme sessizce çalışmaz.
+    app_modes: dict[str, str] = field(default_factory=dict)
+
     def to_payload(self) -> dict[str, Any]:
         return {
             "microphoneName": self.microphone_name,
@@ -83,6 +90,7 @@ class UserSettings:
             "autoStopSeconds": self.auto_stop_seconds,
             "maskPii": self.mask_pii,
             "locale": self.locale,
+            "appModes": dict(self.app_modes),
         }
 
 
@@ -96,6 +104,7 @@ _FIELD_MAP = {
     "autoStopSeconds": "auto_stop_seconds",
     "maskPii": "mask_pii",
     "locale": "locale",
+    "appModes": "app_modes",
 }
 
 
@@ -176,6 +185,17 @@ class SettingsStore:
 
 def _coerce(field_name: str, value: Any) -> Any:
     """Dosyadan gelen değeri beklenen tipe çevirir."""
+    if field_name == "app_modes":
+        if not isinstance(value, dict):
+            raise TypeError("app_modes bir eşleme olmalı")
+        # Anahtarlar `profile_for` ile aynı biçime indiriliyor; aksi hâlde
+        # "Code.exe" yazan bir kayıt hiç eşleşmez ve kullanıcı sebebini
+        # bulamaz.
+        return {
+            str(k).lower().removesuffix(".exe").strip(): str(v)
+            for k, v in value.items()
+            if str(k).strip() and str(v).strip()
+        }
     if field_name == "auto_stop_seconds":
         return max(0.0, min(float(value), 10.0))
     if field_name == "mask_pii":

@@ -154,6 +154,20 @@ export interface PrivacyState {
   autoStopSeconds: number
 }
 
+// ── Uygulama başına mod (Faz 7.5) ───────────────────────────────────────
+
+export interface AppModeMap {
+  /** Süreç adı (küçük harf, `.exe` eki atılmış) → mod kimliği. */
+  modes: Record<string, ModeId>
+  /**
+   * O an odaktaki uygulama.
+   *
+   * Kullanıcının süreç adını (`Code.exe`) elle yazması beklenemez; arayüz
+   * "şu an açık olanı ekle" diyebilmeli.
+   */
+  focused: { process: string; name: string } | null
+}
+
 // ── Model kataloğu (Faz 3.15) ───────────────────────────────────────────
 
 /** OpenRouter kataloğundan gelen bir model. */

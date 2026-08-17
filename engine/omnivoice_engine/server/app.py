@@ -31,7 +31,7 @@ from omnivoice_engine.pipeline.dictation import (
     DictationState,
 )
 from omnivoice_engine.pipeline.meeting import MeetingPipeline
-from omnivoice_engine.pipeline.modes import MODES
+from omnivoice_engine.pipeline.modes import MODES, get_mode
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database
 from omnivoice_engine.llm.catalog import ModelCatalog
@@ -40,6 +40,7 @@ from omnivoice_engine.storage.settings_store import SettingsStore
 from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
+from omnivoice_engine.output.window import get_foreground_window
 from omnivoice_engine.vault import list_entries
 
 log = logging.getLogger(__name__)
@@ -94,6 +95,7 @@ class EngineContext:
                 if saved.auto_stop_seconds is None
                 else saved.auto_stop_seconds
             ),
+            app_modes=saved.app_modes,
         )
 
         # Toplantı boru hattı aynı mikrofonu paylaşıyor; ikisi aynı anda
@@ -480,6 +482,38 @@ async def _handle_message(
             count = await asyncio.to_thread(context.queue.clear)
             await reply({"type": "queue:clear", "cleared": count, **context.queue.to_payload()})
 
+        # ── Uygulama başına mod (Faz 7.5) ─────────────────────────────────
+        case "appmodes:get":
+            await reply(_app_modes_payload(context))
+
+        case "appmodes:set":
+            app = str(message.get("app", "")).lower().removesuffix(".exe").strip()
+            mode_id = message.get("mode")
+            mapping = context.pipeline.app_modes
+
+            if not app:
+                await reply({"type": "appmodes:set", "error": "uygulama adı boş"})
+                return
+
+            if mode_id:
+                try:
+                    # Mod kimliğini burada doğruluyoruz: geçersiz bir değeri
+                    # kaydetmek, dikte anında sessizce yok sayılmasına yol
+                    # açardı ve kullanıcı ayarın çalışmadığını görürdü.
+                    get_mode(str(mode_id))
+                except (KeyError, ValueError):
+                    await reply(
+                        {"type": "appmodes:set", "error": f"bilinmeyen mod: {mode_id}"}
+                    )
+                    return
+                mapping[app] = str(mode_id)
+            else:
+                mapping.pop(app, None)
+
+            context.pipeline.set_app_modes(mapping)
+            await asyncio.to_thread(context.user_settings.update, app_modes=mapping)
+            await reply(_app_modes_payload(context))
+
         # ── Modeller (Faz 3.15) ───────────────────────────────────────────
         case "models:catalog":
             try:
@@ -632,4 +666,25 @@ def _models_payload(context: EngineContext) -> dict[str, Any]:
             "model": saved.vision_model or context.llm.default_model,
             "source": "user" if saved.vision_model else "llm",
         },
+    }
+
+
+def _app_modes_payload(context: EngineContext) -> dict[str, Any]:
+    """Uygulama → mod eşlemesi ve o an odaktaki uygulama.
+
+    Odaktaki uygulama da gönderiliyor: kullanıcının süreç adını (`Code.exe`)
+    elle yazması beklenemez, arayüz "şu an açık olanı ekle" diyebilmeli.
+    """
+    focused = get_foreground_window()
+    return {
+        "type": "appmodes:get",
+        "modes": context.pipeline.app_modes,
+        "focused": (
+            {
+                "process": focused.process_name,
+                "name": focused.app_name,
+            }
+            if focused
+            else None
+        ),
     }

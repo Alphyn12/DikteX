@@ -11,6 +11,8 @@ import type {
   MeetingHistoryItem,
   ModeList,
   VaultEntry,
+  AppModeMap,
+  ModeId,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -154,6 +156,14 @@ export function registerIpc({
 
   ipcMain.handle('snippets:test', (_event, text: string) =>
     engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
+  )
+
+  ipcMain.handle('appmodes:get', () =>
+    engine.request<AppModeMap>({ type: 'appmodes:get' }),
+  )
+
+  ipcMain.handle('appmodes:set', (_event, app: string, mode: ModeId | null) =>
+    engine.request<AppModeMap>({ type: 'appmodes:set', app, mode }),
   )
 
   ipcMain.handle('models:catalog', (_event, force?: boolean) =>
