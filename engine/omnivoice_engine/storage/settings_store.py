@@ -59,6 +59,14 @@ class UserSettings:
     #: çıkmasıyla anlar.
     microphone_name: str | None = None
 
+    #: Metin işleme sağlayıcısı: `openrouter` ya da `gemini`.
+    #:
+    #: İkisi de aynı modeli sunabiliyor ama **gizlilik sınıfları farklı**:
+    #: OpenRouter ücretli uç nokta (eğitime kapalı), Gemini'nin AI Studio
+    #: ücretsiz katmanı gönderilen veriyi eğitimde kullanıyor. Seçim
+    #: kullanıcının, ama bilerek yapması gerekiyor.
+    llm_provider: str | None = None
+
     #: Rol başına model seçimi. `None` ise dağıtımın varsayılanı kullanılır.
     stt_model: str | None = None
     llm_model: str | None = None
@@ -105,6 +113,7 @@ class UserSettings:
     def to_payload(self) -> dict[str, Any]:
         return {
             "microphoneName": self.microphone_name,
+            "llmProvider": self.llm_provider,
             "sttModel": self.stt_model,
             "llmModel": self.llm_model,
             "visionModel": self.vision_model,
@@ -123,6 +132,7 @@ class UserSettings:
 #: adlarını yeniden adlandırdığımızda sessizce bozulmasın.
 _FIELD_MAP = {
     "microphoneName": "microphone_name",
+    "llmProvider": "llm_provider",
     "sttModel": "stt_model",
     "llmModel": "llm_model",
     "visionModel": "vision_model",
@@ -235,6 +245,9 @@ def _coerce(field_name: str, value: Any) -> Any:
         "preflight",
     }:
         return bool(value)
+    if field_name == "llm_provider":
+        text = str(value).strip().lower()
+        return text if text in {"openrouter", "gemini"} else None
     if field_name == "locale":
         text = str(value)
         return text if text in {"tr", "en"} else None

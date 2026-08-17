@@ -20,7 +20,7 @@ import styles from './ModelPicker.module.css'
  */
 export function ModelPicker(): React.JSX.Element {
   const { t } = useI18n()
-  const { selection, catalog, catalogError, loading, error, loadCatalog, setModel } =
+  const { selection, catalog, catalogError, loading, error, loadCatalog, setModel, setProvider } =
     useModels()
 
   // `:batch` modelleri listeden çıkarılıyor, gizlenmiyor diye ayrı bir uyarı
@@ -48,6 +48,37 @@ export function ModelPicker(): React.JSX.Element {
         >
           {loading ? t('models.loading') : t('models.refresh')}
         </button>
+      </div>
+
+      {/*
+        Sağlayıcı seçimi modellerin ÜSTÜNDE: hangi modellerin listeleneceğini
+        o belirliyor ve sırayı tersine çevirmek kafa karıştırırdı.
+      */}
+      <div className={styles.role}>
+        <div className={styles.roleHead}>
+          <span className={styles.roleName}>{t('models.provider')}</span>
+          {selection?.providerPrivacy === 'trains_on_data' && (
+            <span className={styles.training} title={t('training.tooltip')}>
+              {t('training.badge')}
+            </span>
+          )}
+        </div>
+        <select
+          className={styles.select}
+          value={selection?.provider ?? 'openrouter'}
+          onChange={(event) => {
+            void setProvider(event.target.value as 'openrouter' | 'gemini')
+          }}
+        >
+          <option value="openrouter">{t('models.provider.openrouter')}</option>
+          <option value="gemini">{t('models.provider.gemini')}</option>
+        </select>
+        {selection?.providerPrivacy === 'trains_on_data' && (
+          <p className={styles.warning}>{t('models.provider.trainsWarning')}</p>
+        )}
+        {error === 'anahtar-yok' && (
+          <p className={styles.warning}>{t('models.provider.noKey')}</p>
+        )}
       </div>
 
       <div className={styles.roles}>
@@ -105,7 +136,7 @@ export function ModelPicker(): React.JSX.Element {
       </div>
 
       {catalogError && <p className={styles.error}>{catalogError}</p>}
-      {error && <p className={styles.error}>{error}</p>}
+      {error && error !== 'anahtar-yok' && <p className={styles.error}>{error}</p>}
 
       <p className={styles.hint}>
         {catalog.length > 0

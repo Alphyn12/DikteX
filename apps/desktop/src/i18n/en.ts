@@ -98,6 +98,13 @@ export const en: Messages = {
     'shortcut directly keeps your choice — the rule does not override it.',
 
   'models.title': 'MODELS',
+  'models.provider': 'Provider',
+  'models.provider.openrouter': 'OpenRouter (paid · no training)',
+  'models.provider.gemini': 'Gemini — direct (free · trains on data)',
+  'models.provider.trainsWarning':
+    'Gemini’s free tier uses the text you send for model training. The same ' +
+    'model via OpenRouter does not. Prefer OpenRouter for sensitive content.',
+  'models.provider.noKey': 'No key for this provider — add one under API VAULT.',
   'models.role.llm': 'Text processing',
   'models.role.vision': 'Vision (screen eye)',
   'models.source.user': 'selected',

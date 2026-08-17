@@ -80,6 +80,14 @@
   opacity: 0.5;
 }
 
+.training {
+  padding: 1px 6px;
+  border-radius: var(--radius-badge);
+  background: rgba(229, 154, 43, 0.18);
+  color: var(--mod-automation-soft);
+  font: var(--mono-tag);
+}
+
 .price {
   font: var(--mono-tag);
   color: var(--text-subtle);

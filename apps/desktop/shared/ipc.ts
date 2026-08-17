@@ -15,6 +15,7 @@ import type {
   EngineStats,
   ModeId,
   ModeList,
+  LlmProviderName,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -60,6 +61,7 @@ export type {
   ModeId,
   ModeInfo,
   ModeList,
+  LlmProviderName,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -219,6 +221,16 @@ export interface IpcInvokeMap {
   'models:catalog': { args: [force?: boolean]; result: ModelCatalogResult }
   'models:get': { args: []; result: ModelSelection }
   'models:set': { args: [role: ModelRole, model: string | null]; result: ModelSelection }
+  /**
+   * Metin işleme sağlayıcısını değiştirir.
+   *
+   * `changed: false` demek sağlayıcının anahtarı yok demek — seçim
+   * uygulanmadı ve arayüz bunu söylemeli.
+   */
+  'models:set-provider': {
+    args: [provider: LlmProviderName]
+    result: ModelSelection & { changed: boolean }
+  }
 
   // ── Başarısız kayıt kuyruğu ────────────────────────────────────────────
   'queue:list': { args: []; result: QueueList }

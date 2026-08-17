@@ -25,6 +25,7 @@ from omnivoice_engine.audio.capture import (
     refresh_devices,
 )
 from omnivoice_engine.config import get_settings
+from omnivoice_engine.llm.gemini import GeminiLlm
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
 from omnivoice_engine.pipeline.dictation import (
     DEFAULT_AUTO_STOP_SECONDS,
@@ -40,7 +41,7 @@ from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database
 from omnivoice_engine.storage.export import to_json, to_markdown
 from omnivoice_engine.input.hotkey_hook import PushToTalkHook
-from omnivoice_engine.llm.catalog import ModelCatalog
+from omnivoice_engine.llm.catalog import ModelCatalog, fetch_gemini_models
 from omnivoice_engine.storage.queue import ClipQueue
 from omnivoice_engine.storage.settings_store import SettingsStore
 from omnivoice_engine.storage.snippets import SnippetLibrary
@@ -48,7 +49,7 @@ from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
 from omnivoice_engine.output.paste import write_clipboard_text
 from omnivoice_engine.output.window import get_foreground_window
-from omnivoice_engine.vault import list_entries
+from omnivoice_engine.vault import get_key, list_entries
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +70,11 @@ class EngineContext:
         self.catalog = ModelCatalog()
         self.mic = MicrophoneCapture(pre_roll_seconds=1.0)
         self.stt = SttRouter()
-        self.llm = OpenRouterLlm()
+        # Sağlayıcı seçimi kalıcı; varsayılan OpenRouter çünkü eğitime
+        # kapalı. Gemini'nin ücretsiz katmanı eğitime açık ve bunu kullanıcı
+        # bilerek seçmeli.
+        self.llm_provider_name = self.user_settings.settings.llm_provider or "openrouter"
+        self.llm = self._make_llm(self.llm_provider_name)
         self.db = Database()
         self.vocabulary = Vocabulary.load()
         self.snippets = SnippetLibrary.load()
@@ -127,6 +132,36 @@ class EngineContext:
             emit=self.broadcast,
             mask_pii=True if saved.mask_pii is None else saved.mask_pii,
         )
+
+    # ── Metin işleme sağlayıcısı ──────────────────────────────────────────
+
+    @staticmethod
+    def _make_llm(name: str) -> Any:
+        return GeminiLlm() if name == "gemini" else OpenRouterLlm()
+
+    def set_llm_provider(self, name: str) -> bool:
+        """Metin işleme sağlayıcısını değiştirir.
+
+        Anahtarı olmayan bir sağlayıcıya geçmeyi reddediyoruz: kullanıcı
+        seçimin tuttuğunu sanıp her diktede hata alırdı.
+        """
+        if name not in {"openrouter", "gemini"}:
+            return False
+
+        candidate = self._make_llm(name)
+        if not candidate.is_available():
+            log.warning("Sağlayıcı seçilemedi, anahtarı yok: %s", name)
+            return False
+
+        # Model seçimi sağlayıcıya özgü; geçişte sıfırlanıyor, yoksa
+        # OpenRouter kimliği (`google/gemini-...`) Gemini API'sine gider ve
+        # her dikte 404 verirdi.
+        self.llm = candidate
+        self.llm_provider_name = name
+        self.pipeline._llm = candidate  # noqa: SLF001
+        self.meeting._llm = candidate  # noqa: SLF001
+        log.info("Metin işleme sağlayıcısı: %s", name)
+        return True
 
     # ── Basılı tut kipi (Faz 7.7) ─────────────────────────────────────────
 
@@ -687,7 +722,14 @@ async def _handle_message(
         # ── Modeller (Faz 3.15) ───────────────────────────────────────────
         case "models:catalog":
             try:
-                models = await context.catalog.models(force=bool(message.get("force")))
+                if context.llm_provider_name == "gemini":
+                    # Sağlayıcıya göre farklı katalog: Gemini seçiliyken
+                    # OpenRouter kimlikleri (`google/gemini-...`) göstermek,
+                    # seçildiklerinde her diktede 404 üretirdi.
+                    key = get_key("gemini")
+                    models = await fetch_gemini_models(key) if key else []
+                else:
+                    models = await context.catalog.models(force=bool(message.get("force")))
                 await reply(
                     {
                         "type": "models:catalog",
@@ -702,6 +744,16 @@ async def _handle_message(
 
         case "models:get":
             await reply(_models_payload(context))
+
+        case "models:set-provider":
+            name = str(message.get("provider", ""))
+            ok = context.set_llm_provider(name)
+            if ok:
+                await asyncio.to_thread(
+                    context.user_settings.update, llm_provider=name, llm_model=None
+                )
+                context.llm.set_default_model(None)
+            await reply({**_models_payload(context), "changed": ok})
 
         case "models:set":
             role = str(message.get("role", ""))
@@ -881,11 +933,16 @@ def _models_payload(context: EngineContext) -> dict[str, Any]:
     """
     saved = context.user_settings.settings
     settings = get_settings()
+    privacy = context.llm.info.privacy.value
     stt_model = next(
         (p.model for p in context.stt.providers if hasattr(p, "model")), settings.stt_model
     )
     return {
         "type": "models:get",
+        "provider": context.llm_provider_name,
+        # Gizlilik sınıfı arayüze taşınıyor: aynı model iki sağlayıcıda
+        # farklı sınıfta olabiliyor ve kullanıcı bunu görmeli.
+        "providerPrivacy": privacy,
         "llm": {
             "model": context.llm.default_model,
             "source": "user" if saved.llm_model else "default",

@@ -73,6 +73,7 @@ const INVOKE_CHANNEL_MAP: Record<IpcInvokeChannel, true> = {
   'models:catalog': true,
   'models:get': true,
   'models:set': true,
+  'models:set-provider': true,
   'queue:list': true,
   'queue:flush': true,
   'queue:remove': true,

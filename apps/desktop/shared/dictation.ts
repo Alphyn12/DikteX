@@ -301,7 +301,20 @@ export interface RoleModel {
   source: 'user' | 'default' | 'llm'
 }
 
-export type ModelSelection = Record<ModelRole, RoleModel>
+export type ModelSelection = Record<ModelRole, RoleModel> & {
+  /** Etkin metin işleme sağlayıcısı. */
+  provider: LlmProviderName
+  /**
+   * Sağlayıcının gizlilik sınıfı.
+   *
+   * Aynı model iki sağlayıcıda FARKLI sınıfta olabiliyor: OpenRouter
+   * üzerinden giden Gemini ücretli uç nokta (eğitime kapalı), doğrudan
+   * AI Studio ücretsiz katmanı ise eğitime açık.
+   */
+  providerPrivacy: 'private' | 'trains_on_data'
+}
+
+export type LlmProviderName = 'openrouter' | 'gemini'
 
 export interface ModelCatalogResult {
   models: CatalogModel[]

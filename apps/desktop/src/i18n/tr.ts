@@ -104,6 +104,14 @@ export const tr = {
     'doğrudan bastığınızda seçiminiz korunur — kural onu ezmez.',
 
   'models.title': 'MODELLER',
+  'models.provider': 'Sağlayıcı',
+  'models.provider.openrouter': 'OpenRouter (ücretli · eğitime kapalı)',
+  'models.provider.gemini': 'Gemini — doğrudan (ücretsiz · eğitime açık)',
+  'models.provider.trainsWarning':
+    'Gemini’nin ücretsiz katmanı gönderdiğiniz metni model eğitiminde kullanır. ' +
+    'Aynı model OpenRouter üzerinden eğitime kapalıdır. Hassas içerik dikte ' +
+    'ediyorsanız OpenRouter’ı tercih edin.',
+  'models.provider.noKey': 'Bu sağlayıcının anahtarı yok — API KASASI’ndan ekleyin.',
   'models.role.llm': 'Metin işleme',
   'models.role.vision': 'Görsel (ekran gözü)',
   'models.source.user': 'seçildi',

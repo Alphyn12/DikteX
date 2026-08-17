@@ -107,6 +107,61 @@ def _parse(entry: dict[str, object]) -> ModelInfo | None:
     )
 
 
+GEMINI_MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+
+#: Gemini kataloğunda gizlenen model aileleri.
+#:
+#: TTS ve görsel üretim modelleri `generateContent` destekliyor ama metin
+#: temizliği yapmıyorlar; listede görünmeleri yalnız yanlış seçime davet.
+_GEMINI_SKIP = ("-tts", "-image", "embedding", "aqa")
+
+
+async def fetch_gemini_models(api_key: str) -> list[ModelInfo]:
+    """Gemini kataloğu — kullanıcının kendi anahtarıyla.
+
+    Ayrı bir fonksiyon çünkü şekli OpenRouter'dan tamamen farklı: fiyat
+    bilgisi yok (ücretsiz katman), yetenekler `supportedGenerationMethods`
+    listesinde ve modeller `models/` önekiyle geliyor.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
+            response = await client.get(GEMINI_MODELS_URL, params={"key": api_key})
+    except httpx.TimeoutException as exc:
+        raise ProviderError("gemini", "model listesi zaman aşımı", retryable=True) from exc
+    except httpx.HTTPError as exc:
+        raise ProviderError("gemini", f"ağ hatası: {exc}", retryable=True) from exc
+
+    if response.status_code >= 400:
+        raise ProviderError(
+            "gemini",
+            f"model listesi alınamadı ({response.status_code})",
+            retryable=response.status_code >= 500,
+        )
+
+    models: list[ModelInfo] = []
+    for entry in response.json().get("models", []):
+        if "generateContent" not in entry.get("supportedGenerationMethods", []):
+            continue
+        model_id = str(entry.get("name", "")).removeprefix("models/")
+        if not model_id or any(k in model_id for k in _GEMINI_SKIP):
+            continue
+        models.append(
+            ModelInfo(
+                id=model_id,
+                name=str(entry.get("displayName") or model_id),
+                # Ücretsiz katmanda fiyat bildirilmiyor; tahmin uydurmuyoruz.
+                input_price=None,
+                output_price=None,
+                context_length=entry.get("inputTokenLimit"),
+                # Gemini'nin flash/pro aileleri görsel kabul ediyor; ölçüldü.
+                supports_images="flash" in model_id or "pro" in model_id,
+                variant=None,
+            )
+        )
+    log.info("Gemini kataloğu alındı: %d model", len(models))
+    return sorted(models, key=lambda m: m.id)
+
+
 class ModelCatalog:
     """OpenRouter model listesi, önbellekli."""
 

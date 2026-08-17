@@ -20,6 +20,7 @@ import type {
   ReplacementList,
   ReplacementTest,
   StyleState,
+  LlmProviderName,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -234,6 +235,13 @@ export function registerIpc({
 
   ipcMain.handle('models:get', () =>
     engine.request<ModelSelection>({ type: 'models:get' }),
+  )
+
+  ipcMain.handle('models:set-provider', (_event, provider: LlmProviderName) =>
+    engine.request<ModelSelection & { changed: boolean }>({
+      type: 'models:set-provider',
+      provider,
+    }),
   )
 
   ipcMain.handle('models:set', (_event, role: ModelRole, model: string | null) =>

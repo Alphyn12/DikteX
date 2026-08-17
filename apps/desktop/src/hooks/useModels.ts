@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type {
   CatalogModel,
+  LlmProviderName,
   ModelCatalogResult,
   ModelRole,
   ModelSelection,
@@ -22,6 +23,7 @@ export function useModels(): {
   error: string | null
   loadCatalog: (force?: boolean) => Promise<void>
   setModel: (role: ModelRole, model: string | null) => Promise<void>
+  setProvider: (provider: LlmProviderName) => Promise<boolean>
 } {
   const [selection, setSelection] = useState<ModelSelection | null>(null)
   const [catalog, setCatalog] = useState<CatalogModel[]>([])
@@ -69,5 +71,32 @@ export function useModels(): {
     }
   }, [])
 
-  return { selection, catalog, catalogError, loading, error, loadCatalog, setModel }
+  const setProvider = useCallback(
+    async (provider: LlmProviderName): Promise<boolean> => {
+      try {
+        const next = await window.omnivoice.invoke('models:set-provider', provider)
+        setSelection(next)
+        // Sağlayıcı değişince katalog da değişiyor; eskisini göstermek
+        // seçilemeyecek modeller listelemek olurdu.
+        setCatalog([])
+        setError(next.changed ? null : 'anahtar-yok')
+        return next.changed
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : String(cause))
+        return false
+      }
+    },
+    [],
+  )
+
+  return {
+    selection,
+    catalog,
+    catalogError,
+    loading,
+    error,
+    loadCatalog,
+    setModel,
+    setProvider,
+  }
 }
