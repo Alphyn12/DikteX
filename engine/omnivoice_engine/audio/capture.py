@@ -328,6 +328,9 @@ class MicrophoneCapture:
         self._stream_channels = CHANNELS
         self._lock = threading.Lock()
         self._recording = False
+        #: Duraklatma, kaydı bitirmekten farklı: oturum sürüyor ama yeni ses
+        #: eklenmiyor (Faz 7.4).
+        self._paused = False
         self._chunks: list[np.ndarray] = []
         #: Son bloğun RMS'i, 0.0–1.0. Arayüzdeki dalga formu bunu kullanır.
         self._level = 0.0
@@ -545,7 +548,9 @@ class MicrophoneCapture:
 
         with self._lock:
             self._ring.write(block)
-            if self._recording:
+            # Duraklatılmışken halka tampon dolmaya devam ediyor (pre-roll
+            # canlı kalsın) ama kayda ekleme yapılmıyor.
+            if self._recording and not self._paused:
                 self._chunks.append(block)
             # RMS'i int16 tam ölçeğine göre normalize ediyoruz.
             self._level = float(np.sqrt(np.mean(block.astype(np.float32) ** 2)) / 32768.0)
@@ -559,12 +564,14 @@ class MicrophoneCapture:
             pre_roll = self._ring.read_last(int(rate * self.pre_roll_seconds))
             self._chunks = [pre_roll] if len(pre_roll) else []
             self._recording = True
+            self._paused = False
             return len(pre_roll) / rate
 
     def stop_recording(self) -> AudioClip:
         """Kaydı durdurur ve biriken sesi 16 kHz olarak döndürür."""
         with self._lock:
             self._recording = False
+            self._paused = False
             chunks = self._chunks
             self._chunks = []
             rate = self._stream_rate
@@ -580,11 +587,41 @@ class MicrophoneCapture:
         """Kaydı atar — Esc ile iptal."""
         with self._lock:
             self._recording = False
+            self._paused = False
             self._chunks = []
+
+    def pause_recording(self) -> bool:
+        """Kaydı duraklatır; biriken ses korunur (Faz 7.4).
+
+        `_recording` kapatılmıyor, ayrı bir `_paused` bayrağı var. Fark önemli:
+        `_recording = False` yapmak kaydın bittiğini gösterirdi ve `stop()`
+        ile ayırt edilemezdi. Duraklatmada oturum sürüyor, yalnız yeni ses
+        eklenmiyor.
+
+        **Duraklamada geçen süre kayda girmiyor.** Telefon konuşmanız
+        transkripte karışmasın diye.
+        """
+        with self._lock:
+            if not self._recording or self._paused:
+                return False
+            self._paused = True
+            return True
+
+    def resume_recording(self) -> bool:
+        """Duraklatılmış kaydı sürdürür."""
+        with self._lock:
+            if not self._recording or not self._paused:
+                return False
+            self._paused = False
+            return True
 
     @property
     def is_recording(self) -> bool:
         return self._recording
+
+    @property
+    def is_paused(self) -> bool:
+        return self._paused
 
     @property
     def level(self) -> float:

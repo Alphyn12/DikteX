@@ -79,6 +79,7 @@ export function registerIpc({
   // Bölge seçim kaplamasından gelen sonuç.
   ipcMain.handle('region:result', (_event, region) => resolveRegion(region))
   ipcMain.handle('dictation:cancel', () => dictation.cancel())
+  ipcMain.handle('dictation:toggle-pause', () => dictation.togglePause())
   ipcMain.handle('dictation:paste', (_event, text: string) => dictation.paste(text))
 
   // ── Toplantı ───────────────────────────────────────────────────────────

@@ -236,6 +236,14 @@ export interface DictationState {
   deadMicrophone: boolean
   /** `clipboard` durumunda panoda bekleyen karakter sayısı. */
   clipboardChars: number
+  /**
+   * Kayıt duraklatıldı mı (Faz 7.4).
+   *
+   * Ayrı bir `status` değil, `listening` içinde bir bayrak: HUD yerinde
+   * kalmalı ve kullanıcı oturumun sürdüğünü görmeli. Ayrı bir durum yapmak
+   * bitmiş bir kayıtla karıştırılırdı.
+   */
+  paused: boolean
 }
 
 export const INITIAL_DICTATION_STATE: DictationState = {
@@ -256,6 +264,7 @@ export const INITIAL_DICTATION_STATE: DictationState = {
   warning: null,
   deadMicrophone: false,
   clipboardChars: 0,
+  paused: false,
 }
 
 // ── Mikrofon ────────────────────────────────────────────────────────────

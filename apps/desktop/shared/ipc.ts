@@ -106,6 +106,8 @@ export interface IpcInvokeMap {
   /** Modu belirtilmezse hızlı dikte başlar. */
   'dictation:toggle': { args: [mode?: ModeId]; result: void }
   'dictation:cancel': { args: []; result: void }
+  /** Kaydı duraklatır veya sürdürür. */
+  'dictation:toggle-pause': { args: []; result: void }
   /** Pre-flight'taki metni yapıştırır. Kullanıcı düzenlemişse düzenlenmiş hâli. */
   'dictation:paste': { args: [text: string]; result: void }
 

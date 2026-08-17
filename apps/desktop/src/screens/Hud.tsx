@@ -182,7 +182,10 @@ function Listening({ state }: { state: DictationState }): React.JSX.Element {
 
   // İlk saniyede seviye doğal olarak düşük olabilir; kullanıcı henüz
   // konuşmaya başlamamıştır. Uyarıyı biraz bekletiyoruz.
-  const noSignal = state.seconds > NO_SIGNAL_AFTER_SECONDS && state.level <= 0.0008
+  // Duraklatılmışken seviye zaten sıfır geliyor; "sinyal yok" uyarısı
+   // vermek yanlış olur, kullanıcı zaten bilerek susuyor.
+  const noSignal =
+    !state.paused && state.seconds > NO_SIGNAL_AFTER_SECONDS && state.level <= 0.0008
 
   return (
     <>
@@ -196,13 +199,17 @@ function Listening({ state }: { state: DictationState }): React.JSX.Element {
           level={state.level}
         />
         <div className={styles.headText}>
-          <div className={styles.title}>{t('hud.listening')}</div>
+          <div className={styles.title}>
+            {state.paused ? t('hud.paused') : t('hud.listening')}
+          </div>
           <div className={styles.detail}>
             {/*
               Mikrofon sinyal üretmiyorsa bunu konuşurken söylemek gerekir;
               kullanıcı kaydın boş olduğunu ancak sonunda öğrenmemeli.
             */}
-            {noSignal
+            {state.paused
+              ? t('hud.paused.hint')
+              : noSignal
               ? t('hud.noSignal')
               : t('hud.preRoll', {
                   seconds: formatNumber(state.preRollSeconds, { minimumFractionDigits: 1 }),
@@ -223,7 +230,9 @@ function Listening({ state }: { state: DictationState }): React.JSX.Element {
           Dinlerken HUD odakta değil, bu yüzden düz Esc buraya ulaşmaz.
           Gösterilen kısayol gerçekten çalışan kısayol olmalı.
         */}
-        <span className={styles.meta}>{t('hud.stopHint')}</span>
+        <span className={styles.meta}>
+          {state.paused ? t('hud.resumeHint') : t('hud.stopHint')}
+        </span>
       </div>
     </>
   )

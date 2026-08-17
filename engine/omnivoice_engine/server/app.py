@@ -203,6 +203,9 @@ async def _handle_message(
         case "dictation:stop":
             await context.pipeline.stop()
 
+        case "dictation:pause":
+            await context.pipeline.toggle_pause()
+
         case "dictation:cancel":
             await context.pipeline.cancel()
 

@@ -82,6 +82,13 @@ export function registerHotkeys(dictation: DictationController): HotkeyRegistrat
     conflicts.push(cancelAccelerator)
   }
 
+  // Duraklat/devam (Faz 7.4). Global olmak zorunda: kayıt sırasında HUD
+  // bilinçli olarak odak almıyor, o yüzden pencere içi bir tuş buraya ulaşmaz.
+  const pauseAccelerator = 'Control+Alt+P'
+  if (!globalShortcut.register(pauseAccelerator, () => void dictation.togglePause())) {
+    conflicts.push(pauseAccelerator)
+  }
+
   return { modes, conflicts }
 }
 

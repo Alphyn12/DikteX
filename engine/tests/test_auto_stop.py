@@ -151,6 +151,11 @@ class TestDonguEntegrasyonu:
             def recorded_seconds(self) -> float:
                 return self.calls * 0.001
 
+            @property
+            def is_paused(self) -> bool:
+                # Duraklatma (Faz 7.4) seviye döngüsünde okunuyor.
+                return False
+
         stopped = asyncio.Event()
 
         async def emit(_message: dict[str, Any]) -> None:

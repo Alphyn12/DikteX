@@ -59,6 +59,7 @@ export class DictationController {
           this.patch({
             level: Number(event['level'] ?? 0),
             seconds: Number(event['seconds'] ?? 0),
+            paused: Boolean(event['paused']),
           })
         }
         break
@@ -86,6 +87,13 @@ export class DictationController {
 
     switch (status) {
       case 'listening':
+        // Duraklat/devam da `listening` durumu yayıyor. Oturumu sıfırlamamak
+        // için ayırt ediyoruz: aksi hâlde duraklatmak süreyi ve uygulama
+        // adını siler, kullanıcı kaydın baştan başladığını sanır.
+        if (event['paused'] !== undefined && this.state.status === 'listening') {
+          this.patch({ paused: Boolean(event['paused']) })
+          break
+        }
         this.patch({
           ...INITIAL_DICTATION_STATE,
           status,
@@ -170,6 +178,18 @@ export class DictationController {
     }
 
     this.engine.send({ type: 'dictation:toggle', mode })
+  }
+
+  /**
+   * Kaydı duraklatır veya sürdürür (Faz 7.4).
+   *
+   * `cancel`in aksine iyimser güncelleme YOK: duraklamanın gerçekten olup
+   * olmadığını yalnız motor bilir (kayıt bu arada bitmiş olabilir) ve yanlış
+   * bir "duraklatıldı" göstergesi kullanıcıyı konuşmayı kesmeye iter.
+   */
+  togglePause(): void {
+    if (this.state.status !== 'listening') return
+    this.engine.send({ type: 'dictation:pause' })
   }
 
   cancel(): void {

@@ -379,10 +379,19 @@ class DictationPipeline:
                 await self._emit(
                     {
                         "type": "dictation:level",
-                        "level": round(level, 4),
+                        # Duraklatılmışken dalga formu ölü görünmeli; canlı bir
+                        # dalga, kaydın sürdüğü izlenimini verirdi.
+                        "level": 0.0 if self._mic.is_paused else round(level, 4),
                         "seconds": round(self._mic.recorded_seconds, 2),
+                        "paused": self._mic.is_paused,
                     }
                 )
+
+                # Duraklatılmışken sessizlik sayılmamalı: kullanıcı zaten
+                # bilerek susuyor ve dönmeyi bekliyor.
+                if self._mic.is_paused:
+                    await asyncio.sleep(_LEVEL_INTERVAL)
+                    continue
 
                 if watcher.observe(level, _LEVEL_INTERVAL):
                     log.info(
@@ -398,6 +407,34 @@ class DictationPipeline:
                 await asyncio.sleep(_LEVEL_INTERVAL)
         except asyncio.CancelledError:
             pass
+
+    async def toggle_pause(self) -> None:
+        """Kaydı duraklatır veya sürdürür (Faz 7.4).
+
+        Duraklatma ayrı bir durum DEĞİL, `listening` içinde bir alt durum:
+        HUD'un yerinde kalması ve kullanıcının kaydın sürdüğünü görmesi
+        gerekiyor. Ayrı bir durum yapmak, bitmiş bir kayıtla karıştırılırdı.
+        """
+        if self.state is not DictationState.LISTENING or self._session is None:
+            return
+
+        if self._mic.is_paused:
+            changed = self._mic.resume_recording()
+        else:
+            changed = self._mic.pause_recording()
+        if not changed:
+            return
+
+        paused = self._mic.is_paused
+        log.info("Kayıt %s", "duraklatıldı" if paused else "sürdürüldü")
+        await self._emit(
+            {
+                "type": "dictation:state",
+                "state": DictationState.LISTENING.value,
+                "paused": paused,
+                "seconds": round(self._mic.recorded_seconds, 2),
+            }
+        )
 
     async def stop(self) -> None:
         """Kaydı bitirir ve işlemeye geçer."""
