@@ -80,10 +80,13 @@ const INVOKE_CHANNEL_MAP: Record<IpcInvokeChannel, true> = {
   'privacy:get': true,
   'privacy:set-masking': true,
   'dictation:set-auto-stop': true,
+  'dictation:set-preflight': true,
   'stats:get': true,
   'vault:list': true,
   'history:search': true,
   'history:copy': true,
+  'history:delete': true,
+  'history:delete-all': true,
   'history:export': true,
 }
 

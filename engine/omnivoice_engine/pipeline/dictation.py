@@ -244,6 +244,7 @@ class DictationPipeline:
         mask_pii: bool = True,
         queue: ClipQueue | None = None,
         auto_stop_seconds: float = DEFAULT_AUTO_STOP_SECONDS,
+        preflight_enabled: bool = True,
         app_modes: dict[str, str] | None = None,
         replacements: ReplacementLibrary | None = None,
         normalize_numbers_enabled: bool = True,
@@ -261,6 +262,9 @@ class DictationPipeline:
         self._mask_pii = mask_pii
         self._queue = queue
         self._auto_stop_seconds = auto_stop_seconds
+        #: Pre-flight önizlemesi açık mı. Modun `require_preflight` bayrağı
+        #: bunu ezebiliyor.
+        self._preflight_enabled = preflight_enabled
         #: Süreç adı → mod kimliği (Faz 7.5).
         self._app_modes = dict(app_modes or {})
         self._replacements = replacements
@@ -317,6 +321,15 @@ class DictationPipeline:
     def set_normalize_numbers(self, enabled: bool) -> None:
         self._normalize_numbers = enabled
 
+    # ── Pre-flight ────────────────────────────────────────────────────────
+
+    @property
+    def preflight_enabled(self) -> bool:
+        return self._preflight_enabled
+
+    def set_preflight_enabled(self, enabled: bool) -> None:
+        self._preflight_enabled = enabled
+
     def set_auto_stop_seconds(self, seconds: float) -> None:
         # Üst sınır var: 10 saniyeden uzun bir eşik, özelliği kapatmakla
         # aynı şey ama kullanıcı açık sanmaya devam eder.
@@ -352,6 +365,15 @@ class DictationPipeline:
             # Hedef pencereyi kayıt başlarken yakalıyoruz: kullanıcı konuşurken
             # başka bir pencereye geçerse metin yine doğru yere gitmeli.
             target = get_foreground_window()
+            # Hedef pencere baştan günlüğe yazılıyor: yapıştırma başarısız
+            # olduğunda "hangi pencereye gitmeye çalıştı" sorusunun cevabı
+            # olmadan tanı koymak imkânsız.
+            if target is None:
+                log.warning("Ön plandaki pencere okunamadı; yapıştırma hedefi yok")
+            else:
+                log.info(
+                    "Dikte hedefi: %s (%s)", target.title[:60], target.process_name
+                )
             resolved_mode = get_mode(mode)
 
             # Uygulama başına varsayılan mod (Faz 7.5).
@@ -592,6 +614,19 @@ class DictationPipeline:
         # Arka planda: kullanıcı pre-flight'ta beklememeli.
         if self._queue is not None:
             asyncio.create_task(self._flush_queue_quietly())
+
+        # Pre-flight kapatılabilir (Properties IV). Kapalıyken metin doğrudan
+        # yapıştırılıyor ve akış tek adıma iniyor.
+        #
+        # Modun kendi `require_preflight` bayrağı ayarı EZİYOR: mega-prompt
+        # gibi uzun ve pahalı çıktılar onaysız yapıştırılmamalı. Kullanıcı
+        # ayarı kapattığında bunun istisnası olduğunu arayüzde de yazıyor.
+        if not self._preflight_enabled and not session.mode.require_preflight:
+            log.info("Pre-flight kapalı — doğrudan yapıştırılıyor")
+            await self._set_state(DictationState.PREFLIGHT, result=result.to_payload())
+            await self.paste()
+            return
+
         await self._set_state(DictationState.PREFLIGHT, result=result.to_payload())
 
     async def _process(

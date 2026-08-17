@@ -170,6 +170,7 @@ export function usePrivacy(): {
   error: string | null
   setMasking: (enabled: boolean) => Promise<void>
   setAutoStop: (seconds: number) => Promise<void>
+  setPreflight: (enabled: boolean) => Promise<void>
   normalizeNumbers: boolean
   setNormalizeNumbers: (enabled: boolean) => Promise<void>
 } {
@@ -216,6 +217,15 @@ export function usePrivacy(): {
     }
   }, [])
 
+  const setPreflight = useCallback(async (enabled: boolean) => {
+    try {
+      setPrivacy(await window.omnivoice.invoke('dictation:set-preflight', enabled))
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [])
+
   const setAutoStop = useCallback(async (seconds: number) => {
     try {
       setPrivacy(await window.omnivoice.invoke('dictation:set-auto-stop', seconds))
@@ -230,6 +240,7 @@ export function usePrivacy(): {
     error,
     setMasking,
     setAutoStop,
+    setPreflight,
     normalizeNumbers,
     setNormalizeNumbers,
   }

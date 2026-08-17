@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { ModeInfo } from '@shared/ipc'
 import { useI18n } from '../i18n/useI18n'
 import { VAULT_KEYS, type ModuleId } from '../mock/data'
@@ -184,32 +183,28 @@ function ModeTableRow({
 
 function Switches(): React.JSX.Element {
   const { t } = useI18n()
-  const [dynamicModel, setDynamicModel] = useState(true)
-  const [preflight, setPreflight] = useState(true)
   // PII anahtarı artık motordaki gerçek bayrağa bağlı. Diğer ikisi hâlâ
   // yerel durum — karşılıkları henüz yok (3.15 ve mod başına pre-flight).
-  const { privacy, setMasking, setAutoStop, normalizeNumbers, setNormalizeNumbers } =
-    usePrivacy()
+  const {
+    privacy,
+    setMasking,
+    setAutoStop,
+    setPreflight,
+    normalizeNumbers,
+    setNormalizeNumbers,
+  } = usePrivacy()
   const ptt = usePushToTalk()
   const autostart = useAutostart()
 
   return (
     <div className={styles.switches}>
       <SwitchRow
-        title={t('toggle.dynamicModel')}
-        description={t('toggle.dynamicModel.desc')}
-        meta={t('toggle.dynamicModel.meta')}
-        module="audio"
-        on={dynamicModel}
-        onChange={setDynamicModel}
-      />
-      <SwitchRow
         title={t('toggle.preflight')}
         description={t('toggle.preflight.desc')}
         meta={t('toggle.preflight.meta')}
         module="prompt"
-        on={preflight}
-        onChange={setPreflight}
+        on={privacy?.preflight ?? true}
+        onChange={(next) => void setPreflight(next)}
       />
       {/*
         Otomatik durdurma varsayılan olarak AÇIK. Eşiği koda gömmek yerine

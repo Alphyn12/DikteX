@@ -264,6 +264,10 @@ export function registerIpc({
     engine.request<PrivacyState>({ type: 'dictation:set-auto-stop', seconds }),
   )
 
+  ipcMain.handle('dictation:set-preflight', (_event, enabled: boolean) =>
+    engine.request<PrivacyState>({ type: 'dictation:set-preflight', enabled }),
+  )
+
   // ── Mikrofon ───────────────────────────────────────────────────────────
 
   ipcMain.handle('audio:list-devices', async (): Promise<AudioDeviceList> => {
@@ -339,6 +343,14 @@ export function registerIpc({
     await writeFile(result.filePath, response.content, 'utf-8')
     return { saved: true, count: response.count, path: result.filePath }
   })
+
+  ipcMain.handle('history:delete', (_event, recordId: number) =>
+    engine.request<{ deleted: boolean }>({ type: 'history:delete', recordId }),
+  )
+
+  ipcMain.handle('history:delete-all', () =>
+    engine.request<{ deleted: number }>({ type: 'history:delete-all' }),
+  )
 
   ipcMain.handle('history:copy', (_event, recordId: number) =>
     engine.request<{ ok: boolean; chars: number }>({

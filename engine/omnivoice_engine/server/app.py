@@ -109,6 +109,7 @@ class EngineContext:
                 else saved.auto_stop_seconds
             ),
             app_modes=saved.app_modes,
+            preflight_enabled=True if saved.preflight is None else saved.preflight,
             replacements=self.replacements,
             style=self.style,
             normalize_numbers_enabled=(
@@ -736,6 +737,12 @@ async def _handle_message(
             )
             await reply(_privacy_payload(context))
 
+        case "dictation:set-preflight":
+            enabled = bool(message.get("enabled", True))
+            context.pipeline.set_preflight_enabled(enabled)
+            await asyncio.to_thread(context.user_settings.update, preflight=enabled)
+            await reply(_privacy_payload(context))
+
         case "privacy:set-masking":
             enabled = bool(message.get("enabled", True))
             # Aynı bayrak iki boru hattında da var; ikisi ayrışırsa toplantı
@@ -781,6 +788,17 @@ async def _handle_message(
                     },
                 }
             )
+
+        case "history:delete":
+            record_id = int(message.get("recordId", 0) or 0)
+            deleted = await asyncio.to_thread(context.db.delete_dictation, record_id)
+            log.info("Geçmiş kaydı silindi: %s (%s)", record_id, deleted)
+            await reply({"type": "history:delete", "deleted": deleted})
+
+        case "history:delete-all":
+            count = await asyncio.to_thread(context.db.delete_all_dictations)
+            log.info("Tüm dikte geçmişi silindi: %d kayıt", count)
+            await reply({"type": "history:delete-all", "deleted": count})
 
         case "history:export":
             # Dosyayı motor DEĞİL, Electron yazıyor: kaydetme yeri kullanıcının
@@ -848,6 +866,7 @@ def _privacy_payload(context: EngineContext) -> dict[str, Any]:
         "type": "privacy:get",
         "maskPii": context.pipeline.pii_masking,
         "autoStopSeconds": context.pipeline.auto_stop_seconds,
+        "preflight": context.pipeline.preflight_enabled,
         "sttCovered": False,
         "llmCovered": context.pipeline.pii_masking,
     }

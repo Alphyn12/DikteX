@@ -163,6 +163,14 @@ export interface PrivacyState {
    * ayarları; ayrı bir tur atmanın karşılığı yok.
    */
   autoStopSeconds: number
+  /**
+   * Pre-flight önizlemesi açık mı.
+   *
+   * Kapalıyken çıktı doğrudan yapıştırılıyor. Modun `requirePreflight`
+   * bayrağı bunu EZİYOR: mega-prompt gibi uzun ve pahalı çıktılar
+   * onaysız yapıştırılmamalı.
+   */
+  preflight: boolean
 }
 
 // ── Otomatik başlatma (Faz 6.5) ─────────────────────────────────────────

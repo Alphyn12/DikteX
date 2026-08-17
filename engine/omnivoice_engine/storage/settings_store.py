@@ -80,6 +80,10 @@ class UserSettings:
     #: taşıyor ve bu, kullanıcının beklemediği bir veri akışı.
     style_learning: bool | None = None
 
+    #: Pre-flight önizlemesi açık mı. Kapalıyken çıktı doğrudan yapıştırılır
+    #: (modun `require_preflight` bayrağı bunu ezer).
+    preflight: bool | None = None
+
     #: Türkçe sayıları rakama çevirme (Faz 7.9).
     normalize_numbers: bool | None = None
 
@@ -108,6 +112,7 @@ class UserSettings:
             "maskPii": self.mask_pii,
             "locale": self.locale,
             "styleLearning": self.style_learning,
+            "preflight": self.preflight,
             "normalizeNumbers": self.normalize_numbers,
             "pushToTalk": self.push_to_talk,
             "appModes": dict(self.app_modes),
@@ -125,6 +130,7 @@ _FIELD_MAP = {
     "maskPii": "mask_pii",
     "locale": "locale",
     "styleLearning": "style_learning",
+    "preflight": "preflight",
     "normalizeNumbers": "normalize_numbers",
     "pushToTalk": "push_to_talk",
     "appModes": "app_modes",
@@ -226,6 +232,7 @@ def _coerce(field_name: str, value: Any) -> Any:
         "push_to_talk",
         "normalize_numbers",
         "style_learning",
+        "preflight",
     }:
         return bool(value)
     if field_name == "locale":

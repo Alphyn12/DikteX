@@ -229,6 +229,27 @@ class PasteOutcome:
         return self.method is PasteMethod.CLIPBOARD
 
 
+def _describe(handle: int) -> str:
+    """Pencereyi kullanıcının tanıyacağı biçimde adlandırır."""
+    try:
+        import win32gui  # noqa: PLC0415
+
+        title = win32gui.GetWindowText(handle) or ""
+        return title[:60] if title else f"pencere {handle}"
+    except Exception:  # noqa: BLE001
+        return f"pencere {handle}"
+
+
+def _describe_foreground() -> str:
+    try:
+        import win32gui  # noqa: PLC0415
+
+        handle = win32gui.GetForegroundWindow()
+        return f"{_describe(handle)} (hwnd {handle})"
+    except Exception:  # noqa: BLE001
+        return "bilinmiyor"
+
+
 def paste_text(
     text: str, *, window_handle: int | None = None, restore_clipboard: bool = True
 ) -> PasteOutcome:
@@ -267,7 +288,18 @@ def paste_text(
         )
 
     if window_handle and not focus_window(window_handle):
-        return fallback("Hedef pencere öne getirilemedi.")
+        # Hangi pencere olduğunu söylemek şart: kullanıcı "yazacağım yere
+        # tıkladım" diyor ama hedef bambaşka bir pencere olabilir — örneğin
+        # kısayola OmniVoice odaktayken basılmışsa. İsimsiz bir hata
+        # kullanıcıyı da beni de kör bırakıyordu.
+        log.warning(
+            "Odak alınamadı — hedef: %s | o anki ön plan: %s",
+            _describe(window_handle),
+            _describe_foreground(),
+        )
+        return fallback(
+            f"“{_describe(window_handle)}” penceresi öne getirilemedi."
+        )
 
     time.sleep(_FOCUS_SETTLE_SECONDS)
 

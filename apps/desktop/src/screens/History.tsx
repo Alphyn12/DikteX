@@ -32,6 +32,22 @@ export function History({
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState<number | null>(null)
   const [exported, setExported] = useState<string | null>(null)
+  // Silme geri alınamaz; yanlışlıkla tıklamayı önlemek için iki adım.
+  // Onay penceresi yerine satır içi: modal, listeyi kaybettirirdi.
+  const [confirmId, setConfirmId] = useState<number | null>(null)
+
+  const deleteItem = useCallback(
+    async (id: number) => {
+      try {
+        await window.omnivoice.invoke('history:delete', id)
+        setItems((current) => current.filter((row) => row.id !== id))
+        setConfirmId(null)
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : String(cause))
+      }
+    },
+    [],
+  )
 
   const exportHistory = useCallback(
     async (format: 'markdown' | 'json') => {
@@ -202,13 +218,46 @@ export function History({
                 değil: kullanıcı bu ekranda olduğu için odakta OmniVoice var
                 ve "yapıştır" diyecek bir hedef yok.
               */}
-              <button
-                type="button"
-                className={cx(styles.copy, copied === item.id && styles.copied)}
-                onClick={() => void copyItem(item.id)}
-              >
-                {copied === item.id ? t('history.copied') : t('history.copy')}
-              </button>
+              <div className={styles.rowActions}>
+                <button
+                  type="button"
+                  className={cx(styles.copy, copied === item.id && styles.copied)}
+                  onClick={() => void copyItem(item.id)}
+                >
+                  {copied === item.id ? t('history.copied') : t('history.copy')}
+                </button>
+
+                {/*
+                  İki adımlı silme: kayıt geri alınamaz şekilde gidiyor ve
+                  liste kaydırılırken yanlış satıra tıklamak kolay.
+                */}
+                {confirmId === item.id ? (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.deleteConfirm}
+                      onClick={() => void deleteItem(item.id)}
+                    >
+                      {t('history.deleteConfirm')}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.delete}
+                      onClick={() => setConfirmId(null)}
+                    >
+                      {t('history.cancel')}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.delete}
+                    onClick={() => setConfirmId(item.id)}
+                  >
+                    {t('history.delete')}
+                  </button>
+                )}
+              </div>
             </div>
           </article>
         ))}

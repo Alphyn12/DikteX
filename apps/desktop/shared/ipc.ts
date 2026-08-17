@@ -232,6 +232,8 @@ export interface IpcInvokeMap {
   'privacy:set-masking': { args: [enabled: boolean]; result: PrivacyState }
   /** Sessizlikte otomatik durdurma eşiği; 0 kapatır. */
   'dictation:set-auto-stop': { args: [seconds: number]; result: PrivacyState }
+  /** Pre-flight önizlemesini açar/kapatır. */
+  'dictation:set-preflight': { args: [enabled: boolean]; result: PrivacyState }
 
   // ── Mikrofon ───────────────────────────────────────────────────────────
   'audio:list-devices': { args: []; result: AudioDeviceList }
@@ -263,6 +265,10 @@ export interface IpcInvokeMap {
    * yere Ctrl+V ile koyuyor.
    */
   'history:copy': { args: [recordId: number]; result: { ok: boolean; chars: number } }
+  /** Tek bir kaydı siler — arama dizininden de düşer. */
+  'history:delete': { args: [recordId: number]; result: { deleted: boolean } }
+  /** Tüm dikte geçmişini siler. Harcama kayıtları kalır. */
+  'history:delete-all': { args: []; result: { deleted: number } }
   /**
    * Tüm geçmişi dosyaya aktarır (Faz 7.14).
    *

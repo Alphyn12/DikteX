@@ -162,6 +162,9 @@ export const tr = {
     'Dışa aktarılan dosya ham metni içerir — maskeleme uygulanmaz. Dosyayı başka bir yere taşırsanız içinde ne olduğunu bilin.',
   'history.copy': 'Panoya kopyala',
   'history.copied': 'Kopyalandı — Ctrl+V',
+  'history.delete': 'Sil',
+  'history.deleteConfirm': 'Silinsin mi?',
+  'history.cancel': 'Vazgeç',
   'history.copyFailed': 'Pano kilitli — başka bir uygulama kullanıyor olabilir',
 
   'settings.eyebrow': 'AYARLAR',
@@ -183,9 +186,6 @@ export const tr = {
   'provider.gemini': 'Gemini',
   'provider.hybrid': 'Hibrit',
 
-  'toggle.dynamicModel': 'Dinamik model seçici',
-  'toggle.dynamicModel.desc': 'Pil / ağ durumuna göre model boyutları arasında anlık geçiş',
-  'toggle.dynamicModel.meta': 'eşik %35 pil',
   'toggle.preflight': 'Pre-flight önizleme',
   'toggle.preflight.desc': 'Çıktı yapıştırılmadan önce düzenleme penceresi açılır',
   'toggle.preflight.meta': 'mega-prompt’ta zorunlu',

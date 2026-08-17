@@ -414,6 +414,32 @@ class Database:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def delete_dictation(self, record_id: int) -> bool:
+        """Tek bir kaydı siler.
+
+        FTS dizini tetikleyiciyle temizleniyor (`dictations_ad`), yani arama
+        sonuçlarında da kalmıyor. Bu önemli: yalnız satırı silmek, kaydı
+        aramada görünür bırakırdı ve kullanıcı sildiğini sanırdı.
+        """
+        with self._lock:
+            cursor = self._conn.execute(
+                "DELETE FROM dictations WHERE id = ?", (record_id,)
+            )
+            self._conn.commit()
+            return cursor.rowcount > 0
+
+    def delete_all_dictations(self) -> int:
+        """Tüm dikte geçmişini siler.
+
+        Harcama kayıtları (`spend`) KALIYOR: aylık maliyet takibi geçmişten
+        bağımsız ve kullanıcı "geçmişi sildim, param nereye gitti" diye
+        sormamalı.
+        """
+        with self._lock:
+            cursor = self._conn.execute("DELETE FROM dictations")
+            self._conn.commit()
+            return cursor.rowcount
+
     def all_dictations(self) -> list[dict[str, Any]]:
         """Tüm kayıtlar, eskiden yeniye. Dışa aktarma için (Faz 7.14).
 

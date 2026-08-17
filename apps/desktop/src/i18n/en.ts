@@ -155,6 +155,9 @@ export const en: Messages = {
     'The exported file contains raw text — no masking is applied. Know what is inside before moving it elsewhere.',
   'history.copy': 'Copy to clipboard',
   'history.copied': 'Copied — press Ctrl+V',
+  'history.delete': 'Delete',
+  'history.deleteConfirm': 'Delete it?',
+  'history.cancel': 'Cancel',
   'history.copyFailed': 'Clipboard is locked — another app may be using it',
 
   'settings.eyebrow': 'SETTINGS',
@@ -176,9 +179,6 @@ export const en: Messages = {
   'provider.gemini': 'Gemini',
   'provider.hybrid': 'Hybrid',
 
-  'toggle.dynamicModel': 'Dynamic model selector',
-  'toggle.dynamicModel.desc': 'Switches between model sizes based on battery / network state',
-  'toggle.dynamicModel.meta': 'threshold 35% battery',
   'toggle.preflight': 'Pre-flight preview',
   'toggle.preflight.desc': 'Opens an edit window before the output is pasted',
   'toggle.preflight.meta': 'required for mega-prompt',
