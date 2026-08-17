@@ -29,6 +29,7 @@ from omnivoice_engine.pipeline.dictation import DictationPipeline, DictationStat
 from omnivoice_engine.pipeline.meeting import MeetingPipeline
 from omnivoice_engine.pipeline.modes import MODES
 from omnivoice_engine.storage.db import Database
+from omnivoice_engine.storage.queue import ClipQueue
 from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
@@ -52,6 +53,7 @@ class EngineContext:
         self.db = Database()
         self.vocabulary = Vocabulary.load()
         self.snippets = SnippetLibrary.load()
+        self.queue = ClipQueue()
         self.budget_usd = settings.budget_usd
 
         #: Bağlı arayüz istemcileri. Olaylar hepsine yayınlanır.
@@ -65,6 +67,7 @@ class EngineContext:
             emit=self.broadcast,
             vocabulary=self.vocabulary,
             snippets=self.snippets,
+            queue=self.queue,
         )
 
         # Toplantı boru hattı aynı mikrofonu paylaşıyor; ikisi aynı anda
@@ -375,6 +378,26 @@ async def _handle_message(
                     "match": match.to_payload() if match else None,
                 }
             )
+
+        # ── Başarısız kayıt kuyruğu ───────────────────────────────────────
+        case "queue:list":
+            await reply({"type": "queue:list", **context.queue.to_payload()})
+
+        case "queue:flush":
+            stats = await context.pipeline.flush_queue()
+            await reply({"type": "queue:flush", **stats, **context.queue.to_payload()})
+
+        case "queue:remove":
+            removed = await asyncio.to_thread(
+                context.queue.remove_by_id, str(message.get("id", ""))
+            )
+            await reply(
+                {"type": "queue:remove", "removed": removed, **context.queue.to_payload()}
+            )
+
+        case "queue:clear":
+            count = await asyncio.to_thread(context.queue.clear)
+            await reply({"type": "queue:clear", "cleared": count, **context.queue.to_payload()})
 
         # ── Gizlilik ──────────────────────────────────────────────────────
         case "privacy:get":

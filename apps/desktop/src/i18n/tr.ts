@@ -60,6 +60,19 @@ export const tr = {
   'feed.title': 'Son dikteler',
   'feed.viewAll': 'Tümü · yerel SQLite arama',
 
+  'queue.title': 'GÖNDERİLEMEYEN KAYITLAR',
+  'queue.count': '{count} bekliyor',
+  'queue.attempts': '{count} deneme',
+  'queue.retry': 'Yeniden gönder',
+  'queue.sending': 'Gönderiliyor…',
+  'queue.clear': 'Hepsini sil',
+  'queue.remove': 'Bu kaydı sil',
+  'queue.flushResult': '{sent} gönderildi · {failed} bekliyor · {dropped} düşürüldü',
+  'queue.privacyNote':
+    'Bu kayıtların sesi geçici olarak diskte tutuluyor — uygulamanın normalde ' +
+    'yapmadığı bir şey. Gönderilen kayıt hemen siliniyor; 7 günü geçen kendiliğinden ' +
+    'düşüyor. Metin yapıştırılmaz, geçmişe yazılır.',
+
   'aside.actionItems': 'ACTION ITEMS',
   'aside.scratchpad': 'SESLİ NOT DEFTERİ',
   'aside.vocabulary': 'SÖZLÜK ÖNERİLERİ',

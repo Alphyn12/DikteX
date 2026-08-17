@@ -232,6 +232,19 @@ class AudioClip:
         )
         return buffer.getvalue()
 
+    @classmethod
+    def from_encoded_bytes(cls, data: bytes) -> AudioClip:
+        """Kodlanmış sesi (FLAC/WAV) yeniden `AudioClip`'e çevirir.
+
+        Kuyruğa alınmış bir kaydı yeniden göndermek için gerekiyor (Faz 7.2).
+        `soundfile` biçimi baytlardan anladığı için uzantıya bakmıyoruz.
+        """
+        samples, rate = sf.read(BytesIO(data), dtype=DTYPE, always_2d=False)
+        if samples.ndim > 1:
+            # Kuyruğa mono yazıyoruz ama dosya elle değiştirilmiş olabilir.
+            samples = samples[:, 0]
+        return cls(samples=np.ascontiguousarray(samples, dtype=DTYPE), sample_rate=int(rate))
+
     def to_upload_bytes(self) -> tuple[bytes, str, str]:
         """Yüklenecek ses: (veri, dosya adı, MIME tipi).
 

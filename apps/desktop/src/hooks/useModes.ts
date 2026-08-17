@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import type {
   ModeList,
   PrivacyState,
+  QueueFlushResult,
+  QueueList,
   Snippet,
   SnippetList,
   VocabularyList,
@@ -194,4 +196,74 @@ export function usePrivacy(): {
   }, [])
 
   return { privacy, error, setMasking }
+}
+
+/**
+ * Başarısız kayıt kuyruğu (Faz 7.2).
+ *
+ * Kuyruk kullanıcının **sesini** diskte tutuyor. Arayüzde görünmesi bir
+ * kolaylık değil, gizliliğin gereği: kullanıcı neyin saklandığını bilmeli ve
+ * silebilmeli.
+ */
+export function useQueue(): {
+  queue: QueueList | null
+  error: string | null
+  busy: boolean
+  flush: () => Promise<QueueFlushResult | null>
+  remove: (id: string) => Promise<void>
+  clear: () => Promise<void>
+} {
+  const [queue, setQueue] = useState<QueueList | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const { state: engine } = useEngine()
+
+  const load = useCallback(async () => {
+    if (engine.status !== 'connected') return
+    try {
+      setQueue(await window.omnivoice.invoke('queue:list'))
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [engine.status])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const flush = useCallback(async (): Promise<QueueFlushResult | null> => {
+    setBusy(true)
+    try {
+      const result = await window.omnivoice.invoke('queue:flush')
+      setQueue(result)
+      setError(null)
+      return result
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+      return null
+    } finally {
+      setBusy(false)
+    }
+  }, [])
+
+  const remove = useCallback(async (id: string) => {
+    try {
+      setQueue(await window.omnivoice.invoke('queue:remove', id))
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [])
+
+  const clear = useCallback(async () => {
+    try {
+      setQueue(await window.omnivoice.invoke('queue:clear'))
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [])
+
+  return { queue, error, busy, flush, remove, clear }
 }

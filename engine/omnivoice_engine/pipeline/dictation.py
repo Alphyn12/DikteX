@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from omnivoice_engine.audio.capture import MicrophoneCapture
+from omnivoice_engine.audio.capture import AudioClip, MicrophoneCapture
 from omnivoice_engine.context.apps import AppProfile, profile_for
 from omnivoice_engine.context.selection import read_selection, truncate_selection
 from omnivoice_engine.context.variables import VariableContext, inject, mentions_selection
@@ -37,6 +37,7 @@ from omnivoice_engine.pipeline.vision_prompts import screen_question_prompt
 from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database, DictationRecord
 from omnivoice_engine.privacy.masking import MaskResult, mask_all
+from omnivoice_engine.storage.queue import ClipQueue
 from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
@@ -165,6 +166,7 @@ class DictationPipeline:
         vocabulary: Vocabulary | None = None,
         snippets: SnippetLibrary | None = None,
         mask_pii: bool = True,
+        queue: ClipQueue | None = None,
     ) -> None:
         self._mic = mic
         self._stt = stt
@@ -176,6 +178,7 @@ class DictationPipeline:
         #: PII maskeleme varsayılan olarak AÇIK. Kapatmak bilinçli bir karar
         #: olmalı, unutulan bir ayar değil.
         self._mask_pii = mask_pii
+        self._queue = queue
 
         self.state = DictationState.IDLE
         self._session: _Session | None = None
@@ -337,7 +340,18 @@ class DictationPipeline:
         except ProviderError as exc:
             log.error("Dikte işlenemedi: %s", exc)
             self._session = None
-            await self._set_state(DictationState.ERROR, message=str(exc))
+
+            # Geçici hata (ağ kesikse, sağlayıcı 5xx/429 verdiyse) kaydı
+            # kuyruğa alıyoruz. Kalıcı hatada (yanlış anahtar) ALMIYORUZ:
+            # asla başarılı olmayacak bir kaydı diskte tutmak, kullanıcının
+            # sesini boşuna saklamak olurdu.
+            queued = False
+            if exc.retryable and self._queue is not None:
+                queued = await self._enqueue(clip, session.mode, str(exc))
+
+            await self._set_state(
+                DictationState.ERROR, message=str(exc), queued=queued
+            )
             return
         except Exception as exc:  # noqa: BLE001 - beklenmedik hata arayüze taşınmalı
             log.exception("Dikte boru hattında beklenmedik hata")
@@ -347,6 +361,12 @@ class DictationPipeline:
 
         self._result = result
         self._session = None
+
+        # Başarılı bir dikte bağlantının geri geldiğini kanıtlıyor; bekleyen
+        # kayıtları denemek için ayrı bir yoklayıcı kurmaya gerek yok.
+        # Arka planda: kullanıcı pre-flight'ta beklememeli.
+        if self._queue is not None:
+            asyncio.create_task(self._flush_queue_quietly())
         await self._set_state(DictationState.PREFLIGHT, result=result.to_payload())
 
     async def _process(
@@ -618,6 +638,120 @@ class DictationPipeline:
 
         await self._set_state(DictationState.IDLE, pasted=True)
         log.info("Yapıştırıldı: %d karakter", len(content))
+
+    # ── Kuyruk (Faz 7.2) ──────────────────────────────────────────────────
+
+    async def _enqueue(self, clip: AudioClip, mode: Mode, error: str) -> bool:
+        """Başarısız kaydı diske alır."""
+        if self._queue is None:
+            return False
+        try:
+            data, _, _ = await asyncio.to_thread(clip.to_upload_bytes)
+        except Exception:  # noqa: BLE001 - kodlama hatası kuyruğu çökertmesin
+            log.warning("Kayıt kodlanamadı, kuyruğa alınamıyor", exc_info=True)
+            return False
+
+        suffix = ".flac" if data[:4] == b"fLaC" else ".wav"
+        item = await asyncio.to_thread(
+            self._queue.add,
+            audio=data,
+            suffix=suffix,
+            mode=mode.id.value,
+            duration_seconds=clip.duration_seconds,
+            error=error,
+        )
+        if item is not None:
+            await self._emit({"type": "queue:changed", **self._queue.to_payload()})
+        return item is not None
+
+    async def flush_queue(self) -> dict[str, int]:
+        """Kuyruktaki kayıtları yeniden göndermeyi dener.
+
+        **Sonuç yapıştırılmıyor, geçmişe yazılıyor.** Kullanıcı o kayıttan
+        sonra başka bir işe geçmiş olabilir; şu an odaktaki pencereye metin
+        göndermek yanlış yere yazmak demektir ve geri alınamaz.
+
+        Bir kayıt yine geçici bir hatayla düşerse kuyrukta kalıyor; kalıcı
+        hatayla düşerse **çıkarılıyor** — sonsuza kadar denemenin anlamı yok
+        ve diskte duran sesin gizlilik maliyeti sürüyor.
+        """
+        if self._queue is None:
+            return {"sent": 0, "failed": 0, "dropped": 0}
+
+        items = await asyncio.to_thread(self._queue.items)
+        sent = failed = dropped = 0
+
+        for item in items:
+            try:
+                data = await asyncio.to_thread(item.audio_path.read_bytes)
+                clip = await asyncio.to_thread(AudioClip.from_encoded_bytes, data)
+            except Exception:  # noqa: BLE001
+                log.warning("Kuyruktaki kayıt okunamadı: %s", item.item_id, exc_info=True)
+                await asyncio.to_thread(self._queue.remove, item)
+                dropped += 1
+                continue
+
+            await asyncio.to_thread(self._queue.mark_attempt, item)
+
+            try:
+                transcript = await self._stt.transcribe(
+                    clip,
+                    language=None,
+                    vocabulary=self._vocabulary.stt_terms() if self._vocabulary else None,
+                )
+            except ProviderError as exc:
+                if exc.retryable:
+                    log.info("Kuyruk kaydı hâlâ gönderilemiyor: %s", exc)
+                    failed += 1
+                    # Ağ hâlâ kapalıysa kalanları denemek boşuna.
+                    break
+                log.warning("Kuyruk kaydı kalıcı hatayla düştü: %s", exc)
+                await asyncio.to_thread(self._queue.remove, item)
+                dropped += 1
+                continue
+
+            self._db.add_dictation(
+                DictationRecord(
+                    raw_text=transcript.text,
+                    final_text=transcript.text,
+                    mode=item.mode,
+                    app_name=None,
+                    window_title=None,
+                    language=transcript.language,
+                    stt_provider=transcript.provider,
+                    stt_model=transcript.model,
+                    llm_provider=None,
+                    llm_model=None,
+                    audio_seconds=item.duration_seconds,
+                    fillers_removed=0,
+                    stt_ms=transcript.usage.latency_ms,
+                    llm_ms=0,
+                    total_ms=transcript.usage.latency_ms,
+                    cost_usd=transcript.usage.cost_usd or 0.0,
+                )
+            )
+            # Gönderildi: ses diskte kalmamalı.
+            await asyncio.to_thread(self._queue.remove, item)
+            sent += 1
+
+        if sent or dropped or failed:
+            await self._emit(
+                {
+                    "type": "queue:changed",
+                    "sent": sent,
+                    "failed": failed,
+                    "dropped": dropped,
+                    **self._queue.to_payload(),
+                }
+            )
+        return {"sent": sent, "failed": failed, "dropped": dropped}
+
+    async def _flush_queue_quietly(self) -> None:
+        """Arka planda kuyruğu boşaltır; hatası dikteyi etkilemez."""
+        try:
+            await self.flush_queue()
+        except Exception:  # noqa: BLE001 - arka plan görevi sessizce ölmemeli
+            log.warning("Kuyruk boşaltma başarısız", exc_info=True)
 
     async def cancel(self) -> None:
         """Akışı iptal eder — Esc."""

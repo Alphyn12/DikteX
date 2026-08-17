@@ -147,6 +147,39 @@ export interface PrivacyState {
   llmCovered: boolean
 }
 
+// ── Başarısız kayıt kuyruğu ─────────────────────────────────────────────
+
+/**
+ * Diskte bekleyen bir kayıt.
+ *
+ * Bu kayıtlar kullanıcının **sesini** içeriyor — uygulamanın geri kalanının
+ * bilinçli olarak yapmadığı bir şey. Arayüzde görünür olmaları şart: kullanıcı
+ * neyin saklandığını bilmeli ve silebilmeli.
+ */
+export interface QueuedClip {
+  id: string
+  mode: ModeId
+  /** Unix zamanı, saniye. */
+  createdAt: number
+  durationSeconds: number
+  /** Kuyruğa girmesine sebep olan hata. */
+  error: string
+  attempts: number
+}
+
+export interface QueueList {
+  directory: string
+  items: QueuedClip[]
+  count: number
+}
+
+/** Yeniden gönderme denemesinin sonucu. */
+export interface QueueFlushResult extends QueueList {
+  sent: number
+  failed: number
+  dropped: number
+}
+
 // ── Snippet kütüphanesi ─────────────────────────────────────────────────
 
 export interface Snippet {

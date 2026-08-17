@@ -1,6 +1,7 @@
 import type { EngineStats } from '@shared/ipc'
 import { useI18n } from '../i18n/useI18n'
 import { getContent, type ModuleId } from '../mock/data'
+import { QueueCard } from '../components/QueueCard'
 import { Badge, Card, CardLabel, Sparkline, Waveform, tone } from '../components/primitives'
 import { useDictation } from '../hooks/useDictation'
 import { useMeeting } from '../hooks/useMeeting'
@@ -57,6 +58,10 @@ export function Panel(): React.JSX.Element {
 
         <aside className={styles.aside}>
           <div className={styles.asideScroll}>
+            {/* Kuyruk kartı en üstte: gönderilemeyen bir kayıt varsa
+                kullanıcının önce onu görmesi gerekiyor. Boşken kendini
+                gizliyor. */}
+            <QueueCard />
             <SpendCard stats={stats} />
             <ActionItems items={content.actionItems} source={content.actionItemsSource} />
             <Scratchpad notes={content.scratchpad} />

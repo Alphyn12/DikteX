@@ -13,6 +13,8 @@ import type {
   ModeId,
   ModeList,
   PrivacyState,
+  QueueFlushResult,
+  QueueList,
   Snippet,
   SnippetList,
   VaultEntry,
@@ -47,6 +49,9 @@ export type {
   ModeList,
   OutputProfile,
   PrivacyState,
+  QueueFlushResult,
+  QueueList,
+  QueuedClip,
   Snippet,
   SnippetList,
   SpendStats,
@@ -145,6 +150,13 @@ export interface IpcInvokeMap {
    * canlı dikte sırasında sınayabilir.
    */
   'snippets:test': { args: [text: string]; result: { match: Snippet | null } }
+
+  // ── Başarısız kayıt kuyruğu ────────────────────────────────────────────
+  'queue:list': { args: []; result: QueueList }
+  /** Bekleyen kayıtları yeniden gönderir. Sonuç yapıştırılmaz, geçmişe yazılır. */
+  'queue:flush': { args: []; result: QueueFlushResult }
+  'queue:remove': { args: [id: string]; result: QueueList }
+  'queue:clear': { args: []; result: QueueList }
 
   // ── Gizlilik ───────────────────────────────────────────────────────────
   'privacy:get': { args: []; result: PrivacyState }

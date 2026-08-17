@@ -54,6 +54,19 @@ export const en: Messages = {
   'feed.title': 'Recent dictations',
   'feed.viewAll': 'All · local SQLite search',
 
+  'queue.title': 'UNSENT RECORDINGS',
+  'queue.count': '{count} waiting',
+  'queue.attempts': '{count} attempts',
+  'queue.retry': 'Retry',
+  'queue.sending': 'Sending…',
+  'queue.clear': 'Delete all',
+  'queue.remove': 'Delete this recording',
+  'queue.flushResult': '{sent} sent · {failed} waiting · {dropped} dropped',
+  'queue.privacyNote':
+    'Audio for these recordings is held on disk temporarily — something the app ' +
+    'otherwise avoids. Sent recordings are deleted immediately; anything older than ' +
+    '7 days is dropped. Text is written to history, not pasted.',
+
   'aside.actionItems': 'ACTION ITEMS',
   'aside.scratchpad': 'VOICE SCRATCHPAD',
   'aside.vocabulary': 'VOCABULARY SUGGESTIONS',

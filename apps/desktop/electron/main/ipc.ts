@@ -12,6 +12,8 @@ import type {
   ModeList,
   VaultEntry,
   PrivacyState,
+  QueueFlushResult,
+  QueueList,
   Snippet,
   SnippetList,
   VocabularyList,
@@ -149,6 +151,18 @@ export function registerIpc({
   ipcMain.handle('snippets:test', (_event, text: string) =>
     engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
   )
+
+  ipcMain.handle('queue:list', () => engine.request<QueueList>({ type: 'queue:list' }))
+
+  ipcMain.handle('queue:flush', () =>
+    engine.request<QueueFlushResult>({ type: 'queue:flush' }),
+  )
+
+  ipcMain.handle('queue:remove', (_event, id: string) =>
+    engine.request<QueueList>({ type: 'queue:remove', id }),
+  )
+
+  ipcMain.handle('queue:clear', () => engine.request<QueueList>({ type: 'queue:clear' }))
 
   ipcMain.handle('privacy:get', () =>
     engine.request<PrivacyState>({ type: 'privacy:get' }),

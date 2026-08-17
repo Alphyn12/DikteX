@@ -111,6 +111,13 @@ class SttRouter:
         vocabulary: list[str] | None = None,
     ) -> Transcript:
         errors: list[str] = []
+        #: Zincirde geçici bir hata gördük mü?
+        #:
+        #: Bu bayrak birleşik hataya taşınmak zorunda. Taşınmazsa "internet
+        #: kesik" ile "anahtar yanlış" aynı görünüyor ve kuyruk (Faz 7.2)
+        #: yanlış karar veriyor: ya kurtarılabilir bir kaydı çöpe atıyor ya da
+        #: asla başarılı olmayacak bir kaydı sonsuza kadar saklıyor.
+        any_retryable = False
 
         for provider in self.providers:
             name = provider.info.name
@@ -125,6 +132,7 @@ class SttRouter:
             except ProviderError as exc:
                 errors.append(str(exc))
                 if exc.retryable:
+                    any_retryable = True
                     log.warning("%s başarısız, yedeğe geçiliyor: %s", name, exc)
                     continue
                 # Kalıcı hata: bu sağlayıcıyla tekrar denemenin anlamı yok,
@@ -138,4 +146,8 @@ class SttRouter:
 
             return transcript
 
-        raise ProviderError("stt", "hiçbir sağlayıcı yanıt vermedi — " + " | ".join(errors))
+        raise ProviderError(
+            "stt",
+            "hiçbir sağlayıcı yanıt vermedi — " + " | ".join(errors),
+            retryable=any_retryable,
+        )
