@@ -260,6 +260,12 @@ export interface IpcEventMap {
   'window:maximize-changed': boolean
   'app:locale-changed': Locale
   'dictation:changed': DictationState
+  /**
+   * Sesli arama sorgusu hazır (Faz 7.13).
+   *
+   * Ana pencere bunu alınca geçmiş ekranına geçip kutuyu dolduruyor.
+   */
+  'history:query': string
   'meeting:changed': MeetingState
 }
 

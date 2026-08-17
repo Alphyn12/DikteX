@@ -30,6 +30,9 @@ export type ModeId =
   | 'image_prompt'
   | 'sql'
   | 'commit'
+  | 'screen'
+  /** Sesli geçmiş araması — LLM'e gitmez, sorgu arama kutusuna düşer. */
+  | 'search'
 
 /** Aktif uygulamanın çıktı profili — `context/apps.py` ile aynı. */
 export type OutputProfile =

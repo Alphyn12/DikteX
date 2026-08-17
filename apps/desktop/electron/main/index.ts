@@ -5,7 +5,11 @@ import { createHudWindow, syncHud, syncMeetingHud } from './windows/hudWindow'
 import { createTray } from './tray'
 import { registerIpc } from './ipc'
 import { loadEnv } from './env'
-import { DictationController, broadcastDictation } from './dictation'
+import {
+  DictationController,
+  broadcastDictation,
+  setMainWindowResolver,
+} from './dictation'
 import { MeetingController, broadcastMeeting } from './meeting'
 import { registerHotkeys, unregisterHotkeys } from './hotkeys'
 
@@ -47,6 +51,11 @@ async function main(): Promise<void> {
     if (mainWindow.isDestroyed()) mainWindow = createMainWindow()
     return mainWindow
   }
+
+  // Sesli arama sonucu ana pencereye gidiyor (Faz 7.13); dikte denetleyicisi
+  // pencereyi kendisi bulamaz, çünkü HUD ve bölge kaplaması da birer
+  // BrowserWindow.
+  setMainWindowResolver(getMainWindow)
 
   const getHudWindow = (): BrowserWindow => {
     if (hudWindow.isDestroyed()) hudWindow = createHudWindow()

@@ -17,7 +17,12 @@ const DEBOUNCE_MS = 220
  * kendisi katlıyor ama **ı** ayrı bir harf ve katlamıyor — ölçtük,
  * "veritabani" araması "veritabanı" kaydını bulamıyordu.
  */
-export function History(): React.JSX.Element {
+export function History({
+  voiceQuery,
+}: {
+  /** Sesli aramadan gelen sorgu; `seq` aynı sorgunun tekrarını ayırt eder. */
+  voiceQuery?: { text: string; seq: number } | null
+} = {}): React.JSX.Element {
   const { t, formatNumber } = useI18n()
   const { state: engine } = useEngine()
 
@@ -62,6 +67,12 @@ export function History(): React.JSX.Element {
     },
     [engine.status],
   )
+
+  // Sesli sorgu geldiğinde kutuyu dolduruyoruz; arama zaten aşağıdaki
+  // debounce etkisiyle tetikleniyor.
+  useEffect(() => {
+    if (voiceQuery) setQuery(voiceQuery.text)
+  }, [voiceQuery])
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current)

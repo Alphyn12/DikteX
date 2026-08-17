@@ -552,6 +552,19 @@ class DictationPipeline:
             await self._set_state(DictationState.ERROR, message=str(exc))
             return
 
+        # Arama modu (Faz 7.13) pre-flight'a girmiyor: sorgu doğrudan arama
+        # kutusuna gidiyor. Bir arama sorgusunu onaylatmak gereksiz bir adım —
+        # sonucu zaten kullanıcı görüyor ve yanlışsa yeniden yazıyor.
+        if session.mode.id is ModeId.SEARCH:
+            self._session = None
+            self._result = None
+            log.info("Sesli arama sorgusu: %r", result.final_text)
+            await self._emit(
+                {"type": "history:query", "query": result.final_text}
+            )
+            await self._set_state(DictationState.IDLE, searched=True)
+            return
+
         self._result = result
         self._session = None
 
@@ -704,7 +717,10 @@ class DictationPipeline:
         llm_cost = 0.0
         final_text = injected.text
 
-        if self._llm.is_available() and injected.text:
+        # Arama modunda LLM'e gitmiyoruz: sorgu için para ve gecikme
+        # harcamanın karşılığı yok, üstelik model sorguyu "düzelterek"
+        # bozabilir.
+        if mode.id is not ModeId.SEARCH and self._llm.is_available() and injected.text:
             try:
                 if session.screen_image:
                     # Ekran modunun istemi ayrı: burada iş metni temizlemek

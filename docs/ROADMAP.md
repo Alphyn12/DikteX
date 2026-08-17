@@ -358,7 +358,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 |---|---|---|---|
 | 6.2 | Prompt geçmişi arama (FTS5) | Altındaki üç madde buna bağımlı, o yüzden başta. | ✅ |
 | 7.12 | Geçmişten yeniden yapıştır | Veri SQLite'ta duruyor, düğme yok. | ✅ |
-| 7.13 | Sesli geçmiş arama | "geçen hafta Docker hakkında ne demiştim". | ⬜ |
+| 7.13 | Sesli geçmiş arama | "geçen hafta Docker hakkında ne demiştim". | ✅ |
 | 7.14 | Geçmişi dışa aktarma (Markdown / JSON) | Veri sahipliği. | ⬜ |
 
 ### 7.E — Toplama

@@ -76,6 +76,13 @@ export function registerHotkeys(dictation: DictationController): HotkeyRegistrat
     modes.push({ mode, accelerator, registered })
   }
 
+  // Sesli geçmiş araması (Faz 7.13). Kendi kısayolu var çünkü sonucu
+  // yapıştırılmıyor — akışı diğer modlardan farklı.
+  const searchAccelerator = 'Control+Alt+A'
+  if (!globalShortcut.register(searchAccelerator, () => void dictation.toggle('search'))) {
+    conflicts.push(searchAccelerator)
+  }
+
   // İptal her modda aynı.
   const cancelAccelerator = 'Control+Alt+Escape'
   if (!globalShortcut.register(cancelAccelerator, () => dictation.cancel())) {

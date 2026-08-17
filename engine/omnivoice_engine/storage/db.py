@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sqlite3
 import threading
 from dataclasses import dataclass
@@ -31,6 +32,72 @@ SCHEMA_VERSION = 2
 #: Ölçtük: "veritabanı" kayıtlıyken "veritabani" araması 0 sonuç veriyordu.
 #: Türkçe klavyesi olmayan biri tam da öyle yazar.
 _FOLD_MAP = str.maketrans({"ı": "i", "İ": "i", "̇": ""})
+
+
+#: Sorgudan atılan Türkçe/İngilizce soru ve bağlaç kelimeleri.
+#:
+#: Sesli arama (Faz 7.13) doğal cümleyle geliyor: "geçen hafta docker
+#: hakkında ne demiştim". Bunları atmazsak sorgu hiçbir şey bulmaz — ölçtük.
+_QUERY_STOPWORDS = frozenset(
+    {
+        "ne", "nedir", "neydi", "demistim", "dedim", "demis", "soylemistim",
+        "hakkinda", "ile", "icin", "ve", "veya", "bir", "bu", "su", "o",
+        "gecen", "gecende", "hafta", "haftaki", "gun", "gunku", "ay", "ayki",
+        "dun", "bugun", "once", "sonra", "vardi", "var", "mi", "mu", "mi̇",
+        "the", "a", "an", "and", "or", "what", "did", "i", "say", "about",
+        "last", "week", "yesterday", "today",
+    }
+)
+
+
+#: Dolgu kelimesi karşılaştırması için tam ASCII indirgeme.
+#:
+#: `search_fold` aksanları bilinçli olarak tokenizer'a bırakıyor (dizin de
+#: öyle üretiliyor). Ama dolgu listesi ASCII yazılı, dolayısıyla "geçen" ve
+#: "demiştim" eşleşmiyordu — ölçümde "geçen hafta docker hakkında ne
+#: demiştim" sorgusu 0 sonuç veriyordu. Karşılaştırma burada ayrıca
+#: aksansızlaştırılıyor; dizine dokunulmuyor.
+_ASCII_FOLD = str.maketrans(
+    {
+        "ı": "i", "İ": "i", "ş": "s", "Ş": "s", "ğ": "g", "Ğ": "g",
+        "ö": "o", "Ö": "o", "ü": "u", "Ü": "u", "ç": "c", "Ç": "c",
+    }
+)
+
+
+def _stopword_key(word: str) -> str:
+    return word.lower().translate(_ASCII_FOLD)
+
+
+def build_fts_query(query: str) -> str:
+    """Kullanıcı metnini FTS5 ifadesine çevirir.
+
+    **Öbek değil, kelime bazlı AND.** Öbek araması ölçüldü ve fazla katıydı:
+
+        "docker"           → 2 sonuç
+        "docker container" → 1 sonuç
+        "container docker" → 0 sonuç   (sıra değişince kayboluyor)
+        "docker ayarları"  → 0 sonuç   (iki kelime de kayıtta olmasına rağmen)
+
+    Kelimeler AND ile birleştirilip her birine önek eşleşmesi veriliyor;
+    sıra artık önemli değil ve ek almış kelimeler de tutuyor.
+
+    Dolgu kelimeleri atılıyor: sesli arama doğal cümleyle geliyor
+    ("geçen hafta docker hakkında ne demiştim") ve o cümledeki her kelimeyi
+    aramak hiçbir şey bulmamak demek.
+    """
+    folded = search_fold(query)
+    words = [w for w in re.findall(r"\w+", folded) if len(w) > 1]
+    content = [w for w in words if _stopword_key(w) not in _QUERY_STOPWORDS]
+
+    # Hepsi dolgu çıktıysa elde olanı kullanıyoruz: boş bir sorgu döndürmek,
+    # kullanıcının yazdığını tamamen yok saymak olurdu.
+    terms = content or words
+    if not terms:
+        return ""
+
+    # Tırnak, FTS5 sözdizim karakterlerini etkisizleştiriyor.
+    return " AND ".join(f'"{w}"*' for w in terms)
 
 
 def search_fold(text: str) -> str:
@@ -360,12 +427,9 @@ class Database:
         if not query.strip():
             return self.recent_dictations(limit)
 
-        # FTS5 sorgu sözdizimindeki özel karakterler kullanıcı metninde
-        # olabilir; tırnak içine alıp önek eşleşmesi ekliyoruz.
-        # Sorgu da katlanıyor: dizin katlanmış metni taşıyor, sorgu
-        # taşımazsa "veritabani" araması "veritabanı" kaydını bulamaz.
-        escaped = search_fold(query).replace('"', '""')
-        fts_query = f'"{escaped}"*'
+        fts_query = build_fts_query(query)
+        if not fts_query:
+            return self.recent_dictations(limit)
 
         with self._lock:
             try:

@@ -53,6 +53,12 @@ export class DictationController {
         this.applyStatus(event)
         break
 
+      case 'history:query':
+        // Sesli arama sonucu (Faz 7.13). Yapıştırılmıyor; ana pencereye
+        // gidiyor ve orada geçmiş ekranı açılıyor.
+        broadcastHistoryQuery(String(event['query'] ?? ''))
+        break
+
       case 'dictation:level':
         // Yalnız dinlerken anlamlı; geç gelen bir kare durumu bozmasın.
         if (this.state.status === 'listening') {
@@ -208,5 +214,38 @@ export class DictationController {
 export function broadcastDictation(state: DictationState): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) window.webContents.send('dictation:changed', state)
+  }
+}
+
+/**
+ * Ana pencereyi getiren fonksiyon.
+ *
+ * `index.ts` kendi kapanışında tutuyor; buradan erişmek için enjekte
+ * ediliyor. Pencereyi `getAllWindows()` içinde tahmin etmek yanlıştı —
+ * HUD ve bölge kaplaması da birer `BrowserWindow` ve ayırt edici bir
+ * özellikleri yok.
+ */
+let resolveMainWindow: (() => BrowserWindow) | null = null
+
+export function setMainWindowResolver(resolver: () => BrowserWindow): void {
+  resolveMainWindow = resolver
+}
+
+/**
+ * Sesli arama sorgusunu ana pencereye taşır ve pencereyi öne getirir.
+ *
+ * Pencereyi göstermek şart: kullanıcı kısayola başka bir uygulamadayken
+ * bastı ve sonucu görmek için OmniVoice'un önde olması gerekiyor. Diğer
+ * modlarda bu yok — orada metin kullanıcının bulunduğu yere gidiyor.
+ */
+function broadcastHistoryQuery(query: string): void {
+  if (!query.trim()) return
+
+  const main = resolveMainWindow?.()
+  if (main && !main.isDestroyed()) {
+    main.webContents.send('history:query', query)
+    if (!main.isVisible()) main.show()
+    if (main.isMinimized()) main.restore()
+    main.focus()
   }
 }

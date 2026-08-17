@@ -23,6 +23,7 @@ class ModeId(str, Enum):
     SQL = "sql"
     COMMIT = "commit"
     SCREEN = "screen"
+    SEARCH = "search"
 
 
 @dataclass(frozen=True, slots=True)
@@ -172,6 +173,18 @@ MODES: dict[ModeId, Mode] = {
         use_app_profile=False,
         require_preflight=True,
     ),
+    ModeId.SEARCH: Mode(
+        id=ModeId.SEARCH,
+        chord_key="A",
+        module="system",
+        # Bu mod LLM'e HİÇ gitmiyor; yönerge yalnız arayüz tutarlılığı için
+        # duruyor. Sesli bir arama sorgusunu modele göndermek hem para hem
+        # gecikme harcar, hem de sorguyu "düzelterek" bozabilir.
+        instruction="Bu mod yerel çalışır; metin doğrudan arama kutusuna gider.",
+        require_preflight=False,
+        use_app_profile=False,
+        aliases=("ara", "arama", "gecmis", "geçmiş"),
+    ),
     ModeId.COMMIT: Mode(
         id=ModeId.COMMIT,
         chord_key="C",
@@ -215,13 +228,25 @@ MODES: dict[ModeId, Mode] = {
 }
 
 
+#: Takma ad → mod. Modül yüklenirken bir kez kuruluyor.
+#:
+#: `Mode.aliases` alanı vardı ama **hiçbir yerden okunmuyordu** — yani her
+#: modda tanımlı, hiç çalışmayan bir alan. Buraya bağlandı.
+_ALIASES: dict[str, ModeId] = {
+    alias.lower(): mode.id for mode in MODES.values() for alias in mode.aliases
+}
+
+
 def get_mode(mode_id: ModeId | str) -> Mode:
     """Kimlikten mod döndürür. Bilinmeyen kimlik hızlı dikteye düşer."""
     if isinstance(mode_id, str):
         try:
             mode_id = ModeId(mode_id)
         except ValueError:
-            return MODES[ModeId.QUICK]
+            resolved = _ALIASES.get(mode_id.strip().lower())
+            if resolved is None:
+                return MODES[ModeId.QUICK]
+            mode_id = resolved
     return MODES.get(mode_id, MODES[ModeId.QUICK])
 
 

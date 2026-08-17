@@ -18,7 +18,12 @@ from pathlib import Path
 
 import pytest
 
-from omnivoice_engine.storage.db import Database, DictationRecord, search_fold
+from omnivoice_engine.storage.db import (
+    Database,
+    DictationRecord,
+    build_fts_query,
+    search_fold,
+)
 
 
 def kaydet(db: Database, metin: str, *, app: str = "Test", mode: str = "quick") -> int:
@@ -176,3 +181,55 @@ class TestGoc:
             assert len(second.search_dictations("veritabani")) == 1
         finally:
             second.close()
+
+
+class TestSorguKurma:
+    """Doğal dil sorgusundan FTS ifadesi (Faz 7.13).
+
+    Öbek araması ölçüldü ve fazla katıydı:
+
+        "docker"           → 2 sonuç
+        "container docker" → 0 sonuç   (sıra değişince kayboluyor)
+        "docker ayarları"  → 0 sonuç   (iki kelime de kayıtta olmasına rağmen)
+
+    Kelime bazlı AND'e geçildi.
+    """
+
+    def test_tek_kelime(self) -> None:
+        assert build_fts_query("docker") == '"docker"*'
+
+    def test_coklu_kelime_AND(self) -> None:
+        assert build_fts_query("docker container") == '"docker"* AND "container"*'
+
+    def test_SIRA_ONEMSIZ(self, db: Database) -> None:
+        """Öbek aramasında "container docker" 0 sonuç veriyordu."""
+        assert len(db.search_dictations("container docker")) == 1
+
+    def test_bitisik_olmayan_kelimeler(self, db: Database) -> None:
+        """Öbek aramasında "docker ayarları" 0 sonuç veriyordu."""
+        assert len(db.search_dictations("docker ayarları")) == 1
+
+    def test_DOGAL_DIL_sorgusu(self, db: Database) -> None:
+        """Sesli arama doğal cümleyle geliyor."""
+        assert len(db.search_dictations("geçen hafta docker hakkında ne demiştim")) == 1
+
+    def test_dolgu_kelimeleri_atilir(self) -> None:
+        assert build_fts_query("geçen hafta docker hakkında ne demiştim") == '"docker"*'
+
+    def test_dolgu_ESLESMESI_AKSANSIZ(self) -> None:
+        """`search_fold` aksanları tokenizer'a bırakıyor ama dolgu listesi ASCII.
+
+        Bu ayrışma yüzünden "geçen" ve "demiştim" ilk yazımda elenmiyordu ve
+        doğal dil sorgusu 0 sonuç veriyordu.
+        """
+        assert build_fts_query("dün veritabanı hakkında ne söylemiştim") == '"veritabani"*'
+
+    def test_hepsi_dolguysa_elde_olan_kullanilir(self) -> None:
+        """Boş sorgu döndürmek, kullanıcının yazdığını tamamen yok saymak olurdu."""
+        assert build_fts_query("ne demiştim") != ""
+
+    def test_tek_harfli_kelimeler_atilir(self) -> None:
+        assert build_fts_query("a docker b") == '"docker"*'
+
+    def test_bos_sorgu(self) -> None:
+        assert build_fts_query("   ") == ""

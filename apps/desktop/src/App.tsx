@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { AppView, EngineStatus, Locale } from '@shared/ipc'
 import { TitleBar } from './components/TitleBar'
 import { Sidebar } from './components/Sidebar'
@@ -23,6 +23,19 @@ export function App(): React.JSX.Element {
 
 function Shell(): React.JSX.Element {
   const [view, setView] = useState<AppView>('panel')
+  // Sesli aramadan gelen sorgu (Faz 7.13). Geçmiş ekranına aktarılıyor ve
+  // sayaçla birlikte taşınıyor: aynı sorgu iki kez söylenirse ekran yine
+  // güncellensin.
+  const [voiceQuery, setVoiceQuery] = useState<{ text: string; seq: number } | null>(
+    null,
+  )
+
+  useEffect(() => {
+    return window.omnivoice.on('history:query', (query) => {
+      setVoiceQuery((current) => ({ text: query, seq: (current?.seq ?? 0) + 1 }))
+      setView('history')
+    })
+  }, [])
   // Kulaklık takılıp çıkarıldığında motorun haberi olsun (Faz 7.6).
   // Ana pencerede dinleniyor: HUD kısa ömürlü ve kapalıyken de olayı
   // yakalamamız gerekiyor.
@@ -37,7 +50,7 @@ function Shell(): React.JSX.Element {
         <Sidebar view={view} onNavigate={setView} vaultKeyCount={configuredKeys} />
         <main className={styles.content}>
           {view === 'panel' && <Panel onNavigate={setView} />}
-          {view === 'history' && <History />}
+          {view === 'history' && <History voiceQuery={voiceQuery} />}
           {view === 'settings' && <Settings />}
         </main>
       </div>
