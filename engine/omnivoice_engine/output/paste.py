@@ -16,11 +16,13 @@ import ctypes
 import logging
 import time
 from ctypes import wintypes
+from dataclasses import dataclass
+from enum import Enum
 
 import win32clipboard
 import win32con
 
-from omnivoice_engine.output.window import focus_window
+from omnivoice_engine.output.window import can_send_input_to, focus_window
 
 log = logging.getLogger(__name__)
 
@@ -196,38 +198,86 @@ def write_clipboard_text(text: str) -> bool:
 
 
 class PasteError(RuntimeError):
-    """Metin hedef pencereye gönderilemedi."""
+    """Metin hedef pencereye de panoya da konulamadı — gerçek başarısızlık."""
 
 
-def paste_text(text: str, *, window_handle: int | None = None, restore_clipboard: bool = True) -> None:
-    """Metni hedef pencereye yapıştırır.
+class PasteMethod(Enum):
+    """Metnin kullanıcıya nasıl ulaştığı."""
 
-    `window_handle` verilirse önce o pencere öne getirilir — dikte başladığında
-    kullanıcının bulunduğu uygulama. Odak alınamazsa **yapıştırma yapılmaz**;
-    metni yanlış pencereye göndermektense hata vermek yeğdir.
+    DIRECT = "direct"
+    """Ctrl+V gönderildi, metin hedef pencereye yapıştı."""
+
+    CLIPBOARD = "clipboard"
+    """Yapıştırılamadı ama metin panoda duruyor; kullanıcı elle yapıştırabilir."""
+
+
+@dataclass(frozen=True, slots=True)
+class PasteOutcome:
+    """Yapıştırmanın sonucu.
+
+    Metin panoya düştüyse bu bir **hata değil**, kısmi başarıdır: kullanıcı
+    konuşmasını kaybetmedi. Ama bunu bilmesi şart, yoksa Ctrl+V'ye basması
+    gerektiğini anlamaz ve metnin kaybolduğunu sanır.
+    """
+
+    method: PasteMethod
+    #: Doğrudan yapıştırılamadıysa sebebi — kullanıcıya gösterilir.
+    reason: str | None = None
+
+    @property
+    def needs_manual_paste(self) -> bool:
+        return self.method is PasteMethod.CLIPBOARD
+
+
+def paste_text(
+    text: str, *, window_handle: int | None = None, restore_clipboard: bool = True
+) -> PasteOutcome:
+    """Metni hedef pencereye yapıştırır; olmazsa panoda bırakır.
+
+    Eskiden bu fonksiyon başarısızlıkta hata fırlatıyordu ve metin kayboluyordu.
+    Üç ayrı yerde doğrudan yapıştırma **sessizce** başarısız olabiliyor:
+
+    1. Hedef bizden yüksek bütünlük seviyesinde (yönetici olarak çalışan bir
+       uygulama, Görev Yöneticisi, kurulum sihirbazı). `SendInput` bu durumda
+       başarı döner ama olaylar yutulur — bu yüzden **önceden** kontrol edilir.
+    2. Pencere öne getirilemez.
+    3. `SendInput` eksik olay gönderir.
+
+    Üçünde de metin panoda bırakılıyor ve pano **geri konulmuyor**: kullanıcının
+    Ctrl+V ile yapıştıracağı şey orada durmalı.
     """
     if not text:
-        return
+        return PasteOutcome(method=PasteMethod.DIRECT)
 
     previous = read_clipboard_text() if restore_clipboard else None
 
     if not write_clipboard_text(text):
+        # Buraya düşersek metin gerçekten hiçbir yerde değil.
         raise PasteError("Pano kilitli — başka bir uygulama kullanıyor olabilir")
 
-    if window_handle and not focus_window(window_handle):
-        # Panoda metin duruyor; kullanıcı elle Ctrl+V yapabilir.
-        raise PasteError(
-            "Hedef pencere öne getirilemedi. Metin panoya kopyalandı, "
-            "elle yapıştırabilirsiniz."
+    def fallback(reason: str) -> PasteOutcome:
+        """Metni panoda bırak ve sebebi bildir."""
+        log.warning("Doğrudan yapıştırma yapılamadı: %s", reason)
+        return PasteOutcome(method=PasteMethod.CLIPBOARD, reason=reason)
+
+    if window_handle and not can_send_input_to(window_handle):
+        return fallback(
+            "Hedef uygulama yönetici olarak çalışıyor; Windows bu pencereye "
+            "tuş göndermemize izin vermiyor."
         )
+
+    if window_handle and not focus_window(window_handle):
+        return fallback("Hedef pencere öne getirilemedi.")
 
     time.sleep(_FOCUS_SETTLE_SECONDS)
 
     if not _send_ctrl_v():
-        raise PasteError("Tuş dizisi gönderilemedi")
+        return fallback("Tuş dizisi gönderilemedi.")
 
     if restore_clipboard and previous is not None:
         # Hedef uygulama panoyu okuyana kadar bekliyoruz; erken geri koyarsak
         # kullanıcının eski içeriği yapışır.
         time.sleep(_PASTE_SETTLE_SECONDS)
         write_clipboard_text(previous)
+
+    return PasteOutcome(method=PasteMethod.DIRECT)

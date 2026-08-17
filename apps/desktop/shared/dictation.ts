@@ -12,6 +12,13 @@ export type DictationStatus =
   | 'preflight'
   /** Kayıtta konuşma yoktu. Hata değil ama kullanıcıya söylenmeli. */
   | 'silent'
+  /**
+   * Doğrudan yapıştırılamadı; metin panoda bekliyor.
+   *
+   * Ayrı bir durum çünkü HUD `idle` olunca kapanıyor. Kullanıcıya Ctrl+V'ye
+   * basması gerektiğini söylemeden kaybolursak metnin yok olduğunu sanır.
+   */
+  | 'clipboard'
   | 'error'
 
 /** Dikte modları — motor tarafındaki `ModeId` ile birebir aynı. */
@@ -187,6 +194,8 @@ export interface DictationState {
    * Kısık ses ile hiç sinyal olmaması farklı sorunlar, farklı çözümler.
    */
   deadMicrophone: boolean
+  /** `clipboard` durumunda panoda bekleyen karakter sayısı. */
+  clipboardChars: number
 }
 
 export const INITIAL_DICTATION_STATE: DictationState = {
@@ -206,6 +215,7 @@ export const INITIAL_DICTATION_STATE: DictationState = {
   error: null,
   warning: null,
   deadMicrophone: false,
+  clipboardChars: 0,
 }
 
 // ── Mikrofon ────────────────────────────────────────────────────────────

@@ -57,6 +57,13 @@ class DictationState(Enum):
     PREFLIGHT = "preflight"
     SILENT = "silent"
     """Kayıtta konuşma yoktu. Hata değil ama sessizce geçilmemeli."""
+    CLIPBOARD = "clipboard"
+    """Doğrudan yapıştırılamadı; metin panoda bekliyor.
+
+    Ayrı bir durum, çünkü HUD `idle` olunca kapanıyor. Kullanıcıya Ctrl+V'ye
+    basması gerektiğini söylemeden kaybolursak, metnin yok olduğunu sanır —
+    oysa konuşması duruyor.
+    """
     ERROR = "error"
 
 
@@ -584,12 +591,13 @@ class DictationPipeline:
         try:
             # Yapıştırma bloklayıcı Win32 çağrıları içeriyor; olay döngüsünü
             # kilitlememek için iş parçacığına alıyoruz.
-            await asyncio.to_thread(
+            outcome = await asyncio.to_thread(
                 paste_text,
                 content,
                 window_handle=result.target.handle if result.target else None,
             )
         except PasteError as exc:
+            # Buraya yalnız metin hiçbir yere konulamadıysa düşülür.
             log.error("Yapıştırma başarısız: %s", exc)
             await self._set_state(DictationState.ERROR, message=str(exc))
             return
@@ -598,6 +606,16 @@ class DictationPipeline:
             self._db.mark_pasted(result.record_id)
 
         self._result = None
+
+        # Panoya düşmek hata DEĞİL: kullanıcı konuşmasını kaybetmedi. Ama
+        # Ctrl+V'ye basması gerektiğini bilmeli, yoksa metin kaybolmuş sanır.
+        if outcome.needs_manual_paste:
+            log.info("Metin panoda bırakıldı: %d karakter", len(content))
+            await self._set_state(
+                DictationState.CLIPBOARD, message=outcome.reason, chars=len(content)
+            )
+            return
+
         await self._set_state(DictationState.IDLE, pasted=True)
         log.info("Yapıştırıldı: %d karakter", len(content))
 
@@ -615,9 +633,15 @@ class DictationPipeline:
         self, mode: ModeId | str = ModeId.QUICK, *, region: dict[str, int] | None = None
     ) -> None:
         """Kısayolun davranışı: boştaysa başlat, dinliyorsa bitir."""
-        # SILENT ve ERROR birer bilgilendirme durumu; kısayola tekrar basmak
-        # yeni bir dikte başlatmalı, kullanıcıyı önce kapatmaya zorlamamalı.
-        if self.state in {DictationState.IDLE, DictationState.SILENT, DictationState.ERROR}:
+        # SILENT, CLIPBOARD ve ERROR birer bilgilendirme durumu; kısayola
+        # tekrar basmak yeni bir dikte başlatmalı, kullanıcıyı önce kapatmaya
+        # zorlamamalı.
+        if self.state in {
+            DictationState.IDLE,
+            DictationState.SILENT,
+            DictationState.CLIPBOARD,
+            DictationState.ERROR,
+        }:
             await self.start(mode, region=region)
         elif self.state is DictationState.LISTENING:
             await self.stop()

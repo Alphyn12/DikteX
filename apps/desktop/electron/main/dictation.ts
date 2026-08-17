@@ -122,6 +122,17 @@ export class DictationController {
         })
         break
 
+      case 'clipboard':
+        this.patch({
+          status,
+          level: 0,
+          // `message` burada hata değil, SEBEP: neden doğrudan
+          // yapıştırılamadığını kullanıcıya anlatıyor.
+          warning: event['message'] ? String(event['message']) : null,
+          clipboardChars: Number(event['chars'] ?? 0),
+        })
+        break
+
       case 'error':
         this.patch({ status, error: String(event['message'] ?? 'Bilinmeyen hata') })
         break

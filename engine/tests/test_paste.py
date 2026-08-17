@@ -72,10 +72,23 @@ class TestYapistirma:
         paste_module.paste_text("")
         assert read_clipboard_text() == onceki
 
-    def test_gecersiz_pencere_hata_verir(self) -> None:
-        """Odak alınamazsa metin yanlış pencereye gönderilmemeli."""
-        with pytest.raises(paste_module.PasteError):
-            paste_module.paste_text("deneme", window_handle=999_999_999)
+    def test_gecersiz_pencere_metni_panoda_birakir(self) -> None:
+        """Odak alınamazsa metin yanlış pencereye gönderilmemeli — ama kaybolmamalı da.
+
+        Bu test eskiden `PasteError` bekliyordu. Davranış Faz 7.1'de bilinçli
+        olarak değişti: hata fırlatmak kullanıcının dikte ettiği metni yok
+        ediyordu. Artık metin panoda kalıyor ve durum bildiriliyor.
+        """
+        onceki = read_clipboard_text()
+        try:
+            outcome = paste_module.paste_text("deneme", window_handle=999_999_999)
+            assert outcome.method is paste_module.PasteMethod.CLIPBOARD
+            assert outcome.needs_manual_paste
+            # Kritik olan bu satır: metin kullanıcının erişebileceği yerde.
+            assert read_clipboard_text() == "deneme"
+        finally:
+            if onceki is not None:
+                write_clipboard_text(onceki)
 
 
 class TestOdak:

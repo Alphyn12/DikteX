@@ -152,6 +152,9 @@ export const tr = {
   'hud.noSignal': 'Mikrofondan ses gelmiyor',
   'hud.silent': 'Konuşma algılanmadı',
   'hud.silent.hint': 'Kayıtta konuşma çıkmadı, bu yüzden hiçbir şey gönderilmedi. Daha yüksek sesle veya mikrofona daha yakın konuşmayı deneyin.',
+  'hud.clipboard': 'Metin panoda — Ctrl+V ile yapıştırın',
+  'hud.clipboard.hint':
+    '{count} karakter panoya kopyalandı ama hedef pencereye gönderilemedi. Konuşmanız kaybolmadı; imlecinizi istediğiniz yere koyup Ctrl+V yapın.',
   'hud.deadMic': 'Mikrofon ses üretmiyor',
   'hud.deadMic.hint': 'Seçili mikrofon hiç sinyal göndermiyor. Ayarlar → MİKROFON bölümünden çalışan bir aygıt seçin. (NVIDIA Broadcast gibi sanal mikrofonlar, kendi uygulamaları kapalıyken sessizlik üretir.)',
 

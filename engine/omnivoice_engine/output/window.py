@@ -11,7 +11,9 @@ yarar:
 
 from __future__ import annotations
 
+import ctypes
 import logging
+from ctypes import wintypes
 from dataclasses import dataclass
 
 import win32api
@@ -153,6 +155,132 @@ def focus_window(handle: int) -> bool:
                 pass
 
     return win32gui.GetForegroundWindow() == handle
+
+
+# ── Bütünlük seviyesi (UIPI) ──────────────────────────────────────────────
+#
+# Windows'un "User Interface Privilege Isolation" kuralı: bir süreç, yalnız
+# kendisiyle **aynı ya da daha düşük** bütünlük seviyesindeki pencerelere
+# girdi enjekte edebilir. Yönetici olarak çalışan bir uygulamaya `SendInput`
+# göndermek engellenir — ve kritik olan şu: `SendInput` bu durumda da
+# **başarı döndürür**. Olaylar sessizce yutulur.
+#
+# Bu yüzden gönderdikten sonra doğrulamak yerine, göndermeden ÖNCE bakıyoruz.
+
+_advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+_kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+_TOKEN_INTEGRITY_LEVEL = 25
+_PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+_TOKEN_QUERY = 0x0008
+_ERROR_ACCESS_DENIED = 5
+
+#: Bilinen bütünlük seviyeleri (`SECURITY_MANDATORY_*_RID`).
+INTEGRITY_MEDIUM = 0x2000
+INTEGRITY_HIGH = 0x3000
+
+
+class _SID_AND_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [("Sid", ctypes.c_void_p), ("Attributes", wintypes.DWORD)]
+
+
+class _TOKEN_MANDATORY_LABEL(ctypes.Structure):
+    _fields_ = [("Label", _SID_AND_ATTRIBUTES)]
+
+
+_kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+_kernel32.OpenProcess.restype = wintypes.HANDLE
+_advapi32.OpenProcessToken.argtypes = [
+    wintypes.HANDLE,
+    wintypes.DWORD,
+    ctypes.POINTER(wintypes.HANDLE),
+]
+_advapi32.GetTokenInformation.argtypes = [
+    wintypes.HANDLE,
+    ctypes.c_int,
+    ctypes.c_void_p,
+    wintypes.DWORD,
+    ctypes.POINTER(wintypes.DWORD),
+]
+# `argtypes` şart: SID bir işaretçi ve ctypes onu varsayılan olarak `int`
+# sanıp x64'te `OverflowError` veriyor. Ölçtük.
+_advapi32.GetSidSubAuthorityCount.argtypes = [ctypes.c_void_p]
+_advapi32.GetSidSubAuthorityCount.restype = ctypes.POINTER(ctypes.c_ubyte)
+_advapi32.GetSidSubAuthority.argtypes = [ctypes.c_void_p, wintypes.DWORD]
+_advapi32.GetSidSubAuthority.restype = ctypes.POINTER(wintypes.DWORD)
+
+
+def _integrity_level(pid: int) -> int | None:
+    """Sürecin bütünlük seviyesi. Okunamazsa `None`."""
+    handle = _kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+    if not handle:
+        # Erişim reddi tek başına bir bilgidir: bizden yüksek bir süreç.
+        # Ölçtük — `winlogon.exe` ve `csrss.exe` burada hata 5 veriyor.
+        if ctypes.get_last_error() == _ERROR_ACCESS_DENIED:
+            return INTEGRITY_HIGH
+        return None
+
+    try:
+        token = wintypes.HANDLE()
+        if not _advapi32.OpenProcessToken(handle, _TOKEN_QUERY, ctypes.byref(token)):
+            return INTEGRITY_HIGH if ctypes.get_last_error() == _ERROR_ACCESS_DENIED else None
+        try:
+            size = wintypes.DWORD()
+            _advapi32.GetTokenInformation(
+                token, _TOKEN_INTEGRITY_LEVEL, None, 0, ctypes.byref(size)
+            )
+            buffer = ctypes.create_string_buffer(size.value)
+            if not _advapi32.GetTokenInformation(
+                token, _TOKEN_INTEGRITY_LEVEL, buffer, size, ctypes.byref(size)
+            ):
+                return None
+            label = ctypes.cast(buffer, ctypes.POINTER(_TOKEN_MANDATORY_LABEL)).contents
+            count = _advapi32.GetSidSubAuthorityCount(label.Label.Sid).contents.value
+            return int(_advapi32.GetSidSubAuthority(label.Label.Sid, count - 1).contents.value)
+        finally:
+            _kernel32.CloseHandle(token)
+    finally:
+        _kernel32.CloseHandle(handle)
+
+
+def can_send_input_to(handle: int) -> bool:
+    """Bu pencereye girdi enjekte edebilir miyiz?
+
+    `False` ise `SendInput` **sessizce yutulacak** demektir: fonksiyon başarı
+    döner ama tuşlar hedefe ulaşmaz. Bunu önceden bilmek, metni kaybetmek
+    yerine panoya düşürebilmemizi sağlıyor.
+
+    Bilinmeyen durumda `True` dönüyoruz: seviye okunamadığı için yapıştırmayı
+    hiç denememek, çalışacak bir yapıştırmayı engellerdi. Yanlış tarafta
+    kalmak yerine deneyip sonucu bildirmek daha iyi.
+    """
+    if not handle:
+        return True
+
+    try:
+        _, pid = win32process.GetWindowThreadProcessId(handle)
+    except Exception:  # noqa: BLE001
+        return True
+    if not pid:
+        return True
+
+    target = _integrity_level(pid)
+    if target is None:
+        return True
+
+    own = _integrity_level(win32api.GetCurrentProcessId())
+    if own is None:
+        own = INTEGRITY_MEDIUM
+
+    if target > own:
+        log.warning(
+            "Hedef pencere daha yüksek bütünlük seviyesinde (%#x > %#x); "
+            "girdi enjeksiyonu UIPI tarafından engellenecek",
+            target,
+            own,
+        )
+        return False
+    return True
 
 
 def _try_set_foreground(handle: int) -> bool:

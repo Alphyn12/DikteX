@@ -48,7 +48,7 @@ export function Hud(): React.JSX.Element | null {
         ? styles.processing
         : state.status === 'error'
           ? styles.errored
-          : state.status === 'silent'
+          : state.status === 'silent' || state.status === 'clipboard'
             ? styles.warned
             : styles.preflight
 
@@ -62,6 +62,13 @@ export function Hud(): React.JSX.Element | null {
         )}
         {state.status === 'silent' && (
           <Silent deadMicrophone={state.deadMicrophone} onDismiss={cancel} />
+        )}
+        {state.status === 'clipboard' && (
+          <Clipboard
+            chars={state.clipboardChars}
+            reason={state.warning}
+            onDismiss={cancel}
+          />
         )}
         {state.status === 'error' && <Errored message={state.error} onDismiss={cancel} />}
       </div>
@@ -95,6 +102,47 @@ function Silent({
       </div>
       <p className={styles.errorText}>
         {deadMicrophone ? t('hud.deadMic.hint') : t('hud.silent.hint')}
+      </p>
+      <div className={styles.actions}>
+        <button type="button" className={styles.secondary} onClick={onDismiss}>
+          {t('hud.dismiss')}
+          <span className={styles.shortcut} style={{ marginInlineStart: 6 }}>
+            Esc
+          </span>
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ── Panoda bekliyor ────────────────────────────────────────────────────────
+
+/**
+ * Doğrudan yapıştırma yapılamadı, metin panoda.
+ *
+ * Bu ekran olmasaydı HUD sessizce kapanırdı ve kullanıcı dikte ettiği metnin
+ * kaybolduğunu sanırdı — oysa konuşması panoda duruyor. Sebebi de yazıyor,
+ * çünkü "neden olmadı" sorusunun cevabı davranışını değiştiriyor: yönetici
+ * uygulamasıysa bir daha denemesi de işe yaramaz.
+ */
+function Clipboard({
+  chars,
+  reason,
+  onDismiss,
+}: {
+  chars: number
+  reason: string | null
+  onDismiss: () => void
+}): React.JSX.Element {
+  const { t } = useI18n()
+  return (
+    <>
+      <div className={styles.head}>
+        <span className={styles.title}>{t('hud.clipboard')}</span>
+      </div>
+      <p className={styles.errorText}>
+        {t('hud.clipboard.hint', { count: chars })}
+        {reason ? ` ${reason}` : ''}
       </p>
       <div className={styles.actions}>
         <button type="button" className={styles.secondary} onClick={onDismiss}>

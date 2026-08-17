@@ -145,6 +145,9 @@ export const en: Messages = {
   'hud.noSignal': 'No sound from the microphone',
   'hud.silent': 'No speech detected',
   'hud.silent.hint': 'The recording contained no speech, so nothing was sent. Try speaking louder or closer to the microphone.',
+  'hud.clipboard': 'Text is on the clipboard — press Ctrl+V',
+  'hud.clipboard.hint':
+    '{count} characters were copied to the clipboard but could not be sent to the target window. Nothing was lost; place your cursor and press Ctrl+V.',
   'hud.deadMic': 'Microphone produces no sound',
   'hud.deadMic.hint': 'The selected microphone sends no signal at all. Pick a working device under Settings → MICROPHONE. (Virtual microphones such as NVIDIA Broadcast output silence when their own app is closed.)',
 
