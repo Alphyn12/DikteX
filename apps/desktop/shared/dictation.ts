@@ -154,6 +154,47 @@ export interface PrivacyState {
   autoStopSeconds: number
 }
 
+// ── Model kataloğu (Faz 3.15) ───────────────────────────────────────────
+
+/** OpenRouter kataloğundan gelen bir model. */
+export interface CatalogModel {
+  id: string
+  name: string
+  /** 1M jeton başına dolar; `null` ise bilinmiyor (tahmin uydurulmuyor). */
+  inputPrice: number | null
+  outputPrice: number | null
+  contextLength: number | null
+  /** Görsel girdi kabul ediyor mu — ekran gözü modu bunu gerektiriyor. */
+  supportsImages: boolean
+  /** Kimlikteki `:` ekinden gelen varyant: `free`, `batch`, `thinking`. */
+  variant: string | null
+  /**
+   * Anlık işler için kullanılabilir mi.
+   *
+   * `:batch` modelleri eşzamansız toplu işleme uç noktaları — dikte için
+   * seçilirse hiçbir şey dönmez. Adları normalden yalnız iki nokta ile
+   * ayrıldığı için arayüzün bunu göstermesi şart.
+   */
+  interactive: boolean
+}
+
+export type ModelRole = 'llm' | 'stt' | 'vision'
+
+/** Bir rolün etkin modeli ve değerin nereden geldiği. */
+export interface RoleModel {
+  model: string
+  /** `user` = kullanıcı seçti · `default` = dağıtım varsayılanı · `llm` = LLM'den miras. */
+  source: 'user' | 'default' | 'llm'
+}
+
+export type ModelSelection = Record<ModelRole, RoleModel>
+
+export interface ModelCatalogResult {
+  models: CatalogModel[]
+  /** Katalog alınamadıysa sebebi; liste boş ama sebep gösterilmeli. */
+  error: string | null
+}
+
 // ── Başarısız kayıt kuyruğu ─────────────────────────────────────────────
 
 /**

@@ -60,6 +60,23 @@ export const tr = {
   'feed.title': 'Son dikteler',
   'feed.viewAll': 'Tümü · yerel SQLite arama',
 
+  'models.title': 'MODELLER',
+  'models.role.llm': 'Metin işleme',
+  'models.role.vision': 'Görsel (ekran gözü)',
+  'models.source.user': 'seçildi',
+  'models.source.default': 'varsayılan',
+  'models.source.llm': 'metin modelinden',
+  'models.useDefault': '— varsayılanı kullan —',
+  'models.refresh': 'listeyi yenile',
+  'models.loading': 'yükleniyor…',
+  'models.price': '${input} / ${output} · 1M jeton (girdi / çıktı)',
+  'models.priceUnknown': 'fiyat bilinmiyor',
+  'models.batchWarning':
+    'Bu bir toplu işleme (batch) modeli — istek kuyruğa alınır ve yanıt saatler sonra gelebilir. Dikte için uygun değil.',
+  'models.hint':
+    '{count} model listeleniyor. Liste OpenRouter’dan canlı çekiliyor; toplu işleme (batch) modelleri anlık dikteye uygun olmadığı için gizlendi.',
+  'models.hintEmpty': 'Modelleri görmek için “listeyi yenile” deyin.',
+
   'queue.title': 'GÖNDERİLEMEYEN KAYITLAR',
   'queue.count': '{count} bekliyor',
   'queue.attempts': '{count} deneme',

@@ -337,7 +337,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 
 | # | Madde | Not | Durum |
 |---|---|---|---|
-| 3.15 | **Model seçici + ayar kalıcılığı** | Model listesi OpenRouter `/api/v1/models`'tan canlı çekilecek; gömülü liste bir model kalkınca yalan söylerdi. | ⬜ |
+| 3.15 | **Model seçici + ayar kalıcılığı** | Model listesi OpenRouter `/api/v1/models`'tan canlı çekilecek; gömülü liste bir model kalkınca yalan söylerdi. | ✅ |
 | 7.5 | Uygulama başına varsayılan mod | VS Code'a geçince otomatik "kod" modu. Profil altyapısı var, mod hâlâ elle seçiliyor. | ⬜ |
 | 7.6 | Aygıt tak-çıkar otomatik geçişi | Kulaklık takılınca geç, çıkarılınca geri dön. | ⬜ |
 | 7.7 | Push-to-talk (basılı tut) | Düşük seviyeli klavye kancası (`WH_KEYBOARD_LL`) gerektiriyor — Faz 2'de bu yüzden ertelenmişti. | ⬜ |

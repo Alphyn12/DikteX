@@ -25,11 +25,18 @@ from omnivoice_engine.audio.capture import (
 )
 from omnivoice_engine.config import get_settings
 from omnivoice_engine.llm.openrouter import OpenRouterLlm
-from omnivoice_engine.pipeline.dictation import DictationPipeline, DictationState
+from omnivoice_engine.pipeline.dictation import (
+    DEFAULT_AUTO_STOP_SECONDS,
+    DictationPipeline,
+    DictationState,
+)
 from omnivoice_engine.pipeline.meeting import MeetingPipeline
 from omnivoice_engine.pipeline.modes import MODES
+from omnivoice_engine.providers import ProviderError
 from omnivoice_engine.storage.db import Database
+from omnivoice_engine.llm.catalog import ModelCatalog
 from omnivoice_engine.storage.queue import ClipQueue
+from omnivoice_engine.storage.settings_store import SettingsStore
 from omnivoice_engine.storage.snippets import SnippetLibrary
 from omnivoice_engine.storage.vocabulary import Vocabulary
 from omnivoice_engine.stt.router import SttRouter
@@ -47,6 +54,11 @@ class EngineContext:
 
     def __init__(self) -> None:
         settings = get_settings()
+        # Kullanıcı ayarları EN ÖNCE yükleniyor: mikrofon ve model seçimleri
+        # boru hatları kurulmadan uygulanmalı, yoksa ilk dikte yanlış
+        # yapılandırmayla çalışır.
+        self.user_settings = SettingsStore.load()
+        self.catalog = ModelCatalog()
         self.mic = MicrophoneCapture(pre_roll_seconds=1.0)
         self.stt = SttRouter()
         self.llm = OpenRouterLlm()
@@ -55,6 +67,14 @@ class EngineContext:
         self.snippets = SnippetLibrary.load()
         self.queue = ClipQueue()
         self.budget_usd = settings.budget_usd
+
+        saved = self.user_settings.settings
+        self.llm.set_default_model(saved.llm_model)
+        if saved.stt_model:
+            for provider in self.stt.providers:
+                # Sağlayıcıların model alanı ortak değil; olanı ayarlıyoruz.
+                if hasattr(provider, "model"):
+                    provider.model = saved.stt_model
 
         #: Bağlı arayüz istemcileri. Olaylar hepsine yayınlanır.
         self._clients: set[WebSocket] = set()
@@ -68,6 +88,12 @@ class EngineContext:
             vocabulary=self.vocabulary,
             snippets=self.snippets,
             queue=self.queue,
+            mask_pii=True if saved.mask_pii is None else saved.mask_pii,
+            auto_stop_seconds=(
+                DEFAULT_AUTO_STOP_SECONDS
+                if saved.auto_stop_seconds is None
+                else saved.auto_stop_seconds
+            ),
         )
 
         # Toplantı boru hattı aynı mikrofonu paylaşıyor; ikisi aynı anda
@@ -78,6 +104,7 @@ class EngineContext:
             llm=self.llm,
             db=self.db,
             emit=self.broadcast,
+            mask_pii=True if saved.mask_pii is None else saved.mask_pii,
         )
 
     async def broadcast(self, message: dict[str, Any]) -> None:
@@ -109,14 +136,57 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        # Kaydedilen mikrofon, akış AÇILMADAN ÖNCE uygulanıyor. Sonra
+        # uygulamak akışı kapatıp yeniden açmayı gerektirirdi ve o aralıkta
+        # pre-roll tamponu boş kalırdı.
+        #
+        # Aygıt ADLA çözümleniyor: PortAudio indeksleri aygıt takılıp
+        # çıkarıldıkça kayıyor, kaydedilen indeks bir sonraki açılışta
+        # bambaşka bir mikrofon olabilir.
+        saved_name = context.user_settings.settings.microphone_name
+        if saved_name:
+            try:
+                resolved = await asyncio.to_thread(
+                    context.mic.resolve_device_by_name, saved_name
+                )
+                if resolved is None:
+                    log.warning(
+                        "Kaydedilen mikrofon bulunamadı (%s); sistem varsayılanı kullanılıyor",
+                        saved_name,
+                    )
+                else:
+                    # Akış henüz açık değil; `set_device` bu durumda yalnız
+                    # indeksi ayarlıyor, aygıt açmaya çalışmıyor.
+                    await asyncio.to_thread(context.mic.set_device, resolved)
+                    log.info("Kaydedilen mikrofon uygulandı: %s", saved_name)
+            except Exception:  # noqa: BLE001 - ayar hatası motoru düşürmemeli
+                log.warning("Kaydedilen mikrofon uygulanamadı", exc_info=True)
+
         # Mikrofon akışını açılışta başlatıyoruz: pre-roll tamponunun kısayola
         # basıldığı anda dolu olması gerekiyor (Properties I.3).
         try:
             context.mic.start_stream()
         except AudioDeviceError as exc:
-            # Mikrofonsuz da açılabilmeli: kullanıcı geçmişe bakmak veya
-            # ayarları değiştirmek için uygulamayı açmış olabilir.
-            log.warning("Mikrofon akışı açılamadı; dikte devre dışı — %s", exc)
+            # Kaydedilen aygıt artık açılamıyorsa (çıkarılmış, başka bir
+            # uygulama tutuyor) kullanıcıyı mikrofonsuz bırakmıyoruz: sistem
+            # varsayılanıyla bir kez daha deniyoruz. Aksi hâlde bir kez
+            # kaydedilen bozuk seçim, dikteyi kalıcı olarak öldürürdü.
+            if context.mic.device is not None:
+                log.warning(
+                    "Kaydedilen mikrofon açılamadı (%s); sistem varsayılanına dönülüyor",
+                    exc,
+                )
+                try:
+                    await asyncio.to_thread(context.mic.set_device, None)
+                    context.mic.start_stream()
+                except AudioDeviceError as fallback_exc:
+                    log.warning(
+                        "Mikrofon akışı açılamadı; dikte devre dışı — %s", fallback_exc
+                    )
+            else:
+                # Mikrofonsuz da açılabilmeli: kullanıcı geçmişe bakmak veya
+                # ayarları değiştirmek için uygulamayı açmış olabilir.
+                log.warning("Mikrofon akışı açılamadı; dikte devre dışı — %s", exc)
         yield
         context.shutdown()
 
@@ -239,6 +309,14 @@ async def _handle_message(
                         index = resolved
                 await asyncio.to_thread(context.mic.set_device, index)
                 error = None
+                # Seçim kalıcı: motor yeniden başladığında aynı mikrofon
+                # açılmalı. Bu, kullanıcının bildirdiği "varsayılan mikrofonu
+                # değiştiremiyorum" hatasının kalan yarısıydı — değiştirme
+                # çalışıyordu ama her açılışta sıfırlanıyordu.
+                await asyncio.to_thread(
+                    context.user_settings.update,
+                    microphone_name=str(name) if name and index is not None else None,
+                )
             except AudioDeviceError as exc:
                 # Aygıt açılamadı; mikrofon eskisine geri döndü. Hata arayüze
                 # taşınır, motor ayakta kalır.
@@ -402,12 +480,57 @@ async def _handle_message(
             count = await asyncio.to_thread(context.queue.clear)
             await reply({"type": "queue:clear", "cleared": count, **context.queue.to_payload()})
 
+        # ── Modeller (Faz 3.15) ───────────────────────────────────────────
+        case "models:catalog":
+            try:
+                models = await context.catalog.models(force=bool(message.get("force")))
+                await reply(
+                    {
+                        "type": "models:catalog",
+                        "models": [m.to_payload() for m in models],
+                        "error": None,
+                    }
+                )
+            except ProviderError as exc:
+                # Katalog alınamazsa arayüz boş bir liste yerine sebebi
+                # göstermeli; kullanıcı mevcut seçimini yine de görüyor.
+                await reply({"type": "models:catalog", "models": [], "error": str(exc)})
+
+        case "models:get":
+            await reply(_models_payload(context))
+
+        case "models:set":
+            role = str(message.get("role", ""))
+            model = message.get("model")
+            value = (str(model).strip() or None) if model is not None else None
+
+            if role == "llm":
+                context.llm.set_default_model(value)
+                await asyncio.to_thread(context.user_settings.update, llm_model=value)
+            elif role == "stt":
+                for provider in context.stt.providers:
+                    if hasattr(provider, "model") and value:
+                        provider.model = value
+                await asyncio.to_thread(context.user_settings.update, stt_model=value)
+            elif role == "vision":
+                await asyncio.to_thread(context.user_settings.update, vision_model=value)
+            else:
+                await reply({"type": "models:set", "error": f"bilinmeyen rol: {role}"})
+                return
+
+            log.info("Model değişti — %s: %s", role, value or "varsayılan")
+            await reply(_models_payload(context))
+
         # ── Gizlilik ──────────────────────────────────────────────────────
         case "privacy:get":
             await reply(_privacy_payload(context))
 
         case "dictation:set-auto-stop":
             context.pipeline.set_auto_stop_seconds(float(message.get("seconds", 0)))
+            await asyncio.to_thread(
+                context.user_settings.update,
+                auto_stop_seconds=context.pipeline.auto_stop_seconds,
+            )
             await reply(_privacy_payload(context))
 
         case "privacy:set-masking":
@@ -416,6 +539,7 @@ async def _handle_message(
             # dökümü sessizce korumasız kalırdı.
             context.pipeline.set_pii_masking(enabled)
             context.meeting.set_pii_masking(enabled)
+            await asyncio.to_thread(context.user_settings.update, mask_pii=enabled)
             log.info("PII maskeleme %s", "açık" if enabled else "KAPALI")
             await reply(_privacy_payload(context))
 
@@ -478,4 +602,34 @@ def _privacy_payload(context: EngineContext) -> dict[str, Any]:
         "autoStopSeconds": context.pipeline.auto_stop_seconds,
         "sttCovered": False,
         "llmCovered": context.pipeline.pii_masking,
+    }
+
+
+def _models_payload(context: EngineContext) -> dict[str, Any]:
+    """Rol başına etkin model ve nereden geldiği.
+
+    `source` alanı önemli: kullanıcı bir model seçtiğini sanıp aslında
+    varsayılanı kullanıyor olabilir. Hangi değerin nereden geldiğini
+    göstermek bu karışıklığı kapatıyor.
+    """
+    saved = context.user_settings.settings
+    settings = get_settings()
+    stt_model = next(
+        (p.model for p in context.stt.providers if hasattr(p, "model")), settings.stt_model
+    )
+    return {
+        "type": "models:get",
+        "llm": {
+            "model": context.llm.default_model,
+            "source": "user" if saved.llm_model else "default",
+        },
+        "stt": {
+            "model": stt_model,
+            "source": "user" if saved.stt_model else "default",
+        },
+        "vision": {
+            # Görsel için ayrı seçim yoksa LLM modeli kullanılıyor.
+            "model": saved.vision_model or context.llm.default_model,
+            "source": "user" if saved.vision_model else "llm",
+        },
     }

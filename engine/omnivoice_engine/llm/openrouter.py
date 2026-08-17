@@ -46,6 +46,15 @@ class OpenRouterLlm:
     def default_model(self) -> str:
         return self._default_model or get_settings().llm_model
 
+    def set_default_model(self, model: str | None) -> None:
+        """Kullanıcının seçtiği modeli uygular (Faz 3.15).
+
+        `None` "seçim yok" demek ve ortam/kod varsayılanına döner. Boş dize de
+        `None` sayılıyor: arayüzden temizlenen bir alan geçersiz bir model
+        kimliği üretmemeli.
+        """
+        self._default_model = (model or "").strip() or None
+
     @property
     def info(self) -> ProviderInfo:
         return ProviderInfo(

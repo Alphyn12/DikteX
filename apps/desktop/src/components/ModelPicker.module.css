@@ -1,0 +1,105 @@
+/* Rol başına model seçici — Ayarlar sağ sütunu. */
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.refresh {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--mod-system);
+  font: var(--mono-tag);
+  cursor: default;
+}
+
+.refresh:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.refresh:disabled {
+  opacity: 0.5;
+}
+
+.roles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.role {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.roleHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.roleName {
+  font: 600 12px/1 var(--font-ui);
+  color: var(--text-primary);
+}
+
+/* Değerin nereden geldiği — kullanıcı seçtiğini sanıp varsayılanı
+   kullanıyor olabilir. */
+.source {
+  font: var(--mono-tag);
+  color: var(--text-faint);
+}
+
+.sourceUser {
+  color: var(--mod-vault-soft);
+}
+
+.select {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  background: rgba(0, 0, 0, 0.24);
+  color: var(--text-primary);
+  font: 500 12px/1 var(--font-mono);
+  outline: none;
+}
+
+.select:focus {
+  border-color: color-mix(in srgb, var(--mod-system) 60%, transparent);
+}
+
+.select:disabled {
+  opacity: 0.5;
+}
+
+.price {
+  font: var(--mono-tag);
+  color: var(--text-subtle);
+}
+
+.warning {
+  font: 400 11.5px/1.45 var(--font-ui);
+  color: var(--mod-automation-soft);
+}
+
+.hint {
+  margin-top: var(--space-3);
+  padding-top: 11px;
+  border-top: 1px solid var(--border-card);
+  font: 400 11.5px/1.5 var(--font-ui);
+  color: var(--text-faint);
+}
+
+.error {
+  margin-top: var(--space-2);
+  font: var(--text-caption);
+  color: var(--mod-automation-soft);
+}

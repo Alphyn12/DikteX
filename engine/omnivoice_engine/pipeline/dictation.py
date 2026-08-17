@@ -406,7 +406,15 @@ class DictationPipeline:
 
                 await asyncio.sleep(_LEVEL_INTERVAL)
         except asyncio.CancelledError:
+            # Beklenen: `stop()` ve `cancel()` bu görevi iptal ediyor.
             pass
+        except Exception:  # noqa: BLE001
+            # Bu görevi kimse beklemiyor, yani buradaki bir istisna SESSİZCE
+            # yutulurdu: dalga formu donar ve otomatik durdurma çalışmaz ama
+            # hiçbir yerde iz kalmaz. Testte tam olarak bu oldu — sahte
+            # mikrofonda eksik bir alan, yeşil bir test paketi altında
+            # gizlendi.
+            log.exception("Seviye döngüsü beklenmedik şekilde durdu")
 
     async def toggle_pause(self) -> None:
         """Kaydı duraklatır veya sürdürür (Faz 7.4).

@@ -62,6 +62,11 @@ class FakeMic:
         self.cancelled = True
 
     @property
+    def is_paused(self) -> bool:
+        # Duraklatma (Faz 7.4) seviye döngüsünde okunuyor.
+        return False
+
+    @property
     def level(self) -> float:
         return 0.5
 

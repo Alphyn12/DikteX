@@ -11,6 +11,9 @@ import type {
   MeetingHistoryItem,
   ModeList,
   VaultEntry,
+  ModelCatalogResult,
+  ModelRole,
+  ModelSelection,
   PrivacyState,
   QueueFlushResult,
   QueueList,
@@ -151,6 +154,18 @@ export function registerIpc({
 
   ipcMain.handle('snippets:test', (_event, text: string) =>
     engine.request<{ match: Snippet | null }>({ type: 'snippets:test', text }),
+  )
+
+  ipcMain.handle('models:catalog', (_event, force?: boolean) =>
+    engine.request<ModelCatalogResult>({ type: 'models:catalog', force }),
+  )
+
+  ipcMain.handle('models:get', () =>
+    engine.request<ModelSelection>({ type: 'models:get' }),
+  )
+
+  ipcMain.handle('models:set', (_event, role: ModelRole, model: string | null) =>
+    engine.request<ModelSelection>({ type: 'models:set', role, model }),
   )
 
   ipcMain.handle('queue:list', () => engine.request<QueueList>({ type: 'queue:list' }))

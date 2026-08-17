@@ -54,6 +54,23 @@ export const en: Messages = {
   'feed.title': 'Recent dictations',
   'feed.viewAll': 'All · local SQLite search',
 
+  'models.title': 'MODELS',
+  'models.role.llm': 'Text processing',
+  'models.role.vision': 'Vision (screen eye)',
+  'models.source.user': 'selected',
+  'models.source.default': 'default',
+  'models.source.llm': 'from text model',
+  'models.useDefault': '— use default —',
+  'models.refresh': 'refresh list',
+  'models.loading': 'loading…',
+  'models.price': '${input} / ${output} · 1M tokens (in / out)',
+  'models.priceUnknown': 'price unknown',
+  'models.batchWarning':
+    'This is a batch model — requests are queued and replies can take hours. Not suitable for dictation.',
+  'models.hint':
+    '{count} models listed, fetched live from OpenRouter. Batch models are hidden because they cannot serve interactive dictation.',
+  'models.hintEmpty': 'Press “refresh list” to load models.',
+
   'queue.title': 'UNSENT RECORDINGS',
   'queue.count': '{count} waiting',
   'queue.attempts': '{count} attempts',

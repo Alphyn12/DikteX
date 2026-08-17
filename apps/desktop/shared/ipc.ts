@@ -12,6 +12,9 @@ import type {
   EngineStats,
   ModeId,
   ModeList,
+  ModelCatalogResult,
+  ModelRole,
+  ModelSelection,
   PrivacyState,
   QueueFlushResult,
   QueueList,
@@ -48,10 +51,15 @@ export type {
   ModeInfo,
   ModeList,
   OutputProfile,
+  CatalogModel,
+  ModelCatalogResult,
+  ModelRole,
+  ModelSelection,
   PrivacyState,
   QueueFlushResult,
   QueueList,
   QueuedClip,
+  RoleModel,
   Snippet,
   SnippetList,
   SpendStats,
@@ -152,6 +160,12 @@ export interface IpcInvokeMap {
    * canlı dikte sırasında sınayabilir.
    */
   'snippets:test': { args: [text: string]; result: { match: Snippet | null } }
+
+  // ── Modeller (Faz 3.15) ────────────────────────────────────────────────
+  /** Canlı katalog. Koda gömülü liste bir model kalkınca yalan söylerdi. */
+  'models:catalog': { args: [force?: boolean]; result: ModelCatalogResult }
+  'models:get': { args: []; result: ModelSelection }
+  'models:set': { args: [role: ModelRole, model: string | null]; result: ModelSelection }
 
   // ── Başarısız kayıt kuyruğu ────────────────────────────────────────────
   'queue:list': { args: []; result: QueueList }
