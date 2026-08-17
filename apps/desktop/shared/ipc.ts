@@ -10,6 +10,7 @@ import type { HistoryRow } from './history'
 import type {
   AppModeMap,
   AudioDeviceList,
+  AutostartState,
   DictationState,
   EngineStats,
   ModeId,
@@ -49,6 +50,7 @@ export { INITIAL_MEETING_STATE } from './meeting'
 export type {
   AppModeMap,
   AudioDevice,
+  AutostartState,
   AudioDeviceList,
   CatalogModel,
   DictationResult,
@@ -122,6 +124,9 @@ export interface IpcInvokeMap {
   'app:get-version': { args: []; result: string }
   'app:get-locale': { args: []; result: Locale }
   'app:set-locale': { args: [locale: Locale]; result: void }
+  /** Windows açılışında otomatik başlatma (Faz 6.5). */
+  'app:get-autostart': { args: []; result: AutostartState }
+  'app:set-autostart': { args: [enabled: boolean]; result: AutostartState }
 
   // ── Dikte ──────────────────────────────────────────────────────────────
   'dictation:get-state': { args: []; result: DictationState }

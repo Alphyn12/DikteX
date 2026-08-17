@@ -275,7 +275,7 @@ Diarization olmadan 1 saatlik toplantı: STT ~$0.09 + özet ~$0.001 =
 | 6.2 | Prompt geçmişi arama motoru (tam metin arama) | VI | ✅ |
 | 6.3 | Sesli not defteri (Daily Scratchpad) + gün sonu derleme | VI | ❌ kapsam dışı |
 | 6.4 | Yerel REST / Webhook sunucusu (`localhost:8756`) | VI | ❌ kapsam dışı |
-| 6.5 | Otomatik başlatma (güncelleme kontrolü kapsam dışı) | — | ⬜ |
+| 6.5 | Otomatik başlatma (güncelleme kontrolü kapsam dışı) | — | ✅ |
 | 6.6 | Windows kurulum paketi (installer) | — | ⬜ |
 
 ### 6.6 hakkında — dağıtımın bilinen riskleri
@@ -361,7 +361,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 | 7.13 | Sesli geçmiş arama | "geçen hafta Docker hakkında ne demiştim". | ✅ |
 | 7.14 | Geçmişi dışa aktarma (Markdown / JSON) | Veri sahipliği. | ✅ |
 
-### 7.E — Toplama
+### 7.E — Toplama ✅ TAMAMLANDI
 
 | # | Madde | Not | Durum |
 |---|---|---|---|
@@ -369,7 +369,7 @@ mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
 | 7.16 | Dikte kutusu | Yapıştırılamayan uygulamalar için ayrı pencere. 7.1 ile kısmen çakışıyor, o yüzden ondan sonra. | ✅ |
 | 7.17 | Kısayol çakışma çözücü | Çakışma tespiti var, çözüm önerisi yok. | ✅ |
 | 3.13b | Gemini sağlayıcısı (yedek) | Groq düşerse dikte tamamen durmasın. | ❌ kapsam dışı |
-| 6.5 | Otomatik başlatma | Arka planda çalışan bir araç için gerekli. | ⬜ |
+| 6.5 | Otomatik başlatma | Arka planda çalışan bir araç için gerekli. | ✅ |
 
 ### 7.F — En son
 

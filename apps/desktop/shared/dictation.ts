@@ -165,6 +165,20 @@ export interface PrivacyState {
   autoStopSeconds: number
 }
 
+// ── Otomatik başlatma (Faz 6.5) ─────────────────────────────────────────
+
+export interface AutostartState {
+  enabled: boolean
+  /**
+   * Ayar gerçekten uygulanabiliyor mu.
+   *
+   * Geliştirme kurulumunda `false` — kaydolmak `electron.exe`'yi çalıştıran
+   * bir açılış girdisi bırakırdı. Arayüzün bunu göstermesi gerekiyor; yoksa
+   * kullanıcı anahtarı açar, hiçbir şey olmaz ve sebebini bilemez.
+   */
+  supported: boolean
+}
+
 // ── Öğrenen kişisel stil (Faz 3.13) ─────────────────────────────────────
 
 export interface StyleExample {

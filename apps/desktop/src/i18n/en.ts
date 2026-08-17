@@ -186,6 +186,11 @@ export const en: Messages = {
   'toggle.autoStop.desc':
     'Recording ends by itself when silence follows speech — no need to reach for the keyboard',
   'toggle.autoStop.meta': '{seconds} s threshold',
+  'toggle.autostart': 'Start with Windows',
+  'toggle.autostart.desc':
+    'Starts minimised to the tray — no window opens, shortcuts are ready.',
+  'toggle.autostart.meta': 'starts in tray',
+  'toggle.autostart.dev': 'installed builds only',
   'toggle.numbers': 'Convert numbers to digits',
   'toggle.numbers.desc':
     '“fifteen minutes” → “15 minutes”. Local and deterministic; ordinals are left alone.',

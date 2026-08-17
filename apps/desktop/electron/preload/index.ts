@@ -24,6 +24,8 @@ const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
   'app:get-version',
   'app:get-locale',
   'app:set-locale',
+  'app:get-autostart',
+  'app:set-autostart',
   'dictation:get-state',
   'dictation:toggle',
   'dictation:cancel',

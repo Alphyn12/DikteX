@@ -193,6 +193,11 @@ export const tr = {
   'toggle.autoStop.desc':
     'Konuştuktan sonra sessizlik sürerse kayıt kendiliğinden biter — klavyeye dönmeye gerek kalmaz',
   'toggle.autoStop.meta': 'eşik {seconds} sn',
+  'toggle.autostart': 'Windows açılışında başlat',
+  'toggle.autostart.desc':
+    'Uygulama tepsiye inmiş olarak açılır; pencere açılmaz, kısayollar hazır olur.',
+  'toggle.autostart.meta': 'tepsiye iner',
+  'toggle.autostart.dev': 'yalnız kurulu sürümde',
   'toggle.numbers': 'Sayıları rakama çevir',
   'toggle.numbers.desc':
     '“on beş dakika” → “15 dakika”. Yerel ve belirlenimci; sıra sayıları (“birinci”) değişmez.',

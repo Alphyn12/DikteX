@@ -1,4 +1,5 @@
 import { app, dialog, ipcMain, type BrowserWindow } from 'electron'
+import { getAutostart, setAutostart } from './autostart'
 import { writeFile } from 'node:fs/promises'
 import type { EngineSupervisor } from './engine'
 import type { DictationController } from './dictation'
@@ -117,6 +118,9 @@ export function registerIpc({
   })
 
   // ── Modlar ─────────────────────────────────────────────────────────────
+
+  ipcMain.handle('app:get-autostart', () => getAutostart())
+  ipcMain.handle('app:set-autostart', (_event, enabled: boolean) => setAutostart(enabled))
 
   ipcMain.handle('modes:list', async (): Promise<ModeList> => {
     const response = await engine.request<ModeList>({ type: 'modes:list' })

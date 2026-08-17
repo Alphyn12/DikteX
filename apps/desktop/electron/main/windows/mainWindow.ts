@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { BrowserWindow, shell } from 'electron'
+import { startedHidden } from '../autostart'
 
 /**
  * Ana pencere.
@@ -32,7 +33,13 @@ export function createMainWindow(): BrowserWindow {
   })
 
   // Pencere boyanmadan gösterilirse beyaz bir çakma görülür.
-  window.once('ready-to-show', () => window.show())
+  window.once('ready-to-show', () => {
+    // Otomatik başlatmada pencere açılmıyor (Faz 6.5): kullanıcı
+    // bilgisayarı başka bir iş için açtı, dikte aracı tepsiye inip
+    // kısayolu beklemeli.
+    if (startedHidden()) return
+    window.show()
+  })
 
   // Dış bağlantılar uygulamanın içinde değil, varsayılan tarayıcıda açılır.
   window.webContents.setWindowOpenHandler(({ url }) => {

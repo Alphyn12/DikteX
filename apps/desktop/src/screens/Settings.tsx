@@ -19,6 +19,7 @@ import { StyleCard } from '../components/StyleCard'
 import { ModelPicker } from '../components/ModelPicker'
 import { usePrivacy } from '../hooks/useModes'
 import { usePushToTalk } from '../hooks/usePushToTalk'
+import { useAutostart } from '../hooks/useAutostart'
 import { SnippetEditor } from '../components/SnippetEditor'
 import { VocabularyEditor } from '../components/VocabularyEditor'
 import { useModes } from '../hooks/useModes'
@@ -190,6 +191,7 @@ function Switches(): React.JSX.Element {
   const { privacy, setMasking, setAutoStop, normalizeNumbers, setNormalizeNumbers } =
     usePrivacy()
   const ptt = usePushToTalk()
+  const autostart = useAutostart()
 
   return (
     <div className={styles.switches}>
@@ -229,6 +231,18 @@ function Switches(): React.JSX.Element {
         her tuşu gören bir kanca kuruyor. Ne yaptığı ve ne yapmadığı
         anahtarın hemen altında yazıyor — bunu gizlemek savunulamazdı.
       */}
+      <SwitchRow
+        title={t('toggle.autostart')}
+        description={t('toggle.autostart.desc')}
+        meta={
+          autostart.state?.supported === false
+            ? t('toggle.autostart.dev')
+            : t('toggle.autostart.meta')
+        }
+        module="system"
+        on={autostart.state?.enabled ?? false}
+        onChange={(next) => void autostart.setEnabled(next)}
+      />
       <SwitchRow
         title={t('toggle.numbers')}
         description={t('toggle.numbers.desc')}
@@ -287,7 +301,9 @@ function SwitchRow({
   description: string
   meta?: string
   badge?: string
-  module: 'audio' | 'prompt' | 'vault'
+  // Elle yazılmış dar bir birlik yerine paylaşılan tip: yeni bir modül
+  // rengi kullanmak istendiğinde burayı da düzenlemek gerekiyordu.
+  module: ModuleId
   on: boolean
   onChange: (next: boolean) => void
 }): React.JSX.Element {
