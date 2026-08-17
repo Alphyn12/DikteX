@@ -83,6 +83,14 @@ export function registerHotkeys(dictation: DictationController): HotkeyRegistrat
     conflicts.push(searchAccelerator)
   }
 
+  // Yeniden yapıştırma (Faz 7.16). Global olmak ZORUNDA: pencere içi bir
+  // düğmeye tıklamak OmniVoice'u öne getirir ve metin kendi penceremize
+  // yapışırdı. Kullanıcı hedef pencereye tıklayıp buna basıyor.
+  const retryAccelerator = 'Control+Alt+V'
+  if (!globalShortcut.register(retryAccelerator, () => dictation.retryPaste())) {
+    conflicts.push(retryAccelerator)
+  }
+
   // İptal her modda aynı.
   const cancelAccelerator = 'Control+Alt+Escape'
   if (!globalShortcut.register(cancelAccelerator, () => dictation.cancel())) {

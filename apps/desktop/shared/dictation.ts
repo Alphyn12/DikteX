@@ -362,6 +362,14 @@ export interface DictationState {
   /** `clipboard` durumunda panoda bekleyen karakter sayısı. */
   clipboardChars: number
   /**
+   * `clipboard` durumundaki metnin kendisi (Faz 7.16).
+   *
+   * Yalnız "N karakter panoda" demek metni okunamaz ve kurtarılamaz
+   * bırakıyordu; kullanıcı görebilmeli, düzenleyebilmeli ve başka bir
+   * pencereye odaklanıp yeniden deneyebilmeli.
+   */
+  clipboardText: string
+  /**
    * Kayıt duraklatıldı mı (Faz 7.4).
    *
    * Ayrı bir `status` değil, `listening` içinde bir bayrak: HUD yerinde
@@ -397,6 +405,7 @@ export const INITIAL_DICTATION_STATE: DictationState = {
   warning: null,
   deadMicrophone: false,
   clipboardChars: 0,
+  clipboardText: '',
   paused: false,
   refine: 'idle',
 }

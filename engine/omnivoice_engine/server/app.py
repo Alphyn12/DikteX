@@ -345,6 +345,12 @@ async def _handle_message(
         case "dictation:cancel":
             await context.pipeline.cancel()
 
+        case "dictation:retry-paste":
+            # Yeniden yapıştırma (Faz 7.16). Global kısayoldan geliyor:
+            # kullanıcı hedef pencereye tıkladıktan sonra basıyor, böylece
+            # ön plandaki pencere doğru oluyor.
+            await context.pipeline.paste(message.get("text"))
+
         case "dictation:draft":
             # Pre-flight'taki güncel metin (Faz 7.15). Sesli düzeltme global
             # kısayolla başlıyor ve o an arayüzden metin istemenin yolu yok.

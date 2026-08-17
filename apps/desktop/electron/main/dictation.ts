@@ -155,6 +155,7 @@ export class DictationController {
           // yapıştırılamadığını kullanıcıya anlatıyor.
           warning: event['message'] ? String(event['message']) : null,
           clipboardChars: Number(event['chars'] ?? 0),
+          clipboardText: String(event['text'] ?? ''),
         })
         break
 
@@ -209,8 +210,26 @@ export class DictationController {
     this.engine.send({ type: 'dictation:pause' })
   }
 
+  /**
+   * Panoda kalan metni yeniden yapıştırmayı dener (Faz 7.16).
+   *
+   * Yalnız `clipboard` durumunda anlamlı; başka bir durumda kısayola
+   * basmak sessizce yok sayılıyor.
+   */
+  retryPaste(): void {
+    if (this.state.status !== 'clipboard') return
+    this.engine.send({ type: 'dictation:retry-paste', text: this.state.clipboardText })
+  }
+
   /** Pre-flight'taki güncel metni motora bildirir (Faz 7.15). */
   setDraft(text: string): void {
+    // `clipboard` durumunda da geçerli: kullanıcı metni orada da
+    // düzenleyebiliyor ve yeniden yapıştırma düzenlenmiş hâli almalı.
+    if (this.state.status === 'clipboard') {
+      this.patch({ clipboardText: text })
+      this.engine.send({ type: 'dictation:draft', text })
+      return
+    }
     if (this.state.status !== 'preflight') return
     this.engine.send({ type: 'dictation:draft', text })
   }

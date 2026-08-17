@@ -71,6 +71,15 @@ _SPEECH_LEVEL = 0.012
 DEFAULT_AUTO_STOP_SECONDS = 1.6
 
 
+def _is_own_window(window: WindowInfo) -> bool:
+    """Pencere bize mi ait?
+
+    Yeniden yapıştırmada gerekiyor: kullanıcı HUD'a tıklarsa ön plandaki
+    pencere bizimdir ve metni oraya göndermek hiçbir işe yaramaz.
+    """
+    return window.process_name.lower() in {"electron.exe", "omnivoice.exe"}
+
+
 class SilenceWatcher:
     """Otomatik durdurma kararını veren durum makinesi (Faz 7.3).
 
@@ -969,10 +978,39 @@ class DictationPipeline:
         await self._set_state(DictationState.PREFLIGHT, result=result.to_payload())
 
     async def paste(self, text: str | None = None) -> None:
-        """Pre-flight'taki metni hedef pencereye yapıştırır."""
+        """Metni hedef pencereye yapıştırır.
+
+        `CLIPBOARD` durumunda da çalışıyor (Faz 7.16): ilk deneme
+        başarısız olduysa kullanıcı başka bir pencereye odaklanıp yeniden
+        deneyebilmeli. Yeni denemede hedef pencere **yeniden okunuyor** —
+        eski hedef zaten çalışmamıştı.
+        """
         result = self._result
-        if self.state is not DictationState.PREFLIGHT or result is None:
+        if result is None:
             return
+        if self.state not in {DictationState.PREFLIGHT, DictationState.CLIPBOARD}:
+            return
+
+        if self.state is DictationState.CLIPBOARD:
+            # Kullanıcı bu arada başka bir pencereye geçmiş olabilir; eski
+            # hedefte ısrar etmek aynı hatayı tekrarlamak olurdu.
+            #
+            # Ama ODAKTA BİZ OLABİLİRİZ: kullanıcı HUD'daki metni düzenlemek
+            # için tıkladıysa ön plandaki pencere bizim penceremizdir ve
+            # metni oraya yapıştırmak hiçbir işe yaramaz. Bu yüzden yeniden
+            # deneme global kısayolla yapılıyor ve burada ayrıca kontrol
+            # ediliyor.
+            focused = get_foreground_window()
+            if focused is not None and _is_own_window(focused):
+                log.info("Yeniden deneme atlandı: odakta kendi penceremiz var")
+                await self._emit(
+                    {
+                        "type": "dictation:warning",
+                        "message": "Önce metni yapıştırmak istediğiniz pencereye tıklayın",
+                    }
+                )
+                return
+            result.target = focused
 
         # Kullanıcı önizlemede düzenlemiş olabilir.
         content = text if text is not None else result.final_text
@@ -1023,8 +1061,18 @@ class DictationPipeline:
         # Ctrl+V'ye basması gerektiğini bilmeli, yoksa metin kaybolmuş sanır.
         if outcome.needs_manual_paste:
             log.info("Metin panoda bırakıldı: %d karakter", len(content))
+            # Sonuç SAKLANIYOR: kullanıcı metni görebilmeli, düzenleyebilmeli
+            # ve başka bir pencereye odaklanıp yeniden deneyebilmeli
+            # (Faz 7.16). Yalnız "N karakter panoda" demek, metni okunamaz
+            # ve kurtarılamaz bırakıyordu.
+            result.final_text = content
+            self._result = result
+            self._draft = content
             await self._set_state(
-                DictationState.CLIPBOARD, message=outcome.reason, chars=len(content)
+                DictationState.CLIPBOARD,
+                message=outcome.reason,
+                chars=len(content),
+                text=content,
             )
             return
 

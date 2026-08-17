@@ -264,6 +264,9 @@ export const en: Messages = {
   'hud.clipboard': 'Text is on the clipboard — press Ctrl+V',
   'hud.clipboard.hint':
     '{count} characters were copied to the clipboard but could not be sent to the target window. Nothing was lost; place your cursor and press Ctrl+V.',
+  'hud.clipboard.retryHint':
+    'Click the window you want the text in, then press Ctrl+Alt+V. ' +
+    'Your edits here are kept.',
   'hud.deadMic': 'Microphone produces no sound',
   'hud.deadMic.hint': 'The selected microphone sends no signal at all. Pick a working device under Settings → MICROPHONE. (Virtual microphones such as NVIDIA Broadcast output silence when their own app is closed.)',
 

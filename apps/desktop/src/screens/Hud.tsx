@@ -71,6 +71,7 @@ export function Hud(): React.JSX.Element | null {
         )}
         {state.status === 'clipboard' && (
           <Clipboard
+            text={state.clipboardText}
             chars={state.clipboardChars}
             reason={state.warning}
             onDismiss={cancel}
@@ -132,24 +133,48 @@ function Silent({
  * uygulamasıysa bir daha denemesi de işe yaramaz.
  */
 function Clipboard({
+  text,
   chars,
   reason,
   onDismiss,
 }: {
+  text: string
   chars: number
   reason: string | null
   onDismiss: () => void
 }): React.JSX.Element {
   const { t } = useI18n()
+  const [draft, setDraft] = useState(text)
+
+  useEffect(() => setDraft(text), [text])
+
   return (
     <>
       <div className={styles.head}>
         <span className={styles.title}>{t('hud.clipboard')}</span>
       </div>
+
       <p className={styles.errorText}>
         {t('hud.clipboard.hint', { count: chars })}
         {reason ? ` ${reason}` : ''}
       </p>
+
+      {/*
+        Metin düzenlenebilir duruyor (Faz 7.16). Yalnız "N karakter panoda"
+        demek, kullanıcıya kurtaramayacağı bir şey olduğunu söylemekti.
+      */}
+      <textarea
+        className={cx(styles.preview, 'selectable')}
+        value={draft}
+        rows={Math.min(8, Math.max(2, Math.ceil(draft.length / 60)))}
+        onChange={(event) => {
+          setDraft(event.target.value)
+          // Düzenleme motora akmalı; yeniden yapıştırma bunu kullanıyor.
+          void window.omnivoice.invoke('dictation:draft', event.target.value)
+        }}
+        aria-label={t('hud.clipboard')}
+      />
+
       <div className={styles.actions}>
         <button type="button" className={styles.secondary} onClick={onDismiss}>
           {t('hud.dismiss')}
@@ -158,6 +183,8 @@ function Clipboard({
           </span>
         </button>
       </div>
+
+      <div className={styles.refineHint}>{t('hud.clipboard.retryHint')}</div>
     </>
   )
 }
