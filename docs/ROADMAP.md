@@ -5,9 +5,11 @@ her madde **%100 bitmeden** bir sonraki faza geçilmez.
 
 **Durum işaretleri:** ⬜ başlanmadı · 🟨 devam ediyor · ✅ bitti · ❌ kapsam dışı
 
-**16 Ağustos 2026 — kapsam daraltma.** Kalan 16 maddenin 10'u, kullanıcıyla
-madde madde değerlendirildikten sonra kapsam dışı bırakıldı. Gerekçeler
-"Kapsam dışı bırakılan" bölümünde tek tek yazılı. Kalan 6 madde aşağıda.
+**16 Ağustos 2026 — kapsam daraltma, sonra genişletme.** Kalan 16 maddenin
+10'u madde madde değerlendirilip kapsam dışı bırakıldı (gerekçeler "Kapsam
+dışı bırakılan" bölümünde). Ardından kullanıcı "böyle bir uygulamada nasıl bu
+özellik bulunmaz diyeceğin ne var?" diye sordu; 20 öneriden **17'si kabul
+edildi**. **Güncel çalışma sırası Faz 7'de.**
 
 ---
 
@@ -301,6 +303,88 @@ makinede sınanması şart. Bu maddeyi "bir günde biter" diye planlamıyoruz.
    anahtarını girer" akışı ayrıca tasarlanmalı — şu an yok.
 3. **İmzasız exe SmartScreen uyarısı verir.** Kaldırmanın tek yolu ücretli kod
    imzalama sertifikası. Kişisel kullanımda sorun değil, dağıtımda sorun.
+
+---
+
+## Faz 7 — Güvenilirlik ve günlük kullanım
+
+**16 Ağustos 2026'da eklendi.** Kullanıcı "böyle bir uygulamada nasıl bu
+özellik bulunmaz diyeceğin ne var?" diye sordu; 20 öneri değerlendirildi,
+**17'si kabul edildi**. Reddedilenler: 10 (kayıt sırasında maliyet
+göstergesi), 14 (gürültü bastırma), 15 (canlı/kısmi metin).
+
+**Sıralama kuralı — kullanıcı kararı:** installer (6.6) **her şeyin sonunda**.
+
+Sıralama gerekçesi: önce veri kaybını ve sessiz başarısızlığı kapatan
+maddeler, sonra ayar kalıcılığına bağımlı olanlar, sonra metin kalitesi, en
+son toplama işleri. Bir maddenin yeri, değerinden çok **neye bağımlı olduğuna**
+göre belirlendi.
+
+### 7.A — Veri kaybı ve sessiz başarısızlık (önce bunlar)
+
+| # | Madde | Neden ilk sırada | Durum |
+|---|---|---|---|
+| 7.1 | **Yapıştırmayı doğrulama + pano yedeği** | Yapıştırma başarısız olursa metin şu an **sessizce kayboluyor**. Teorik değil: yükseltilmiş ayrıcalıkla çalışan pencereler (Görev Yöneticisi, kurulum sihirbazları) Windows'un UIPI kuralı gereği normal bir süreçten gelen `SendInput`'u reddeder. Oyunlar ve bazı RDP oturumları da öyle. | ⬜ |
+| 7.2 | **Çevrimdışı / hata kuyruğu** | İnternet kesikse veya sağlayıcı hata verirse konuşma tamamen kayboluyor. Ses zaten bellekte; diske alıp bağlantı gelince göndermek konuşmayı kurtarır. | ⬜ |
+| 7.3 | **Sessizlikte otomatik durdurma (VAD)** | Kaydı bitirmek için klavyeye dönmek gerekiyor; bu "eller serbest" vaadini yarıda kesiyor. Altyapı hazır (`voiced_seconds`). | ⬜ |
+| 7.4 | **Duraklat / devam** | Şu an tek seçenek bitirmek ya da iptal. Telefon çalınca kayıt çöpe gidiyor. | ⬜ |
+
+### 7.B — Ayar kalıcılığı ve ona bağlı olanlar
+
+3.15 buraya alındı çünkü **ayar kalıcılığı altyapısını o getiriyor** ve
+altındaki üç madde ona bağımlı. Ayrıca bilinen bir hatayı da kapatıyor:
+mikrofon seçimi şu an her motor yeniden başlatmasında sıfırlanıyor.
+
+| # | Madde | Not | Durum |
+|---|---|---|---|
+| 3.15 | **Model seçici + ayar kalıcılığı** | Model listesi OpenRouter `/api/v1/models`'tan canlı çekilecek; gömülü liste bir model kalkınca yalan söylerdi. | ⬜ |
+| 7.5 | Uygulama başına varsayılan mod | VS Code'a geçince otomatik "kod" modu. Profil altyapısı var, mod hâlâ elle seçiliyor. | ⬜ |
+| 7.6 | Aygıt tak-çıkar otomatik geçişi | Kulaklık takılınca geç, çıkarılınca geri dön. | ⬜ |
+| 7.7 | Push-to-talk (basılı tut) | Düşük seviyeli klavye kancası (`WH_KEYBOARD_LL`) gerektiriyor — Faz 2'de bu yüzden ertelenmişti. | ⬜ |
+
+### 7.C — Metin kalitesi
+
+| # | Madde | Not | Durum |
+|---|---|---|---|
+| 7.8 | Otomatik değiştirme sözlüğü | Sözlükten farklı: sözlük STT'ye *ipucu*, bu kesin bul-değiştir. Whisper bazı özel adları hep aynı biçimde yanlış yazıyor; bir kez tanımlayıp kurtulmak etkili. | ⬜ |
+| 7.9 | Türkçe sayı / tarih / birim normalizasyonu | "on beş dakika" → "15 dakika". | ⬜ |
+| 7.10 | Sesli düzen komutları | "yeni satır", "paragraf", "madde işareti". Whisper noktalama koyuyor ama düzen kuramıyor. | ⬜ |
+| 7.11 | Karışık dil (TR+EN) davranışı | **Önce ölçüm**: "bu component'i refactor et" gibi cümlelerde mevcut davranış bilinmiyor. Ölçmeden kod yazılmayacak. | ⬜ |
+| 3.13 | Öğrenen kişisel stil (Style Refiner) | Pre-flight zaten bedava eğitim sinyali üretiyor: model ne yazdı vs. kullanıcı ne yapıştırdı. O fark şu an çöpe gidiyor. | ⬜ |
+
+### 7.D — Geçmiş ve erişim
+
+| # | Madde | Not | Durum |
+|---|---|---|---|
+| 6.2 | Prompt geçmişi arama (FTS5) | Altındaki üç madde buna bağımlı, o yüzden başta. | ⬜ |
+| 7.12 | Geçmişten yeniden yapıştır | Veri SQLite'ta duruyor, düğme yok. | ⬜ |
+| 7.13 | Sesli geçmiş arama | "geçen hafta Docker hakkında ne demiştim". | ⬜ |
+| 7.14 | Geçmişi dışa aktarma (Markdown / JSON) | Veri sahipliği. | ⬜ |
+
+### 7.E — Toplama
+
+| # | Madde | Not | Durum |
+|---|---|---|---|
+| 7.15 | Sesle düzeltme (pre-flight) | "daha kısa yaz", "resmi olsun" deyip yeniden ürettirmek. Sesli bir uygulamada sonucu fareyle düzeltmek tuhaf. | ⬜ |
+| 7.16 | Dikte kutusu | Yapıştırılamayan uygulamalar için ayrı pencere. 7.1 ile kısmen çakışıyor, o yüzden ondan sonra. | ⬜ |
+| 7.17 | Kısayol çakışma çözücü | Çakışma tespiti var, çözüm önerisi yok. | ⬜ |
+| 3.13b | Gemini sağlayıcısı (yedek) | Groq düşerse dikte tamamen durmasın. | ⬜ |
+| 6.5 | Otomatik başlatma | Arka planda çalışan bir araç için gerekli. | ⬜ |
+
+### 7.F — En son
+
+| # | Madde | Not | Durum |
+|---|---|---|---|
+| 6.6 | **Windows kurulum paketi** | Kullanıcı kararı: tüm özellikler bitmeden buraya geçilmeyecek. En riskli madde; riskleri Faz 6 bölümünde yazılı. | ⬜ |
+
+### Reddedilen 3 öneri
+
+| # | Öneri | Gerekçe |
+|---|---|---|
+| 10 | Kayıt sırasında maliyet göstergesi | Kullanıcı istemedi. Maliyet zaten pre-flight'ta ve panelde görünüyor. |
+| 14 | Gürültü bastırma + seviye normalizasyonu | Kullanıcı istemedi. |
+| 15 | Canlı / kısmi metin (streaming) | Kullanıcı istemedi; ben de önermemiştim — en pahalı madde ve tek gerçek kazancı algısal. Groq akış vermiyor, parçalı göndermek maliyeti artırırdı. |
+
 
 ---
 
