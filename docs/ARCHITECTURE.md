@@ -1,4 +1,4 @@
-# OmniVoice — Mimari
+# DikteX — Mimari
 
 ## Genel bakış
 
@@ -7,7 +7,7 @@ yapay zekayla ilgili her şey ayrı bir Python sürecinde çalışır.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  OmniVoice.exe   (Electron · Node.js)                       │
+│  DikteX.exe      (Electron · Node.js)                       │
 │                                                             │
 │  ┌───────────────────┐      ┌────────────────────────────┐  │
 │  │  main process     │      │  renderer  (React + TS)    │  │

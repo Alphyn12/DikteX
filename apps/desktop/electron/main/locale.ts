@@ -13,12 +13,12 @@ import type { Locale } from '@shared/ipc'
 
 const TRAY_MESSAGES = {
   tr: {
-    show: 'OmniVoice’u göster',
+    show: 'DikteX’i göster',
     startDictation: 'Dikte başlat',
     quit: 'Çıkış',
   },
   en: {
-    show: 'Show OmniVoice',
+    show: 'Show DikteX',
     startDictation: 'Start dictation',
     quit: 'Quit',
   },

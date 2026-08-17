@@ -271,7 +271,7 @@ export function setMainWindowResolver(resolver: () => BrowserWindow): void {
  * Sesli arama sorgusunu ana pencereye taşır ve pencereyi öne getirir.
  *
  * Pencereyi göstermek şart: kullanıcı kısayola başka bir uygulamadayken
- * bastı ve sonucu görmek için OmniVoice'un önde olması gerekiyor. Diğer
+ * bastı ve sonucu görmek için DikteX'in önde olması gerekiyor. Diğer
  * modlarda bu yok — orada metin kullanıcının bulunduğu yere gidiyor.
  */
 function broadcastHistoryQuery(query: string): void {

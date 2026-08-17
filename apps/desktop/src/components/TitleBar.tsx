@@ -24,7 +24,7 @@ export function TitleBar(): React.JSX.Element {
   return (
     <div className={cx(styles.bar, 'drag-region')}>
       <img className={styles.logo} src={logoUrl} alt="" />
-      <span className={styles.title}>OmniVoice</span>
+      <span className={styles.title}>DikteX</span>
 
       <div className={styles.spacer} />
 

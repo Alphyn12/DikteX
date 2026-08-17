@@ -1,4 +1,4 @@
-**OmniVoice** için konuştuğumuz tüm modüller, teknik kabiliyetler ve ileri düzey özelliklerin eksiksiz listesi:
+**DikteX** için konuştuğumuz tüm modüller, teknik kabiliyetler ve ileri düzey özelliklerin eksiksiz listesi:
 
 ---
 
@@ -64,4 +64,4 @@
 * **Hassas Veri Maskeleme (PII Masking):** TC kimlik, kart no, API anahtarı veya şahsi verileri buluta gitmeden önce yerelde sansürleme.
 * **Prompt Geçmişi & Yerel Veritabanı:** Tüm sesli girdilerin ve çıktıların yerel SQLite üzerinde tutulduğu arama motoru.
 * **Sesli Not Defteri (Daily Scratchpad):** Günlük rastgele fikirleri toplayıp gün sonunda düzenleyen yerel not paneli.
-* **Yerel REST / Webhook Sunucusu:** Diğer masaüstü betiklerinin veya projelerin `localhost` üzerinden OmniVoice motorunu tetikleyebilmesi.
+* **Yerel REST / Webhook Sunucusu:** Diğer masaüstü betiklerinin veya projelerin `localhost` üzerinden DikteX motorunu tetikleyebilmesi.

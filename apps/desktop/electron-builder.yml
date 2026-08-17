@@ -2,19 +2,19 @@
 #
 # Kurulum iki parçayı bir araya getiriyor:
 #   * Electron kabuğu — `out/` içindeki derlenmiş ana/preload/renderer kodu
-#   * Python motoru   — PyInstaller'ın ürettiği `engine/dist/omnivoice-engine`
+#   * Python motoru   — PyInstaller'ın ürettiği `engine/dist/diktex-engine`
 #
 # Motor `extraResources` olarak kopyalanıyor, `files` içine değil: Electron'un
 # asar arşivine giren bir `.exe` çalıştırılamaz. `engine.ts` onu tam olarak
-# `resources/engine/omnivoice-engine.exe` yolunda arıyor.
+# `resources/engine/diktex-engine.exe` yolunda arıyor.
 
 # electron-builder tam sürüm istiyor: platforma özel ikilileri indirmek için
 # aralık (`^43.4.0`) çözülemiyor. `package.json`'daki aralığı bozmadan
 # burada sabitliyoruz.
 electronVersion: 43.4.0
 
-appId: dev.bariskirli.omnivoice
-productName: OmniVoice
+appId: dev.bariskirli.diktex
+productName: DikteX
 copyright: © 2026 Baris Kirli
 
 directories:
@@ -35,7 +35,7 @@ extraResources:
   # PyInstaller çıktısının TAMAMI: `.exe` tek başına çalışmıyor, yanındaki
   # `_internal` klasörüne (PortAudio, libsndfile, pywin32 DLL'leri) ihtiyaç
   # duyuyor.
-  - from: ../../engine/dist/omnivoice-engine
+  - from: ../../engine/dist/diktex-engine
     to: engine
     filter:
       - '**/*'
@@ -62,11 +62,11 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: OmniVoice
+  shortcutName: DikteX
   # Kaldırma sırasında kullanıcı verisi SİLİNMİYOR: dikte geçmişi ve ayarlar
   # kullanıcının kendi verisi. Yeniden kurulumda yerinde duruyor.
   deleteAppDataOnUninstall: false
-  artifactName: OmniVoice-Kurulum-${version}.${ext}
+  artifactName: DikteX-Kurulum-${version}.${ext}
 
 # Otomatik güncelleme kapalı: dağıtım kanalı yok (bkz. ROADMAP 6.5).
 publish: null

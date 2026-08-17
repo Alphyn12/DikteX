@@ -2,7 +2,7 @@
   "name": "@omnivoice/desktop",
   "version": "0.0.0",
   "private": true,
-  "description": "OmniVoice masaüstü kabuğu — Electron + React",
+  "description": "DikteX masaüstü kabuğu — Electron + React",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",

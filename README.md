@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="assets/logo-omnivoice.png" width="96" alt="OmniVoice">
-  <h1>OmniVoice</h1>
+  <img src="assets/logo-diktex.png" width="96" alt="DikteX">
+  <h1>DikteX</h1>
   <p><b>Windows 11 için sesle çalışan yapay zeka asistanı.</b><br>
   Kısayola bas, konuş, bırak — temizlenmiş ve bağlama uygun metin imlecinin olduğu yere yapışsın.</p>
 </div>
@@ -9,7 +9,7 @@
 
 ## Ne yapar
 
-OmniVoice bir dikte aracı değil, sesle çalışan bir **prompt motorudur**. Konuştuğunuz
+DikteX bir dikte aracı değil, sesle çalışan bir **prompt motorudur**. Konuştuğunuz
 dağınık cümleyi alır; dolgu kelimeleri ayıklar, hangi uygulamada olduğunuzu anlar
 ve çıktıyı o ortama uygun biçimde üretir — VS Code'da kod, Slack'te profesyonel
 mesaj, terminalde conventional commit mesajı.
@@ -42,7 +42,7 @@ Ayrıntılı mimari: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
 ## Kurulum (kullanım)
 
-[`release/OmniVoice-Kurulum-<sürüm>.exe`](release/) dosyasını çalıştırın.
+[`release/DikteX-Kurulum-<sürüm>.exe`](release/) dosyasını çalıştırın.
 Python veya Node.js kurulu olmasına gerek yok — motor da kurulumun içinde.
 
 İlk açılışta **API anahtarlarınızı girin**: Ayarlar → API KASASI. Anahtarlar

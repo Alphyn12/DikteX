@@ -273,7 +273,7 @@ export interface IpcInvokeMap {
    * Geçmişteki bir kaydı panoya kopyalar (Faz 7.12).
    *
    * Dikte akışının aksine hedef pencere yok: kullanıcı arama ekranında,
-   * yani odakta OmniVoice var. Metin panoya yazılıyor ve kullanıcı istediği
+   * yani odakta DikteX var. Metin panoya yazılıyor ve kullanıcı istediği
    * yere Ctrl+V ile koyuyor.
    */
   'history:copy': { args: [recordId: number]; result: { ok: boolean; chars: number } }

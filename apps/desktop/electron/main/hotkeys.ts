@@ -125,7 +125,7 @@ export function registerHotkeys(dictation: DictationController): HotkeyRegistrat
   registerWithFallback('Control+Alt+A', () => void dictation.toggle('search'), outcome)
 
   // Yeniden yapıştırma (Faz 7.16). Global olmak ZORUNDA: pencere içi bir
-  // düğmeye tıklamak OmniVoice'u öne getirir ve metin kendi penceremize
+  // düğmeye tıklamak DikteX'i öne getirir ve metin kendi penceremize
   // yapışırdı. Kullanıcı hedef pencereye tıklayıp buna basıyor.
   registerWithFallback('Control+Alt+V', () => dictation.retryPaste(), outcome)
 

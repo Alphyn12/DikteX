@@ -77,7 +77,7 @@ def _is_own_window(window: WindowInfo) -> bool:
     Yeniden yapıştırmada gerekiyor: kullanıcı HUD'a tıklarsa ön plandaki
     pencere bizimdir ve metni oraya göndermek hiçbir işe yaramaz.
     """
-    return window.process_name.lower() in {"electron.exe", "omnivoice.exe"}
+    return window.process_name.lower() in {"electron.exe", "diktex.exe", "omnivoice.exe"}
 
 
 class SilenceWatcher:

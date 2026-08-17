@@ -78,7 +78,7 @@ export class EngineSupervisor extends EventEmitter {
    */
   private resolveCommand(): { command: string; args: string[]; cwd: string } | { error: string } {
     if (app.isPackaged) {
-      const exe = join(process.resourcesPath, 'engine', 'omnivoice-engine.exe')
+      const exe = join(process.resourcesPath, 'engine', 'diktex-engine.exe')
       if (!existsSync(exe)) {
         return { error: `Paketlenmiş motor bulunamadı: ${exe}` }
       }

@@ -31,10 +31,26 @@ export function History({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState<number | null>(null)
-  const [exported, setExported] = useState<string | null>(null)
+  // Dışa aktarma ve toplu silme aynı satırda geri bildirim veriyor.
+  const [notice, setNotice] = useState<string | null>(null)
   // Silme geri alınamaz; yanlışlıkla tıklamayı önlemek için iki adım.
   // Onay penceresi yerine satır içi: modal, listeyi kaybettirirdi.
   const [confirmId, setConfirmId] = useState<number | null>(null)
+  // "Tümünü sil" için ayrı onay: tek kayıt silmekten çok daha yıkıcı.
+  const [confirmAll, setConfirmAll] = useState(false)
+
+  const deleteAll = useCallback(async () => {
+    try {
+      const result = await window.omnivoice.invoke('history:delete-all')
+      setItems([])
+      setConfirmAll(false)
+      // Kaç kaydın gittiğini söylüyoruz: liste zaten boşaldığı için
+      // başka türlü işlemin gerçekleştiği anlaşılmazdı.
+      setNotice(t('history.deletedAll', { count: result.deleted }))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [t])
 
   const deleteItem = useCallback(
     async (id: number) => {
@@ -54,7 +70,7 @@ export function History({
       try {
         const result = await window.omnivoice.invoke('history:export', format)
         // İptal bir hata değil; sessizce geçiyoruz.
-        if (result.saved) setExported(t('history.exported', { count: result.count }))
+        if (result.saved) setNotice(t('history.exported', { count: result.count }))
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause))
       }
@@ -136,7 +152,42 @@ export function History({
         >
           {t('history.exportJson')}
         </button>
-        {exported && <span className={styles.exportDone}>{exported}</span>}
+        {notice && <span className={styles.exportDone}>{notice}</span>}
+
+        <span className={styles.spacer} />
+
+        {/* Dışa aktarmanın yanında duruyor: kullanıcı geçmişi temizlemeden
+            önce büyük olasılıkla bir kopyasını almak isteyecek. */}
+        {confirmAll ? (
+          <>
+            <button
+              type="button"
+              className={styles.deleteConfirm}
+              onClick={() => void deleteAll()}
+            >
+              {t('history.deleteAllConfirm')}
+            </button>
+            <button
+              type="button"
+              className={styles.delete}
+              onClick={() => setConfirmAll(false)}
+            >
+              {t('history.cancel')}
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className={styles.delete}
+            // Süzgeç sonucuna değil, geçmişin kendisine bakıyoruz: arama
+            // 0 sonuç verirken düğmeyi kapatmak, dolu bir geçmişi
+            // silinemez gösterirdi.
+            disabled={items.length === 0 && !query}
+            onClick={() => setConfirmAll(true)}
+          >
+            {t('history.deleteAll')}
+          </button>
+        )}
       </div>
 
       {/* Dosyanın ham metin içerdiği söyleniyor: kullanıcı onu başka bir
@@ -215,7 +266,7 @@ export function History({
 
               {/*
                 Yeniden yapıştırma panoya yazıyor, doğrudan bir pencereye
-                değil: kullanıcı bu ekranda olduğu için odakta OmniVoice var
+                değil: kullanıcı bu ekranda olduğu için odakta DikteX var
                 ve "yapıştır" diyecek bir hedef yok.
               */}
               <div className={styles.rowActions}>

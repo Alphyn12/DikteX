@@ -241,14 +241,108 @@ class SpendSummary:
     call_count: int
 
 
-def default_db_path() -> Path:
-    """Veritabanının yeri: `%LOCALAPPDATA%\\OmniVoice\\omnivoice.sqlite`."""
+#: Uygulamanın veri klasörü. Eski ad yalnız göç için tutuluyor.
+APP_DATA_DIR = "DikteX"
+_LEGACY_DATA_DIR = "OmniVoice"
+
+
+def app_data_dir() -> Path:
+    """Kullanıcı verisinin klasörü: `%LOCALAPPDATA%\\DikteX`.
+
+    Uygulama önce OmniVoice adıyla kullanıldı ve eski klasörde **gerçek
+    kullanıcı verisi** var: dikte geçmişi, ayarlar, snippet'ler, kuyruk.
+    Yeni ada geçerken klasör adını öylece değiştirmek o geçmişi
+    kaybettirirdi, o yüzden eskisi varsa bir kez taşınıyor.
+
+    Taşıma başarısız olursa (dosya kilitli, izin yok) **eski klasörde devam
+    ediliyor**: veri kaybetmektense eski adı kullanmak yeğdir.
+    """
     import os
 
-    base = os.environ.get("LOCALAPPDATA") or str(Path.home())
-    directory = Path(base) / "OmniVoice"
+    base = Path(os.environ.get("LOCALAPPDATA") or str(Path.home()))
+    directory = base / APP_DATA_DIR
+    legacy = base / _LEGACY_DATA_DIR
+
+    if not directory.exists() and legacy.exists():
+        try:
+            legacy.rename(directory)
+            log.info("Veri klasörü taşındı: %s → %s", legacy, directory)
+        except OSError:
+            # Yığın izi basmıyoruz: bu beklenen bir yol, hata değil.
+            # Uygulama açıkken SQLite dosyaları kilitli olur ve taşıma
+            # başarısız olur; bir sonraki temiz açılışta yeniden denenir.
+            log.info("Veri klasörü şimdilik taşınamadı (kilitli); eskisi kullanılıyor")
+            legacy.mkdir(parents=True, exist_ok=True)
+            return legacy
+
     directory.mkdir(parents=True, exist_ok=True)
-    return directory / "omnivoice.sqlite"
+    return directory
+
+
+DB_FILENAME = "diktex.sqlite"
+_LEGACY_DB_FILENAME = "omnivoice.sqlite"
+
+
+def _migrate_db_file(directory: Path) -> None:
+    """Veritabanı dosyasını eski addan yenisine taşır.
+
+    ## Neden düz bir `rename` yetmiyor
+
+    SQLite WAL kipinde çalışıyor. Yani `omnivoice.sqlite` tek başına güncel
+    değil: en son yazılanlar `omnivoice.sqlite-wal` içinde bekliyor olabilir.
+    Yalnız ana dosyayı yeniden adlandırmak, WAL'i geride bırakıp
+    **kaydedilmiş dikteleri kaybetmek** demek olurdu.
+
+    Bu yüzden önce `wal_checkpoint(TRUNCATE)` ile WAL ana dosyaya
+    boşaltılıyor, sonra taşınıyor.
+
+    Taşınamazsa eski ad kullanılmaya devam ediyor; bir sonraki temiz
+    açılışta yeniden denenir.
+    """
+    new = directory / DB_FILENAME
+    old = directory / _LEGACY_DB_FILENAME
+    if new.exists() or not old.exists():
+        return
+
+    try:
+        conn = sqlite3.connect(str(old))
+        try:
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        log.info("Veritabanı WAL'i boşaltılamadı; eski dosya adı korunuyor")
+        return
+
+    try:
+        old.rename(new)
+    except OSError:
+        # Uygulamanın başka bir örneği dosyayı tutuyor olabilir.
+        log.info("Veritabanı şimdilik yeniden adlandırılamadı (kilitli)")
+        return
+
+    # Checkpoint sonrası bunlar zaten boş; kalırlarsa yalnız kafa karıştırır.
+    for suffix in ("-wal", "-shm"):
+        try:
+            (directory / f"{_LEGACY_DB_FILENAME}{suffix}").unlink(missing_ok=True)
+        except OSError:
+            pass
+    log.info("Veritabanı taşındı: %s → %s", old.name, new.name)
+
+
+def default_db_path() -> Path:
+    """Veritabanının yeri.
+
+    Taşıma başarısız olursa eski dosya kullanılmaya devam ediyor: veri
+    kaybetmektense eski adı taşımak yeğdir.
+    """
+    directory = app_data_dir()
+    _migrate_db_file(directory)
+    new = directory / DB_FILENAME
+    legacy = directory / _LEGACY_DB_FILENAME
+    if not new.exists() and legacy.exists():
+        return legacy
+    return new
 
 
 class Database:

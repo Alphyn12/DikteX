@@ -74,7 +74,7 @@ export const en: Messages = {
   'replace.find': 'Find',
   'replace.findPlaceholder': 'omni voice',
   'replace.replace': 'Replace with',
-  'replace.replacePlaceholder': 'OmniVoice',
+  'replace.replacePlaceholder': 'DikteX',
   'replace.wholeWord': 'Match whole word (suffixes preserved)',
   'replace.duplicate': 'This rule already exists, or find and replace are identical',
   'replace.empty': 'No rules yet',
@@ -165,6 +165,9 @@ export const en: Messages = {
   'history.delete': 'Delete',
   'history.deleteConfirm': 'Delete it?',
   'history.cancel': 'Cancel',
+  'history.deleteAll': 'Delete all',
+  'history.deleteAllConfirm': 'Delete all history?',
+  'history.deletedAll': '{count} records deleted',
   'history.copyFailed': 'Clipboard is locked — another app may be using it',
 
   'settings.eyebrow': 'SETTINGS',
@@ -209,7 +212,7 @@ export const en: Messages = {
   'toggle.ptt.failed': 'Hook could not be installed — security software may be blocking it.',
   'toggle.ptt.privacy':
     'This mode installs a low-level keyboard hook that sees every key on the system. ' +
-    'OmniVoice only tracks whether Ctrl, Alt and Space are held; no other key is stored, ' +
+    'DikteX only tracks whether Ctrl, Alt and Space are held; no other key is stored, ' +
     'logged, or swallowed. The hook is never installed while the mode is off.',
   'toggle.pii': 'PII masking',
   'toggle.pii.desc':
@@ -241,7 +244,7 @@ export const en: Messages = {
   'engine.port': 'port',
 
   // ── Tray menu ────────────────────────────────────────────────────────────
-  'tray.show': 'Show OmniVoice',
+  'tray.show': 'Show DikteX',
   'tray.startDictation': 'Start dictation',
   'tray.quit': 'Quit',
 

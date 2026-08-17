@@ -1,4 +1,4 @@
-# OmniVoice — Tasarım Sistemi
+# DikteX — Tasarım Sistemi
 
 Bu belge `design/mockup.dc.html` dosyasından **birebir çıkarılmıştır**. Arayüzde
 sabit kodlanmış renk/ölçü kullanılmaz; her şey buradaki token'lardan gelir.

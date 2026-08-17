@@ -80,7 +80,7 @@ export const tr = {
   'replace.find': 'Aranan',
   'replace.findPlaceholder': 'omni voice',
   'replace.replace': 'Yerine',
-  'replace.replacePlaceholder': 'OmniVoice',
+  'replace.replacePlaceholder': 'DikteX',
   'replace.wholeWord': 'Tam kelime ara (ekler korunur)',
   'replace.duplicate': 'Bu kural zaten var ya da aranan ile yerine aynı',
   'replace.empty': 'Henüz kural yok',
@@ -173,6 +173,9 @@ export const tr = {
   'history.delete': 'Sil',
   'history.deleteConfirm': 'Silinsin mi?',
   'history.cancel': 'Vazgeç',
+  'history.deleteAll': 'Tümünü sil',
+  'history.deleteAllConfirm': 'Tüm geçmiş silinsin mi?',
+  'history.deletedAll': '{count} kayıt silindi',
   'history.copyFailed': 'Pano kilitli — başka bir uygulama kullanıyor olabilir',
 
   'settings.eyebrow': 'AYARLAR',
@@ -217,7 +220,7 @@ export const tr = {
   'toggle.ptt.failed': 'Kanca kurulamadı — bir güvenlik yazılımı engelliyor olabilir.',
   'toggle.ptt.privacy':
     'Bu kip düşük seviyeli bir klavye kancası kurar ve o kanca sistemdeki tüm tuşları görür. ' +
-    'OmniVoice yalnız Ctrl, Alt ve Boşluk tuşlarının basılı olup olmadığını izler; başka hiçbir ' +
+    'DikteX yalnız Ctrl, Alt ve Boşluk tuşlarının basılı olup olmadığını izler; başka hiçbir ' +
     'tuş saklanmaz, günlüğe yazılmaz ve hiçbir tuş yutulmaz. Kip kapalıyken kanca hiç kurulmaz.',
   'toggle.pii': 'PII maskeleme',
   'toggle.pii.desc':
@@ -249,7 +252,7 @@ export const tr = {
   'engine.port': 'port',
 
   // ── Tepsi menüsü ─────────────────────────────────────────────────────────
-  'tray.show': 'OmniVoice’u göster',
+  'tray.show': 'DikteX’i göster',
   'tray.startDictation': 'Dikte başlat',
   'tray.quit': 'Çıkış',
 

@@ -220,7 +220,7 @@ export interface ReplacementRule {
   /**
    * Kelime sınırı aransın mı.
    *
-   * Açıkken `kod` kuralı `kodlama`yı bozmaz ama `OmniVoice'u` içindeki eki
+   * Açıkken `kod` kuralı `kodlama`yı bozmaz ama `DikteX'i` içindeki eki
    * korur: Türkçe ekler sona geldiği için sol sınır katı, sağ serbest.
    */
   wholeWord: boolean

@@ -16,7 +16,7 @@ import { registerHotkeys, unregisterHotkeys } from './hotkeys'
 /** Motorun dinlediği port. `.env.local` ile değiştirilebilir. */
 const DEFAULT_ENGINE_PORT = 8756
 
-// Tek örnek kilidi: OmniVoice global kısayol ve tek bir motor süreci sahiplenir.
+// Tek örnek kilidi: DikteX global kısayol ve tek bir motor süreci sahiplenir.
 // İkinci bir örnek bunları ele geçirip ilkini bozar.
 if (!app.requestSingleInstanceLock()) {
   app.quit()
@@ -104,7 +104,7 @@ async function main(): Promise<void> {
   })
 
   // Pencere gizlendiğinde uygulama yaşamaya devam eder — arka planda
-  // çalışması OmniVoice'un işleyişinin bir parçası.
+  // çalışması DikteX'in işleyişinin bir parçası.
   app.on('window-all-closed', () => {
     // Bilerek boş: çıkış yalnız tepsi menüsünden yapılır.
   })

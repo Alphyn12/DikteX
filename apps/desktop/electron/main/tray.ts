@@ -6,7 +6,7 @@ import type { DictationController } from './dictation'
 /**
  * Sistem tepsisi ikonu.
  *
- * OmniVoice bir arka plan uygulamasıdır: global kısayolun her an çalışması
+ * DikteX bir arka plan uygulamasıdır: global kısayolun her an çalışması
  * gerekir, bu yüzden pencere kapatıldığında uygulama sonlanmaz, tepsiye
  * çekilir. Gerçek çıkış yalnız tepsi menüsünden yapılır.
  */
@@ -19,7 +19,7 @@ export function createTray(
     : join(app.getAppPath(), 'resources', 'tray.png')
 
   const tray = new Tray(nativeImage.createFromPath(iconPath))
-  tray.setToolTip('OmniVoice')
+  tray.setToolTip('DikteX')
 
   const show = (): void => {
     const window = getWindow()

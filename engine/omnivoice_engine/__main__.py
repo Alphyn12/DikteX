@@ -27,7 +27,7 @@ _LOG_MAX_BYTES = 2_000_000
 
 def log_path() -> Path:
     """Günlük dosyasının yeri — veritabanının yanında."""
-    return default_db_path().parent / "omnivoice.log"
+    return default_db_path().parent / "diktex.log"
 
 
 def _configure_logging() -> None:

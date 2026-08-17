@@ -1,4 +1,4 @@
-# OmniVoice — Geliştirme Yol Haritası
+# DikteX — Geliştirme Yol Haritası
 
 **Strateji: dikey dilim.** Her faz, kullanılabilir bir uygulama bırakır. Bir fazdaki
 her madde **%100 bitmeden** bir sonraki faza geçilmez.

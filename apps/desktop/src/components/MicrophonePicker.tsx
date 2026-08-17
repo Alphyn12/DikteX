@@ -13,7 +13,7 @@ import styles from './MicrophonePicker.module.css'
  * `audio/capture.py::list_input_devices`).
  *
  * "Sistem varsayılanı" ayrı bir seçenek olarak sunulur — kullanıcı Windows'ta
- * aygıt değiştirdiğinde OmniVoice'un da onunla birlikte değişmesini isteyebilir.
+ * aygıt değiştirdiğinde DikteX'in da onunla birlikte değişmesini isteyebilir.
  */
 export function MicrophonePicker(): React.JSX.Element {
   const { t } = useI18n()
