@@ -55,6 +55,33 @@ export function createHudWindow(): BrowserWindow {
   return window
 }
 
+/**
+ * HUD'u ön plandan çeker — yapıştırmadan hemen önce çağrılır.
+ *
+ * ## Neden gerekli
+ *
+ * Pre-flight sırasında odak bilerek HUD'a alınıyor (Enter/Esc ve düzenleme
+ * için). Yapıştırmayı yapansa **motor süreci**, yani Electron değil. Windows
+ * ön planda olmayan bir sürecin `SetForegroundWindow` çağrısını sessizce
+ * reddediyor: ölçtük, motordan yapılan düz çağrı hata 0 ile geri dönüyor.
+ *
+ * Motor bunu `AttachThreadInput` hilesiyle aşıyor ve çoğu zaman çalışıyor —
+ * ama bu, Windows'un izin vermesine bağlı bir yan yol. Odağı asıl elinde
+ * tutan biziz; bırakmak bize düşer. HUD odağı bıraktığında Windows
+ * Z-sırasındaki bir önceki pencereyi, yani kullanıcının hedefini
+ * etkinleştiriyor ve motorun işi önemsizleşiyor.
+ *
+ * Pencere GİZLENMİYOR, yalnız odaksızlaştırılıyor: yapıştırma başarısız
+ * olursa HUD `clipboard` durumunu göstermeye devam etmeli, kaybolup geri
+ * gelmemeli.
+ */
+export function releaseHudFocus(window: BrowserWindow): void {
+  if (window.isDestroyed() || !window.isVisible()) return
+  // `setFocusable(false)` odağı da bırakıyor; ayrıca `blur()` çağırmak
+  // gerekmiyor ve bazı Windows sürümlerinde pencereyi titretiyor.
+  if (window.isFocusable()) window.setFocusable(false)
+}
+
 /** HUD'u imlecin bulunduğu ekranın alt ortasına yerleştirir. */
 export function positionHud(window: BrowserWindow): void {
   const cursor = screen.getCursorScreenPoint()

@@ -199,20 +199,16 @@ export function usePrivacy(): {
     }
   }, [])
 
-  // Sayı normalizasyonu ayrı bir uç noktada; durumu burada tutuyoruz ki
-  // anahtar iyimser güncellensin ve tıklama anlık hissedilsin.
-  const [normalizeNumbers, setNormalize] = useState(true)
-
+  // Sayı normalizasyonu da gizlilik yükünün parçası. Eskiden burada ayrı
+  // bir `useState(true)` vardı ve motordan HİÇ okunmuyordu: kullanıcı
+  // kapatıp uygulamayı yeniden başlattığında anahtar açık görünüyor, boru
+  // hattı kapalı çalışıyordu. Denetim betiği bunu yakaladı
+  // (tools/denetim/anahtar_denetimi.py).
   const setNormalizeNumbers = useCallback(async (enabled: boolean) => {
-    setNormalize(enabled)
     try {
-      const result = await window.omnivoice.invoke('replacements:set-numbers', enabled)
-      setNormalize(result.enabled)
+      setPrivacy(await window.omnivoice.invoke('replacements:set-numbers', enabled))
       setError(null)
     } catch (cause) {
-      // Motor reddettiyse gerçek duruma dönüyoruz; yanlış bir anahtar
-      // konumu, ayarın çalıştığını sandırırdı.
-      setNormalize(!enabled)
       setError(cause instanceof Error ? cause.message : String(cause))
     }
   }, [])
@@ -241,7 +237,7 @@ export function usePrivacy(): {
     setMasking,
     setAutoStop,
     setPreflight,
-    normalizeNumbers,
+    normalizeNumbers: privacy?.normalizeNumbers ?? true,
     setNormalizeNumbers,
   }
 }

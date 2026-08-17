@@ -668,7 +668,9 @@ async def _handle_message(
             await asyncio.to_thread(
                 context.user_settings.update, normalize_numbers=enabled
             )
-            await reply({"type": "replacements:set-numbers", "enabled": enabled})
+            # Yanıt olarak tüm gizlilik yükü dönüyor: arayüz tek bir
+            # kaynaktan okusun, iki ayrı durum tutmasın.
+            await reply(_privacy_payload(context))
 
         # ── Basılı tut kipi (Faz 7.7) ─────────────────────────────────────
         case "ptt:get":
@@ -919,6 +921,12 @@ def _privacy_payload(context: EngineContext) -> dict[str, Any]:
         "maskPii": context.pipeline.pii_masking,
         "autoStopSeconds": context.pipeline.auto_stop_seconds,
         "preflight": context.pipeline.preflight_enabled,
+        # Sayı normalizasyonu buraya sonradan eklendi. Motor değeri
+        # kaydediyordu ama hiçbir yerden yayınlamıyordu; arayüz de her
+        # açılışta "açık" varsayıyordu. Kullanıcı kapatıp uygulamayı yeniden
+        # başlattığında anahtar açık görünüyor, boru hattı kapalı
+        # çalışıyordu — anahtar durumu hakkında yalan söylüyordu.
+        "normalizeNumbers": context.pipeline.normalize_numbers,
         "sttCovered": False,
         "llmCovered": context.pipeline.pii_masking,
     }

@@ -205,7 +205,7 @@ export interface IpcInvokeMap {
   /** Kuralı canlı diktede sınamadan denemek için. */
   'replacements:test': { args: [text: string]; result: ReplacementTest }
   /** Türkçe sayıları rakama çevirme (Faz 7.9). */
-  'replacements:set-numbers': { args: [enabled: boolean]; result: { enabled: boolean } }
+  'replacements:set-numbers': { args: [enabled: boolean]; result: PrivacyState }
 
   // ── Basılı tut kipi (Faz 7.7) ──────────────────────────────────────────
   'ptt:get': { args: []; result: PushToTalkState }

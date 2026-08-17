@@ -218,6 +218,9 @@ export class DictationController {
    */
   retryPaste(): void {
     if (this.state.status !== 'clipboard') return
+    // HUD bu durumda odaklanabilir; yeniden denemeden önce ön planı
+    // bırakması gerekiyor, yoksa metin bize geri yapışır.
+    releaseFocus?.()
     this.engine.send({ type: 'dictation:retry-paste', text: this.state.clipboardText })
   }
 
@@ -242,8 +245,26 @@ export class DictationController {
   }
 
   paste(text: string): void {
+    // Önce odağı bırakıyoruz, sonra motora söylüyoruz. Sıra önemli: motor
+    // ön planda olmadığı için hedefi kendi başına öne getirmekte zorlanıyor
+    // (bkz. `releaseHudFocus`).
+    releaseFocus?.()
     this.engine.send({ type: 'dictation:paste', text })
   }
+
+}
+
+/**
+ * HUD'un odağı bırakmasını sağlayan geri çağrım.
+ *
+ * `index.ts` enjekte ediyor; denetleyici HUD penceresini kendisi bulamaz —
+ * bölge kaplaması ve ana pencere de birer `BrowserWindow` ve ayırt edici
+ * özellikleri yok.
+ */
+let releaseFocus: (() => void) | null = null
+
+export function setHudFocusReleaser(release: () => void): void {
+  releaseFocus = release
 }
 
 /** Durumu tüm pencerelere yayar. */

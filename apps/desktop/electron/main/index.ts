@@ -1,13 +1,19 @@
 import { app, BrowserWindow, type Tray } from 'electron'
 import { EngineSupervisor } from './engine'
 import { createMainWindow } from './windows/mainWindow'
-import { createHudWindow, syncHud, syncMeetingHud } from './windows/hudWindow'
+import {
+  createHudWindow,
+  releaseHudFocus,
+  syncHud,
+  syncMeetingHud,
+} from './windows/hudWindow'
 import { createTray } from './tray'
 import { registerIpc } from './ipc'
 import { loadEnv } from './env'
 import {
   DictationController,
   broadcastDictation,
+  setHudFocusReleaser,
   setMainWindowResolver,
 } from './dictation'
 import { MeetingController, broadcastMeeting } from './meeting'
@@ -61,6 +67,10 @@ async function main(): Promise<void> {
     if (hudWindow.isDestroyed()) hudWindow = createHudWindow()
     return hudWindow
   }
+
+  // Yapıştırmadan önce HUD ön planı bırakıyor: motor ön planda olmadığı
+  // için hedef pencereyi kendi başına öne getirmekte zorlanıyor.
+  setHudFocusReleaser(() => releaseHudFocus(getHudWindow()))
 
   const dictation = new DictationController(engine, (state) => {
     broadcastDictation(state)

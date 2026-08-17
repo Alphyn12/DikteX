@@ -208,7 +208,7 @@ export function registerIpc({
   )
 
   ipcMain.handle('replacements:set-numbers', (_event, enabled: boolean) =>
-    engine.request<{ enabled: boolean }>({ type: 'replacements:set-numbers', enabled }),
+    engine.request<PrivacyState>({ type: 'replacements:set-numbers', enabled }),
   )
 
   ipcMain.handle('ptt:get', () => engine.request<PushToTalkState>({ type: 'ptt:get' }))

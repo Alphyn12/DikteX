@@ -171,6 +171,15 @@ export interface PrivacyState {
    * onaysız yapıştırılmamalı.
    */
   preflight: boolean
+  /**
+   * Sayılar rakama çevriliyor mu ("otuz beş" → "35").
+   *
+   * Motorun kalıcı ayarından geliyor. Eskiden arayüz bunu kendi başına
+   * `true` varsayıyordu: kullanıcı kapatıp uygulamayı yeniden başlatınca
+   * anahtar açık görünüyor, boru hattı kapalı çalışıyordu. Anahtarın
+   * gerçeği söylemesi için değerin tek kaynağı motor olmalı.
+   */
+  normalizeNumbers: boolean
 }
 
 // ── Otomatik başlatma (Faz 6.5) ─────────────────────────────────────────
