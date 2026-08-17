@@ -14,78 +14,107 @@ import type {
  * içinde ilan edilmiş kanallar açılır; keyfi kanal çağrısı yapılamaz.
  */
 
-const INVOKE_CHANNELS = new Set<IpcInvokeChannel>([
-  'window:minimize',
-  'window:toggle-maximize',
-  'window:close',
-  'window:is-maximized',
-  'engine:get-state',
-  'engine:restart',
-  'app:get-version',
-  'app:get-locale',
-  'app:set-locale',
-  'app:get-autostart',
-  'app:set-autostart',
-  'dictation:get-state',
-  'dictation:toggle',
-  'dictation:cancel',
-  'dictation:toggle-pause',
-  'dictation:draft',
-  'dictation:paste',
-  'audio:list-devices',
-  'audio:set-device',
-  'meeting:get-state',
-  'meeting:toggle',
-  'meeting:cancel',
-  'meeting:dismiss',
-  'meeting:devices',
-  'meeting:history',
-  'region:result',
-  'modes:list',
-  'vocabulary:list',
-  'vocabulary:add',
-  'vocabulary:remove',
-  'snippets:list',
-  'snippets:add',
-  'snippets:remove',
-  'snippets:test',
-  'style:get',
-  'style:set-enabled',
-  'style:clear',
-  'replacements:list',
-  'replacements:add',
-  'replacements:remove',
-  'replacements:test',
-  'replacements:set-numbers',
-  'ptt:get',
-  'ptt:set',
-  'audio:devices-changed',
-  'appmodes:get',
-  'appmodes:set',
-  'models:catalog',
-  'models:get',
-  'models:set',
-  'queue:list',
-  'queue:flush',
-  'queue:remove',
-  'queue:clear',
-  'privacy:get',
-  'privacy:set-masking',
-  'dictation:set-auto-stop',
-  'stats:get',
-  'vault:list',
-  'history:search',
-  'history:copy',
-  'history:export',
-])
+/**
+ * İzin verilen çağrı kanalları.
+ *
+ * `Record<IpcInvokeChannel, true>` biçimi bilinçli: bir kanal sözleşmeye
+ * eklenip buraya eklenmezse **derleme hata veriyor**. Düz bir `Set` bunu
+ * yakalamıyordu ve olay listesindeki eksik bir kanal, uygulamayı bomboş bir
+ * pencereyle açılır hâle getirmişti (bkz. `EVENT_CHANNEL_MAP`).
+ */
+const INVOKE_CHANNEL_MAP: Record<IpcInvokeChannel, true> = {
+  'window:minimize': true,
+  'window:toggle-maximize': true,
+  'window:close': true,
+  'window:is-maximized': true,
+  'engine:get-state': true,
+  'engine:restart': true,
+  'app:get-version': true,
+  'app:get-locale': true,
+  'app:set-locale': true,
+  'app:get-autostart': true,
+  'app:set-autostart': true,
+  'dictation:get-state': true,
+  'dictation:toggle': true,
+  'dictation:cancel': true,
+  'dictation:toggle-pause': true,
+  'dictation:draft': true,
+  'dictation:paste': true,
+  'audio:list-devices': true,
+  'audio:set-device': true,
+  'meeting:get-state': true,
+  'meeting:toggle': true,
+  'meeting:cancel': true,
+  'meeting:dismiss': true,
+  'meeting:devices': true,
+  'meeting:history': true,
+  'region:result': true,
+  'modes:list': true,
+  'vocabulary:list': true,
+  'vocabulary:add': true,
+  'vocabulary:remove': true,
+  'snippets:list': true,
+  'snippets:add': true,
+  'snippets:remove': true,
+  'snippets:test': true,
+  'style:get': true,
+  'style:set-enabled': true,
+  'style:clear': true,
+  'replacements:list': true,
+  'replacements:add': true,
+  'replacements:remove': true,
+  'replacements:test': true,
+  'replacements:set-numbers': true,
+  'ptt:get': true,
+  'ptt:set': true,
+  'audio:devices-changed': true,
+  'appmodes:get': true,
+  'appmodes:set': true,
+  'models:catalog': true,
+  'models:get': true,
+  'models:set': true,
+  'queue:list': true,
+  'queue:flush': true,
+  'queue:remove': true,
+  'queue:clear': true,
+  'privacy:get': true,
+  'privacy:set-masking': true,
+  'dictation:set-auto-stop': true,
+  'stats:get': true,
+  'vault:list': true,
+  'history:search': true,
+  'history:copy': true,
+  'history:export': true,
+}
 
-const EVENT_CHANNELS = new Set<IpcEventChannel>([
-  'engine:state-changed',
-  'window:maximize-changed',
-  'app:locale-changed',
-  'dictation:changed',
-  'meeting:changed',
-])
+const INVOKE_CHANNELS = new Set<IpcInvokeChannel>(
+  Object.keys(INVOKE_CHANNEL_MAP) as IpcInvokeChannel[],
+)
+
+/**
+ * İzin verilen olay kanalları.
+ *
+ * `Record<IpcEventChannel, true>` üzerinden kuruluyor, düz bir `Set` olarak
+ * değil — fark kritik: bu biçimde **eksik bir kanal derleme hatası** veriyor.
+ *
+ * Düz liste kullanılıyordu ve `history:query` (Faz 7.13) sözleşmeye eklenip
+ * buraya eklenmemişti. Tip denetimi geçti, derleme geçti, ama uygulama
+ * açılışta `İzin verilmeyen IPC olayı` fırlatıp React ağacını çökertti:
+ * **bomboş bir pencere**, hiçbir hata görünmeden. Aynı tuzağa bir daha
+ * düşmemek için liste artık tipten türetiliyor.
+ */
+const EVENT_CHANNEL_MAP: Record<IpcEventChannel, true> = {
+  'engine:state-changed': true,
+  'window:maximize-changed': true,
+  'app:locale-changed': true,
+  'dictation:changed': true,
+  'meeting:changed': true,
+  'history:query': true,
+}
+
+const EVENT_CHANNELS = new Set<IpcEventChannel>(
+  Object.keys(EVENT_CHANNEL_MAP) as IpcEventChannel[],
+)
 
 /** Hangi pencerede olduğumuzu HTML dosya adından çıkarıyoruz. */
 function detectSurface(): WindowSurface {
