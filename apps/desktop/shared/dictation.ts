@@ -180,6 +180,17 @@ export interface PrivacyState {
    * gerçeği söylemesi için değerin tek kaynağı motor olmalı.
    */
   normalizeNumbers: boolean
+  /**
+   * Kullanıcının dikte ederken konuştuğu diller (`tr`, `en`, …).
+   *
+   * Whisper dili kendisi tahmin ediyor ve yanılabiliyor: Türkçe konuşma
+   * **İzlandaca** çözümlendi ve çıktı kullanılamaz hâle geldi. Bu liste
+   * dili sabitlemiyor — yalnız tespit listenin dışına düşerse motorun
+   * yeniden denemesini sağlıyor.
+   *
+   * Boş liste denetimi kapatır: her tespit olduğu gibi kabul edilir.
+   */
+  sttLanguages: string[]
 }
 
 // ── Otomatik başlatma (Faz 6.5) ─────────────────────────────────────────

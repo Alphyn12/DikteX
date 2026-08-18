@@ -201,6 +201,9 @@ export const en: Messages = {
     'Starts minimised to the tray — no window opens, shortcuts are ready.',
   'toggle.autostart.meta': 'starts in tray',
   'toggle.autostart.dev': 'installed builds only',
+  'language.title': 'Languages you speak',
+  'language.desc': 'If detection falls outside these, the clip is transcribed again. The language is not pinned.',
+  'language.off': 'Language check off — detection is accepted as is.',
   'toggle.numbers': 'Convert numbers to digits',
   'toggle.numbers.desc':
     '“fifteen minutes” → “15 minutes”. Local and deterministic; ordinals are left alone.',

@@ -173,6 +173,8 @@ export function usePrivacy(): {
   setPreflight: (enabled: boolean) => Promise<void>
   normalizeNumbers: boolean
   setNormalizeNumbers: (enabled: boolean) => Promise<void>
+  sttLanguages: string[]
+  setSttLanguages: (languages: string[]) => Promise<void>
 } {
   const [privacy, setPrivacy] = useState<PrivacyState | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -213,6 +215,22 @@ export function usePrivacy(): {
     }
   }, [])
 
+  /**
+   * Kullanıcının konuştuğu diller.
+   *
+   * Dili sabitlemiyor: Whisper yine kendi tespitini yapıyor. Bu liste
+   * yalnız tespit dışarı düştüğünde (ölçülen hata: Türkçe konuşma
+   * **İzlandaca** çözümlendi) motorun yeniden denemesini sağlıyor.
+   */
+  const setSttLanguages = useCallback(async (languages: string[]) => {
+    try {
+      setPrivacy(await window.omnivoice.invoke('stt:set-languages', languages))
+      setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }, [])
+
   const setPreflight = useCallback(async (enabled: boolean) => {
     try {
       setPrivacy(await window.omnivoice.invoke('dictation:set-preflight', enabled))
@@ -239,6 +257,8 @@ export function usePrivacy(): {
     setPreflight,
     normalizeNumbers: privacy?.normalizeNumbers ?? true,
     setNormalizeNumbers,
+    sttLanguages: privacy?.sttLanguages ?? [],
+    setSttLanguages,
   }
 }
 

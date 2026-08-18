@@ -107,6 +107,7 @@ class GroqStt:
         return Transcript(
             text=str(payload.get("text", "")).strip(),
             language=payload.get("language"),
+            confidence=_mean_logprob(payload),
             model=self.model,
             provider="groq",
             usage=Usage(
@@ -115,3 +116,23 @@ class GroqStt:
                 audio_seconds=clip.duration_seconds,
             ),
         )
+
+
+def _mean_logprob(payload: dict) -> float | None:
+    """Segmentlerin ortalama `avg_logprob` değeri.
+
+    Dil düzeltmesi (bkz. `stt/language.py`) bu sayıya bakarak iki dil
+    denemesinden hangisinin daha olası olduğuna karar veriyor. Segment
+    dönmezse `None`: uydurma bir güven skoru, düzeltmeyi yanlış yönlendirirdi.
+    """
+    segments = payload.get("segments")
+    if not isinstance(segments, list) or not segments:
+        return None
+    değerler = [
+        s.get("avg_logprob")
+        for s in segments
+        if isinstance(s, dict) and isinstance(s.get("avg_logprob"), (int, float))
+    ]
+    if not değerler:
+        return None
+    return sum(değerler) / len(değerler)  # type: ignore[arg-type]

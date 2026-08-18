@@ -65,6 +65,7 @@ const INVOKE_CHANNEL_MAP: Record<IpcInvokeChannel, true> = {
   'replacements:remove': true,
   'replacements:test': true,
   'replacements:set-numbers': true,
+  'stt:set-languages': true,
   'ptt:get': true,
   'ptt:set': true,
   'audio:devices-changed': true,

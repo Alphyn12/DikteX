@@ -209,6 +209,9 @@ export const tr = {
     'Uygulama tepsiye inmiş olarak açılır; pencere açılmaz, kısayollar hazır olur.',
   'toggle.autostart.meta': 'tepsiye iner',
   'toggle.autostart.dev': 'yalnız kurulu sürümde',
+  'language.title': 'Konuştuğunuz diller',
+  'language.desc': 'Tespit bu dillerin dışına düşerse kayıt yeniden çözümlenir. Dil sabitlenmez.',
+  'language.off': 'Dil denetimi kapalı — tespit olduğu gibi kabul edilir.',
   'toggle.numbers': 'Sayıları rakama çevir',
   'toggle.numbers.desc':
     '“on beş dakika” → “15 dakika”. Yerel ve belirlenimci; sıra sayıları (“birinci”) değişmez.',

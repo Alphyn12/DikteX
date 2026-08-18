@@ -70,6 +70,11 @@ class EngineContext:
         self.catalog = ModelCatalog()
         self.mic = MicrophoneCapture(pre_roll_seconds=1.0)
         self.stt = SttRouter()
+        # Konuşulan diller kalıcı ayardan geliyor. `None` ise varsayılan
+        # (Türkçe + İngilizce) kalıyor; router kendi normalleştirmesini
+        # yapıyor, bozuk bir ayar dosyası motoru düşürmüyor.
+        if self.user_settings.settings.stt_languages is not None:
+            self.stt.set_languages(self.user_settings.settings.stt_languages)
         # Sağlayıcı seçimi kalıcı; varsayılan OpenRouter çünkü eğitime
         # kapalı. Gemini'nin ücretsiz katmanı eğitime açık ve bunu kullanıcı
         # bilerek seçmeli.
@@ -797,6 +802,14 @@ async def _handle_message(
             await asyncio.to_thread(context.user_settings.update, preflight=enabled)
             await reply(_privacy_payload(context))
 
+        case "stt:set-languages":
+            kodlar = context.stt.set_languages(message.get("languages"))
+            await asyncio.to_thread(
+                context.user_settings.update, stt_languages=list(kodlar)
+            )
+            log.info("Dikte dilleri: %s", ", ".join(kodlar) or "(denetim kapalı)")
+            await reply(_privacy_payload(context))
+
         case "privacy:set-masking":
             enabled = bool(message.get("enabled", True))
             # Aynı bayrak iki boru hattında da var; ikisi ayrışırsa toplantı
@@ -927,6 +940,9 @@ def _privacy_payload(context: EngineContext) -> dict[str, Any]:
         # başlattığında anahtar açık görünüyor, boru hattı kapalı
         # çalışıyordu — anahtar durumu hakkında yalan söylüyordu.
         "normalizeNumbers": context.pipeline.normalize_numbers,
+        # Dikte dilleri de canlı bir motor ayarı; ayrı bir tur atmanın
+        # karşılığı yok.
+        "sttLanguages": list(context.stt.languages),
         "sttCovered": False,
         "llmCovered": context.pipeline.pii_masking,
     }

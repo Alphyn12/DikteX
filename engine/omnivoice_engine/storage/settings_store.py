@@ -110,6 +110,17 @@ class UserSettings:
     #: kullanmak şart: iki yer ayrışırsa eşleşme sessizce çalışmaz.
     app_modes: dict[str, str] = field(default_factory=dict)
 
+    #: Kullanıcının dikte ederken konuştuğu diller (Faz 7.17).
+    #:
+    #: `None` → varsayılan (Türkçe + İngilizce). Boş liste → denetim kapalı,
+    #: Whisper'ın tespitine olduğu gibi güvenilir.
+    #:
+    #: Neden bir liste ve neden tek bir dil değil: kullanıcı gün içinde iki
+    #: dili de kullanıyor. Ama dil hiç kısıtlanmayınca Whisper Türkçe sesi
+    #: **İzlandaca** sanıp çıktıyı kullanılamaz hâle getirdi. Liste, "şunları
+    #: konuşuyorum" demenin yolu; sabitleme değil.
+    stt_languages: list[str] | None = None
+
     def to_payload(self) -> dict[str, Any]:
         return {
             "microphoneName": self.microphone_name,
@@ -125,6 +136,9 @@ class UserSettings:
             "normalizeNumbers": self.normalize_numbers,
             "pushToTalk": self.push_to_talk,
             "appModes": dict(self.app_modes),
+            "sttLanguages": (
+                None if self.stt_languages is None else list(self.stt_languages)
+            ),
         }
 
 
@@ -144,6 +158,7 @@ _FIELD_MAP = {
     "normalizeNumbers": "normalize_numbers",
     "pushToTalk": "push_to_talk",
     "appModes": "app_modes",
+    "sttLanguages": "stt_languages",
 }
 
 

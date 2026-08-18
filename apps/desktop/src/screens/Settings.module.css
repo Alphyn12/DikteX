@@ -372,3 +372,36 @@
   font: 400 11.5px/1.5 var(--font-ui);
   color: var(--text-faint);
 }
+
+/* ── Dikte dilleri (Faz 7.17) ─────────────────────────────────────────── */
+
+/*
+  Anahtar değil çip: seçenekler birbirini dışlamıyor, kullanıcı ikisini de
+  konuşuyor. Yine de `role="switch"` taşıyorlar — her biri bağımsız bir
+  açık/kapalı durumu ve denetim betiği de onları böyle sayıyor.
+*/
+.langChip {
+  height: 26px;
+  padding: 0 11px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-badge);
+  background: rgba(0, 0, 0, 0.24);
+  color: var(--text-subtle);
+  font: 500 11.5px/1 var(--font-ui);
+  cursor: default;
+}
+
+.langChip + .langChip {
+  margin-left: 6px;
+}
+
+.langChip:hover {
+  border-color: var(--border-control-hover, var(--border-control));
+  color: var(--text-primary);
+}
+
+.langChipOn {
+  border-color: color-mix(in srgb, var(--mod-audio) 55%, transparent);
+  background: color-mix(in srgb, var(--mod-audio) 18%, transparent);
+  color: var(--text-primary);
+}

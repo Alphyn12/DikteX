@@ -49,6 +49,13 @@ class Transcript:
     model: str
     provider: str
     usage: Usage
+    #: Whisper segmentlerinin ortalama `avg_logprob` değeri (0'a yakın iyi).
+    #:
+    #: Dil düzeltmesi (bkz. `stt/language.py`) buna bakıyor: aynı ses iki
+    #: dille çözümlenip hangisinin daha olası olduğu bu sayıyla seçiliyor.
+    #: Ölçüldü — Türkçe sese "en" dayatınca -0.130'dan -0.910'a düşüyor.
+    #: Sağlayıcı bildirmiyorsa `None`.
+    confidence: float | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -207,6 +207,10 @@ export function registerIpc({
     engine.request<ReplacementTest>({ type: 'replacements:test', text }),
   )
 
+  ipcMain.handle('stt:set-languages', (_event, languages: string[]) =>
+    engine.request<PrivacyState>({ type: 'stt:set-languages', languages }),
+  )
+
   ipcMain.handle('replacements:set-numbers', (_event, enabled: boolean) =>
     engine.request<PrivacyState>({ type: 'replacements:set-numbers', enabled }),
   )

@@ -242,6 +242,8 @@ export interface IpcInvokeMap {
   // ── Gizlilik ───────────────────────────────────────────────────────────
   'privacy:get': { args: []; result: PrivacyState }
   'privacy:set-masking': { args: [enabled: boolean]; result: PrivacyState }
+  /** Dikte ederken konuşulan diller; boş liste dil denetimini kapatır. */
+  'stt:set-languages': { args: [languages: string[]]; result: PrivacyState }
   /** Sessizlikte otomatik durdurma eşiği; 0 kapatır. */
   'dictation:set-auto-stop': { args: [seconds: number]; result: PrivacyState }
   /** Pre-flight önizlemesini açar/kapatır. */

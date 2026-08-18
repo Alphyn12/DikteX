@@ -193,6 +193,8 @@ function Switches(): React.JSX.Element {
     setPreflight,
     normalizeNumbers,
     setNormalizeNumbers,
+    sttLanguages,
+    setSttLanguages,
   } = usePrivacy()
   const ptt = usePushToTalk()
   const autostart = useAutostart()
@@ -247,6 +249,7 @@ function Switches(): React.JSX.Element {
         on={normalizeNumbers}
         onChange={(next) => void setNormalizeNumbers(next)}
       />
+      <LanguageRow selected={sttLanguages} onChange={setSttLanguages} />
       <SwitchRow
         title={t('toggle.ptt')}
         description={t('toggle.ptt.desc')}
@@ -282,6 +285,62 @@ function Switches(): React.JSX.Element {
 /** Electron hızlandırıcısını okunur hâle getirir: `Control+Alt+K` → `Ctrl+Alt+K`. */
 function formatAccelerator(accelerator: string): string {
   return accelerator.replace(/Control/g, 'Ctrl').replace(/Super/g, 'Win')
+}
+
+/** Dikte edilebilecek diller — kod ve gösterilen ad. */
+const DIKTE_DILLERI: readonly { kod: string; ad: string }[] = [
+  { kod: 'tr', ad: 'Türkçe' },
+  { kod: 'en', ad: 'English' },
+]
+
+/**
+ * Konuştuğunuz diller (Faz 7.17).
+ *
+ * Anahtar değil, çoklu seçim: kullanıcı gün içinde iki dili de kullanıyor
+ * ve birini sabitlemek diğerini bozardı. Ölçülen hata şuydu — Whisper dili
+ * kendi tahmin ederken Türkçe konuşmayı **İzlandaca** sandı ve çıktı
+ * kullanılamaz hâle geldi.
+ *
+ * Hiçbiri seçili değilken denetim kapalı: her tespit olduğu gibi kabul
+ * ediliyor. Bu bilinçli bir seçenek, kaza değil — açıklaması altında yazıyor.
+ */
+function LanguageRow({
+  selected,
+  onChange,
+}: {
+  selected: string[]
+  onChange: (languages: string[]) => Promise<void>
+}): React.JSX.Element {
+  const { t } = useI18n()
+
+  const topla = (kod: string): string[] =>
+    selected.includes(kod) ? selected.filter((x) => x !== kod) : [...selected, kod]
+
+  return (
+    <div className={styles.switchRow}>
+      <div className={styles.switchText}>
+        <div className={styles.switchTitle}>{t('language.title')}</div>
+        <p className={styles.switchDesc}>
+          {selected.length === 0 ? t('language.off') : t('language.desc')}
+        </p>
+      </div>
+      <div className={styles.switchControl}>
+        {DIKTE_DILLERI.map(({ kod, ad }) => (
+          <button
+            key={kod}
+            type="button"
+            role="switch"
+            aria-checked={selected.includes(kod)}
+            aria-label={`${t('language.title')}: ${ad}`}
+            className={cx(styles.langChip, selected.includes(kod) && styles.langChipOn)}
+            onClick={() => void onChange(topla(kod))}
+          >
+            {ad}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function SwitchRow({
