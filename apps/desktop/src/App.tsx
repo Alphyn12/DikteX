@@ -8,7 +8,7 @@ import { Settings } from './screens/Settings'
 import { I18nProvider, useI18n } from './i18n/useI18n'
 import { useEngine } from './hooks/useEngine'
 import { useDeviceWatcher } from './hooks/useDeviceWatcher'
-import { VAULT_KEYS } from './mock/data'
+import { useVault } from './hooks/useVault'
 import type { MessageKey } from './i18n/tr'
 import styles from './App.module.css'
 import { cx } from './utils/cx'
@@ -40,7 +40,9 @@ function Shell(): React.JSX.Element {
   // Ana pencerede dinleniyor: HUD kısa ömürlü ve kapalıyken de olayı
   // yakalamamız gerekiyor.
   useDeviceWatcher()
-  const configuredKeys = VAULT_KEYS.filter((key) => key.masked !== null).length
+  // Sayaç mockup listesinden geliyordu ve kullanıcının gerçek kasasıyla
+  // ilgisi yoktu; artık motordan okunuyor.
+  const { configuredCount: configuredKeys } = useVault()
 
   return (
     <div className={styles.shell}>

@@ -227,6 +227,8 @@ export const en: Messages = {
   'aside.chorded.status': 'no conflicts · {count} modes bound',
   'aside.apiVault': 'API VAULT',
   'aside.addKey': 'add',
+  'aside.noKey': 'no key',
+  'aside.vaultLoading': 'reading vault…',
   'aside.localServer': 'LOCAL SERVER',
   'aside.localServer.desc': 'REST + webhook open — external scripts can trigger the engine.',
 

@@ -40,13 +40,24 @@ export function Sidebar({
       <div className={styles.gap} />
       <div className={styles.sectionLabel}>{t('nav.modules')}</div>
 
+      {/*
+        Bunlar DÜĞME DEĞİL, renk anahtarı.
+
+        Mockup'tan `<button>` olarak geldiler ve hiçbir zaman `onClick`
+        almadılar: tıklanabilir görünüp hiçbir şey yapmıyorlardı. Yanlarında
+        da mockup'tan kalma uydurma sayılar duruyordu (148, 31, 4, 12) —
+        hiçbiri gerçek bir şeyi saymıyordu.
+
+        Modül noktaları arayüzün her yerinde kart rengi olarak kullanılıyor;
+        bu liste onların ne anlama geldiğini gösteriyor. İşlevi bu, o yüzden
+        artık etkileşimli görünmüyorlar.
+      */}
       {MODULES.map((module) => (
-        <button key={module.id} type="button" className={cx(styles.item, styles.module)}>
+        <div key={module.id} className={cx(styles.item, styles.module)}>
           <Pill />
           <Dot module={module.id} />
           <span className={styles.moduleLabel}>{t(module.label)}</span>
-          {module.count && <span className={cx(styles.count, 'tabular')}>{module.count}</span>}
-        </button>
+        </div>
       ))}
 
       <div className={styles.spacer} />

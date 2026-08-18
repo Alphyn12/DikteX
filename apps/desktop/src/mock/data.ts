@@ -27,15 +27,17 @@ export const MODULE_COLOR: Record<ModuleId, string> = {
 export interface ModuleEntry {
   id: ModuleId
   label: MessageKey
-  count: string
 }
 
 export const MODULES: readonly ModuleEntry[] = [
-  { id: 'audio', label: 'module.audio', count: '148' },
-  { id: 'prompt', label: 'module.prompt', count: '31' },
-  { id: 'meeting', label: 'module.meeting', count: '4' },
-  { id: 'automation', label: 'module.automation', count: '12' },
-  { id: 'vault', label: 'module.vault', count: '' },
+  // Sayı alanı KALDIRILDI: mockup'tan kalma uydurma rakamlardı (148, 31,
+  // 4, 12) ve hiçbiri gerçek bir şeyi saymıyordu. Gerçek sayaç göstermek
+  // istenirse veri motordan gelmeli.
+  { id: 'audio', label: 'module.audio' },
+  { id: 'prompt', label: 'module.prompt' },
+  { id: 'meeting', label: 'module.meeting' },
+  { id: 'automation', label: 'module.automation' },
+  { id: 'vault', label: 'module.vault' },
 ]
 
 // ── Panel ─────────────────────────────────────────────────────────────────

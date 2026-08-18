@@ -1,6 +1,7 @@
 import type { ModeInfo } from '@shared/ipc'
 import { useI18n } from '../i18n/useI18n'
-import { VAULT_KEYS, type ModuleId } from '../mock/data'
+import { useVault } from '../hooks/useVault'
+import { type ModuleId } from '../mock/data'
 import {
   Badge,
   Card,
@@ -360,30 +361,60 @@ function ChordedShortcut(): React.JSX.Element {
   )
 }
 
+/** Sağlayıcının kullanıcıya gösterilen adı. */
+const SAGLAYICI_ADI: Record<string, string> = {
+  openrouter: 'OpenRouter',
+  groq: 'Groq',
+  gemini: 'Gemini',
+}
+
+/**
+ * Sağlayıcının verisi model eğitiminde kullanılıyor mu.
+ *
+ * Gemini'nin ücretsiz katmanı kullanıyor; OpenRouter üzerinden giden aynı
+ * model kullanmıyor. Kullanıcı anahtarı görürken riski de görmeli.
+ */
+const EGITIME_ACIK = new Set(['gemini'])
+
+/**
+ * API kasası — **gerçek** içerik.
+ *
+ * Bu kart mockup'tan kalma sabit bir listeyi gösteriyordu: kullanıcının hiç
+ * sahip olmadığı bir kayıt ("Webhook (Notion)") ve gerçeğine benzeyen ama
+ * uydurma maskeler. `vault:list` motorda ve IPC'de baştan beri hazırdı,
+ * yalnız buradan çağrılmıyordu.
+ */
 function ApiVault(): React.JSX.Element {
   const { t } = useI18n()
+  const { entries, error } = useVault()
+
   return (
     <Card>
       <CardLabel>{t('aside.apiVault')}</CardLabel>
       <div className={styles.keyList}>
-        {VAULT_KEYS.map((key) => (
-          <div key={key.id} className={styles.keyRow}>
-            {key.masked ? <Dot module="vault" /> : <span className={styles.keyEmptyDot} />}
-            <span className={cx(styles.keyName, key.masked ? '' : styles.keyNameEmpty)}>
-              {key.name}
+        {entries.map((entry) => (
+          <div key={entry.provider} className={styles.keyRow}>
+            {entry.configured ? <Dot module="vault" /> : <span className={styles.keyEmptyDot} />}
+            <span
+              className={cx(styles.keyName, entry.configured ? '' : styles.keyNameEmpty)}
+            >
+              {SAGLAYICI_ADI[entry.provider] ?? entry.provider}
             </span>
-            {key.trainsOnData && (
+            {entry.configured && EGITIME_ACIK.has(entry.provider) && (
               <TrainingBadge label={t('training.badge')} tooltip={t('training.tooltip')} />
             )}
-            {key.masked ? (
-              <span className={styles.keyMasked}>{key.masked}</span>
+            {entry.masked ? (
+              <span className={styles.keyMasked}>{entry.masked}</span>
             ) : (
-              <button type="button" className={styles.keyAdd}>
-                {t('aside.addKey')}
-              </button>
+              <span className={styles.keyNameEmpty}>{t('aside.noKey')}</span>
             )}
           </div>
         ))}
+        {/* Motor bağlanmadan liste boş; "anahtarınız yok" demek yanlış olurdu. */}
+        {entries.length === 0 && !error && (
+          <span className={styles.keyNameEmpty}>{t('aside.vaultLoading')}</span>
+        )}
+        {error && <span className={styles.keyNameEmpty}>{error}</span>}
       </div>
     </Card>
   )

@@ -235,6 +235,8 @@ export const tr = {
   'aside.chorded.status': 'çakışma yok · {count} mod bağlı',
   'aside.apiVault': 'API KASASI',
   'aside.addKey': 'ekle',
+  'aside.noKey': 'anahtar yok',
+  'aside.vaultLoading': 'kasa okunuyor…',
   'aside.localServer': 'YEREL SUNUCU',
   'aside.localServer.desc': 'REST + webhook açık — dış betikler motoru tetikleyebilir.',
 

@@ -467,6 +467,129 @@ def rapor_yaz(bulgular: list[Bulgu]) -> int:
     return 1 if sahte else 0
 
 
+# ── Ekran denetimi ─────────────────────────────────────────────────────────
+#
+# Projenin şimdiye kadarki en kötü hatası, paketlenmiş uygulamanın **bomboş**
+# açılmasıydı: preload'ın izin listesine eklenmeyen tek bir IPC olayı React
+# ağacını çökertti ve ekranda hiçbir şey, hiçbir hata görünmedi. Pencere
+# vardı, içi yoktu.
+#
+# Bunu gözle kontrol etmek işe yaramaz — boş bir pencere de "açıldı" gibi
+# görünür. Ölçülebilir olan iki şey var: gövdede gerçekten içerik var mı, ve
+# yakalanmamış bir istisna atıldı mı.
+
+
+@dataclass
+class EkranBulgusu:
+    ad: str
+    metin_uzunluğu: int = 0
+    hatalar: list[str] = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        if self.hatalar is None:
+            self.hatalar = []
+
+    @property
+    def sağlam(self) -> bool:
+        # 40 karakter eşiği: boş bir React kabuğu da birkaç karakter üretiyor
+        # (başlık çubuğu, kenar çubuğu iskeleti). Gerçek bir ekran bundan çok
+        # daha fazlasını yazıyor.
+        return self.metin_uzunluğu > 40 and not self.hatalar
+
+    @property
+    def hüküm(self) -> str:
+        if self.hatalar:
+            return "ÇÖKTÜ"
+        if self.metin_uzunluğu <= 40:
+            return "BOŞ"
+        return "ÇİZİLDİ"
+
+
+#: Yakalanmamış hataları toplayan tuzak.
+#:
+#: React bir hata sınırı olmadan çöktüğünde konsola yazıyor ama ekranda
+#: hiçbir iz bırakmıyor. `window.onerror` ve reddedilen söz yakalayıcısı,
+#: sessiz çöküşü görünür kılan tek yol.
+HATA_TUZAĞI = """
+(() => {
+  if (window.__hatalar) return 'zaten kurulu';
+  window.__hatalar = [];
+  window.addEventListener('error', (o) => {
+    window.__hatalar.push(String((o.error && o.error.stack) || o.message));
+  });
+  window.addEventListener('unhandledrejection', (o) => {
+    window.__hatalar.push('reddedilen söz: ' + String(o.reason));
+  });
+  return 'kuruldu';
+})()
+"""
+
+EKRANLARI_LİSTELE = """
+(() => Array.from(document.querySelectorAll('nav button'))
+  .map((d) => (d.textContent || '').trim())
+  .filter((t) => t.length > 0))()
+"""
+
+
+def _ekrana_git(ad: str) -> str:
+    kaçış = json.dumps(ad)
+    return f"""
+(() => {{
+  const d = Array.from(document.querySelectorAll('nav button'))
+    .find((x) => (x.textContent || '').trim() === {kaçış});
+  if (!d) return 'bulunamadı';
+  d.click();
+  return 'tıklandı';
+}})()
+"""
+
+
+GÖVDE_UZUNLUĞU = """
+(() => {
+  const ana = document.querySelector('main') || document.body;
+  return (ana.innerText || '').trim().length;
+})()
+"""
+
+
+async def ekranları_denetle(cdp: Cdp) -> list[EkranBulgusu]:
+    await cdp.js(HATA_TUZAĞI)
+    ekranlar = await cdp.js(EKRANLARI_LİSTELE)
+    if not isinstance(ekranlar, list) or not ekranlar:
+        return [EkranBulgusu(ad="(gezinme bulunamadı)")]
+
+    bulgular: list[EkranBulgusu] = []
+    for ad in ekranlar:
+        await cdp.js("window.__hatalar = []")
+        if await cdp.js(_ekrana_git(str(ad))) != "tıklandı":
+            continue
+        await asyncio.sleep(1.2)
+        bulgu = EkranBulgusu(ad=str(ad))
+        bulgu.metin_uzunluğu = int(await cdp.js(GÖVDE_UZUNLUĞU) or 0)
+        bulgu.hatalar = [str(h)[:160] for h in (await cdp.js("window.__hatalar") or [])]
+        bulgular.append(bulgu)
+        print(f"  - {ad}: {bulgu.metin_uzunluğu} karakter, {bulgu.hüküm}")
+    return bulgular
+
+
+def ekran_raporu(bulgular: list[EkranBulgusu]) -> int:
+    genişlik = max((len(b.ad) for b in bulgular), default=10) + 2
+    print()
+    print("=" * (genişlik + 34))
+    print(f"{'EKRAN':<{genişlik}} {'İÇERİK':<12} HÜKÜM")
+    print("=" * (genişlik + 34))
+    bozuk = 0
+    for b in bulgular:
+        print(f"{b.ad:<{genişlik}} {str(b.metin_uzunluğu) + ' krk':<12} {b.hüküm}")
+        if not b.sağlam:
+            bozuk += 1
+            for h in b.hatalar[:2]:
+                print(f"{'':<{genişlik}} +- {h}")
+    print("=" * (genişlik + 34))
+    print(f"{len(bulgular) - bozuk}/{len(bulgular)} ekran çiziliyor.")
+    return 1 if bozuk else 0
+
+
 async def main() -> int:
     paketli = "--paketli" in sys.argv
     komut, çalışma_dizini = başlatma_komutu(paketli)
@@ -496,8 +619,16 @@ async def main() -> int:
             cdp = Cdp(ws)
             await cdp.çağır("Runtime.enable")
             await cdp.çağır("Page.enable")
+            print()
+            print("--- EKRANLAR ---")
+            ekranlar = await ekranları_denetle(cdp)
+            print()
+            print("--- ANAHTARLAR ---")
             bulgular = await denetle(cdp)
-        return rapor_yaz(bulgular)
+        # İkisi de çalışsın istiyoruz; biri patlarsa diğerinin sonucu da
+        # görünmeli, yoksa her koşuda tek bir sorun öğreniyoruz.
+        kod = ekran_raporu(ekranlar)
+        return max(kod, rapor_yaz(bulgular))
     finally:
         süreç.terminate()
         try:
