@@ -460,6 +460,16 @@ class DictationPipeline:
            uzun, ama "bitirdim" jestini beklemekten kısa.
         """
         watcher = SilenceWatcher(threshold_seconds=self._auto_stop_seconds)
+        # Tanı için: kayıt otomatik bitmediğinde sebebini sonradan
+        # anlayabilmemiz gerekiyor. "Susunca durmadı" diye bildirilen bir
+        # durumun iki farklı sebebi olabilir — ayar kapalıydı ya da mikrofon
+        # eşiği hiç aşmadı — ve günlükte hiçbir iz yokken ikisi ayırt
+        # edilemiyordu.
+        if not watcher.enabled:
+            log.info("Otomatik durdurma KAPALI (eşik 0); kayıt elle bitirilecek")
+        else:
+            log.debug("Otomatik durdurma açık, eşik %.1f sn", watcher.threshold_seconds)
+        en_yüksek = 0.0
 
         try:
             while self.state is DictationState.LISTENING:
@@ -481,6 +491,8 @@ class DictationPipeline:
                     await asyncio.sleep(_LEVEL_INTERVAL)
                     continue
 
+                en_yüksek = max(en_yüksek, level)
+
                 if watcher.observe(level, _LEVEL_INTERVAL):
                     log.info(
                         "Sessizlik %.1f sn sürdü — kayıt otomatik bitiriliyor",
@@ -495,7 +507,20 @@ class DictationPipeline:
                 await asyncio.sleep(_LEVEL_INTERVAL)
         except asyncio.CancelledError:
             # Beklenen: `stop()` ve `cancel()` bu görevi iptal ediyor.
-            pass
+            #
+            # Kayıt elle bitmiş demektir. Otomatik durdurma açıkken buraya
+            # düşmek, eşiğin hiç tetiklenmediğini gösteriyor — sebebini
+            # yazıyoruz, yoksa "neden durmadı" sorusu ölçülemez kalıyor.
+            if watcher.enabled and not watcher.heard_speech:
+                log.info(
+                    "Kayıt elle bitti; otomatik durdurma tetiklenmedi çünkü "
+                    "konuşma eşiği hiç aşılmadı (en yüksek seviye %.4f, eşik %.4f)",
+                    en_yüksek,
+                    watcher.speech_level,
+                )
+            # İptali yutmaya devam ediyoruz: bu görevi kimse beklemiyor ve
+            # yeniden fırlatmak yalnız davranışı değiştirirdi. Buradaki tek
+            # yenilik günlük satırı.
         except Exception:  # noqa: BLE001
             # Bu görevi kimse beklemiyor, yani buradaki bir istisna SESSİZCE
             # yutulurdu: dalga formu donar ve otomatik durdurma çalışmaz ama
