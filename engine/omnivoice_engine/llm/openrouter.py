@@ -32,7 +32,7 @@ TIMEOUT_SECONDS = 90.0
 #: sağlayıcı tarafında isteğin kaynağını görünür kılar.
 ATTRIBUTION_HEADERS = {
     "HTTP-Referer": "https://github.com/Alphyn12/omnivoice",
-    "X-Title": "OmniVoice",
+    "X-Title": "DikteX",
 }
 
 

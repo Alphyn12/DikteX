@@ -29,7 +29,9 @@ METIN = "Yapıştırılamayan metin"
 
 
 class TestKendiPenceremiz:
-    @pytest.mark.parametrize("ad", ["electron.exe", "Electron.exe", "OmniVoice.exe"])
+    @pytest.mark.parametrize(
+        "ad", ["electron.exe", "Electron.exe", "DikteX.exe", "OmniVoice.exe"]
+    )
     def test_kendi_pencerelerimiz_taninir(self, ad: str) -> None:
         assert _is_own_window(WindowInfo(handle=1, title="x", process_name=ad))
 

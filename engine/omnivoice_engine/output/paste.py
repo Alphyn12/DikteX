@@ -290,7 +290,7 @@ def paste_text(
     if window_handle and not focus_window(window_handle):
         # Hangi pencere olduğunu söylemek şart: kullanıcı "yazacağım yere
         # tıkladım" diyor ama hedef bambaşka bir pencere olabilir — örneğin
-        # kısayola OmniVoice odaktayken basılmışsa. İsimsiz bir hata
+        # kısayola DikteX odaktayken basılmışsa. İsimsiz bir hata
         # kullanıcıyı da beni de kör bırakıyordu.
         log.warning(
             "Odak alınamadı — hedef: %s | o anki ön plan: %s",

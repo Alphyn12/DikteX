@@ -177,3 +177,86 @@ def test_yeni_veritabanı_varken_eskisi_üzerine_yazılmıyor(veri_kokü: Path) 
         assert conn.execute("SELECT t FROM d").fetchone()[0] == "yeni veri"
     finally:
         conn.close()
+
+
+# ── Kasa (Credential Manager) ─────────────────────────────────────────────
+
+
+class SahteKasa:
+    """`keyring` yerine geçen sözlük.
+
+    Gerçek Credential Manager'a dokunmuyoruz: test, geliştiricinin kendi
+    anahtarlarını taşıyıp silerdi.
+    """
+
+    def __init__(self) -> None:
+        self.kayıtlar: dict[tuple[str, str], str] = {}
+
+    def get_password(self, servis: str, ad: str) -> str | None:
+        return self.kayıtlar.get((servis, ad))
+
+    def set_password(self, servis: str, ad: str, değer: str) -> None:
+        self.kayıtlar[(servis, ad)] = değer
+
+    def delete_password(self, servis: str, ad: str) -> None:
+        del self.kayıtlar[(servis, ad)]
+
+
+@pytest.fixture
+def kasa(monkeypatch: pytest.MonkeyPatch) -> SahteKasa:
+    import omnivoice_engine.vault as vault_module
+
+    sahte = SahteKasa()
+    monkeypatch.setattr(vault_module, "keyring", sahte)
+    # `.env.local` yedeği devreye girmesin: kasadan geleni ölçüyoruz.
+    monkeypatch.setattr(vault_module, "get_settings", lambda: object())
+    return sahte
+
+
+def test_eski_adla_kayıtlı_anahtar_yeni_ada_taşınıyor(kasa: SahteKasa) -> None:
+    """Uygulama adı değişti; anahtarlar Credential Manager'da eski adla.
+
+    Taşınmazsa kullanıcı üç anahtarı da yeniden yapıştırmak zorunda kalır.
+    """
+    from omnivoice_engine.vault import _LEGACY_SERVICE_NAME, SERVICE_NAME, get_key
+
+    kasa.set_password(_LEGACY_SERVICE_NAME, "groq", "gsk_gercek_anahtar")
+
+    assert get_key("groq") == "gsk_gercek_anahtar"
+    assert kasa.get_password(SERVICE_NAME, "groq") == "gsk_gercek_anahtar"
+    # Eskisi ancak yenisi doğrulandıktan SONRA siliniyor.
+    assert kasa.get_password(_LEGACY_SERVICE_NAME, "groq") is None
+
+
+def test_taşıma_başarısız_olursa_anahtar_kaybolmuyor(
+    kasa: SahteKasa, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Yeni ada yazamazsak eskisine dokunulmamalı.
+
+    Ters sırada bir hata anahtarı tamamen kaybettirirdi — kullanıcı hem
+    eski hem yeni adda hiçbir şey bulamazdı.
+    """
+    from keyring.errors import KeyringError
+
+    from omnivoice_engine.vault import _LEGACY_SERVICE_NAME, get_key
+
+    kasa.set_password(_LEGACY_SERVICE_NAME, "gemini", "AQ.gercek")
+
+    def yazma_hatası(*_: object) -> None:
+        raise KeyringError("kasa kilitli")
+
+    monkeypatch.setattr(kasa, "set_password", yazma_hatası)
+
+    # Anahtar yine de dönüyor: kullanıcının dikte edebilmesi, kasanın
+    # düzenli olmasından önemli.
+    assert get_key("gemini") == "AQ.gercek"
+    assert kasa.get_password(_LEGACY_SERVICE_NAME, "gemini") == "AQ.gercek"
+
+
+def test_yeni_adda_anahtar_varken_eskisine_bakılmıyor(kasa: SahteKasa) -> None:
+    from omnivoice_engine.vault import _LEGACY_SERVICE_NAME, SERVICE_NAME, get_key
+
+    kasa.set_password(SERVICE_NAME, "openrouter", "sk-or-yeni")
+    kasa.set_password(_LEGACY_SERVICE_NAME, "openrouter", "sk-or-eski")
+
+    assert get_key("openrouter") == "sk-or-yeni"

@@ -19,8 +19,8 @@ daha can sıkıcı.
 Kural yazan kullanıcı metnini bozabilir. Bu yüzden:
 
 * Varsayılan **kelime sınırı** aranıyor — "kod" kuralı "kodlama"yı bozmasın.
-* Ama Türkçe eklemeli olduğu için kelime sınırı ekleri de kesiyor: "OmniVoice"
-  kuralı "OmniVoice'u" içinde çalışsın diye **son ek serbest** bırakılıyor.
+* Ama Türkçe eklemeli olduğu için kelime sınırı ekleri de kesiyor: "DikteX"
+  kuralı "DikteX'u" içinde çalışsın diye **son ek serbest** bırakılıyor.
 * Arayüzde deneme alanı var; kullanıcı kuralı canlı diktede sınamak zorunda
   değil.
 """
@@ -77,8 +77,8 @@ class Replacement:
 
 
 #: Türkçe ekler kelimenin sonuna geliyor, bu yüzden **sol** sınır katı, sağ
-#: sınır serbest. "OmniVoice" kuralı "OmniVoice'u" içinde çalışmalı ama
-#: "MyOmniVoice" içinde çalışmamalı.
+#: sınır serbest. "DikteX" kuralı "DikteX'u" içinde çalışmalı ama
+#: "MyDikteX" içinde çalışmamalı.
 _LEFT_BOUNDARY = r"(?<![\w])"
 _RIGHT_BOUNDARY = r"(?![\w])"
 #: Ek ayırıcıları: kesme işareti ve doğrudan bitişik ek.
@@ -125,7 +125,7 @@ def apply_replacements(text: str, rules: list[Replacement]) -> ReplacementResult
 
         def substitute(match: re.Match[str]) -> str:
             # Eşleşen metnin kural uzunluğundan fazlası **ek** demektir ve
-            # korunmalı: "OmniVoice'u" → "OmniVoice'u", "OmniVoice" değil.
+            # korunmalı: "DikteX'u" → "DikteX'u", "DikteX" değil.
             suffix = match.group(0)[len(rule.find) :]
             return rule.replace + suffix
 

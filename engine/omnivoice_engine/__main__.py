@@ -67,7 +67,7 @@ def main() -> int:
     settings = get_settings()
     providers = settings.configured_providers
 
-    log.info("OmniVoice motoru %s", __version__)
+    log.info("DikteX motoru %s", __version__)
     log.info("Dinlenen adres: 127.0.0.1:%d", settings.port)
 
     if providers:

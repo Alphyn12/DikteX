@@ -293,7 +293,7 @@ def create_app() -> FastAPI:
         context.shutdown()
 
     app = FastAPI(
-        title="OmniVoice Engine",
+        title="DikteX Engine",
         version=__version__,
         docs_url=None,  # Yerel motor; dışa dönük belge sunmasına gerek yok.
         redoc_url=None,
@@ -878,7 +878,7 @@ async def _handle_message(
             #
             # Dikte akışının aksine burada HEDEF PENCERE YOK: kullanıcı
             # uygulamanın içinde, arama ekranında. Metin o an odaktaki
-            # pencereye gönderilemez — odakta OmniVoice var. Bu yüzden
+            # pencereye gönderilemez — odakta DikteX var. Bu yüzden
             # doğrudan panoya yazılıyor ve kullanıcı istediği yere
             # Ctrl+V ile koyuyor.
             # `recordId`, `id` DEĞİL: `id` alanı istek/yanıt eşleştirmesi için

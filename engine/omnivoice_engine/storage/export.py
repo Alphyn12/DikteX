@@ -73,14 +73,14 @@ def _local_time(iso: str) -> str:
 def to_markdown(rows: list[dict[str, Any]]) -> str:
     """Okunabilir Markdown — günlere göre gruplanmış."""
     if not rows:
-        return "# OmniVoice geçmişi\n\n_Kayıt yok._\n"
+        return "# DikteX geçmişi\n\n_Kayıt yok._\n"
 
     by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         by_day[_local_day(str(row.get("created_at", "")))].append(row)
 
     lines = [
-        "# OmniVoice geçmişi",
+        "# DikteX geçmişi",
         "",
         f"_{len(rows)} kayıt · {datetime.now().astimezone().strftime('%d.%m.%Y %H:%M')}_",
         "",

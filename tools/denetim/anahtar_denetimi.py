@@ -38,6 +38,15 @@ kapalı çalışıyordu. Düzeltildi — değer artık `privacy:get` yükünde.
     npm run build
     engine/.venv/Scripts/python tools/denetim/anahtar_denetimi.py
 
+Kurulum paketini denetlemek için (asıl dağıtılan şey bu):
+
+    npm run dist
+    engine/.venv/Scripts/python tools/denetim/anahtar_denetimi.py --paketli
+
+Paketli kip önemli: geliştirme derlemesinde çalışan bir şeyin pakette de
+çalıştığı **varsayılamaz**. Eksik bir dosya ya da izin listesinde unutulan
+bir IPC kanalı yalnız orada patlıyor.
+
 Çıkış kodu: her anahtar gerçekse 0, en az biri sahteyse 1.
 """
 
@@ -178,6 +187,10 @@ def _boş_port_mu(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) != 0
 
 
+#: Paketlenmiş uygulamanın yeri.
+PAKET_EXE = KÖK / "release" / "win-unpacked" / "DikteX.exe"
+
+
 def electron_yolu() -> Path:
     """`node_modules` içindeki Electron ikilisi."""
     yol = MASAÜSTÜ.parent.parent / "node_modules" / "electron" / "dist" / "electron.exe"
@@ -187,6 +200,22 @@ def electron_yolu() -> Path:
     if bulunan:
         return Path(bulunan)
     raise SystemExit("Electron bulunamadı — `npm install` çalıştırıldı mı?")
+
+
+def başlatma_komutu(paketli: bool) -> tuple[list[str], str | None]:
+    """Denetlenecek uygulamayı başlatan komut ve çalışma dizini."""
+    if paketli:
+        if not PAKET_EXE.exists():
+            raise SystemExit(
+                "Paket bulunamadı: " + str(PAKET_EXE) + " — `npm run dist` çalıştırın."
+            )
+        return ([str(PAKET_EXE), f"--remote-debugging-port={CDP_PORT}"], None)
+    if not (MASAÜSTÜ / "out" / "main" / "index.js").exists():
+        raise SystemExit("`npm run build` çalıştırılmamış — out/ yok.")
+    return (
+        [str(electron_yolu()), ".", f"--remote-debugging-port={CDP_PORT}"],
+        str(MASAÜSTÜ),
+    )
 
 
 def ayar_dosyası() -> Path:
@@ -439,8 +468,9 @@ def rapor_yaz(bulgular: list[Bulgu]) -> int:
 
 
 async def main() -> int:
-    if not (MASAÜSTÜ / "out" / "main" / "index.js").exists():
-        raise SystemExit("`npm run build` çalıştırılmamış — out/ yok.")
+    paketli = "--paketli" in sys.argv
+    komut, çalışma_dizini = başlatma_komutu(paketli)
+    print("Denetlenen:", "KURULUM PAKETİ" if paketli else "geliştirme derlemesi")
 
     if not _boş_port_mu(CDP_PORT):
         raise SystemExit(f"{CDP_PORT} portu dolu; başka bir denetim mi çalışıyor?")
@@ -459,11 +489,7 @@ async def main() -> int:
     # Denetim gerçek dikte yapmıyor; motor yine de açılıyor çünkü ayarların
     # çoğu oraya yazılıyor ve kalıcılık ölçümü onsuz anlamsız olurdu.
     yedek = AyarYedeği()
-    süreç = subprocess.Popen(
-        [str(electron_yolu()), ".", f"--remote-debugging-port={CDP_PORT}"],
-        cwd=str(MASAÜSTÜ),
-        env=ortam,
-    )
+    süreç = subprocess.Popen(komut, cwd=çalışma_dizini, env=ortam)
     try:
         adres = await sayfayı_bekle(CDP_PORT, AÇILIŞ_ZAMAN_AŞIMI, süreç)
         async with websockets.connect(adres, max_size=None) as ws:

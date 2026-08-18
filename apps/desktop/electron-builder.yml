@@ -52,7 +52,13 @@ win:
   # İmzalama sertifikamız yok. İmzasız kurulumda Windows SmartScreen
   # "bilinmeyen yayıncı" uyarısı verir; kullanıcı "Yine de çalıştır" demeli.
   # Bunu kaldırmanın tek yolu ücretli kod imzalama sertifikası.
-  signAndEditExecutable: false
+  #
+  # `signAndEditExecutable: false` DEĞİL: o seçenek imzalamayla birlikte
+  # **kaynak düzenlemeyi de** kapatıyor ve ikon exe'ye hiç işlenmiyordu —
+  # electron-builder bunu derleme günlüğünde açıkça uyarıyor. Uygulama
+  # görev çubuğunda ve Başlat menüsünde genel Electron simgesiyle
+  # görünürdü. `signExecutable` yalnız imzalamayı kapatıyor.
+  signExecutable: false
 
 nsis:
   # Kullanıcı başına kurulum: yönetici hakkı istemiyor. Uygulama zaten
