@@ -51,7 +51,7 @@ import socket
 import subprocess
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
@@ -63,7 +63,7 @@ CDP_PORT = 9333
 
 #: Uygulamanın açılıp renderer'ın hazır olması için üst sınır.
 AÇILIŞ_ZAMAN_AŞIMI = 60.0
-#: Bir tıklamadan sonra IPC'nin tamamlanması için beklenen süre.
+#: Tıklamadan sonra motora gidip gelmenin tamamlanması için beklenen süre.
 TIKLAMA_BEKLEME = 1.2
 
 
@@ -189,6 +189,40 @@ def electron_yolu() -> Path:
     raise SystemExit("Electron bulunamadı — `npm install` çalıştırıldı mı?")
 
 
+def ayar_dosyası() -> Path:
+    """Kullanıcının gerçek ayar dosyası.
+
+    Denetim ayrı bir profil kullanmıyor: uygulamayı olduğu gibi çalıştırmak
+    istiyoruz, yoksa ölçtüğümüz şey gerçek uygulama olmaz. Bedeli, denetimin
+    kullanıcının **asıl ayarlarını** oynatması — ölçtük, bir çalıştırma
+    `maskPii` ve `preflight` değerlerini kapalı bıraktı. Bu yüzden dosya
+    baştan yedekleniyor ve sonunda geri konuyor.
+    """
+    kök = os.environ.get("LOCALAPPDATA") or str(Path.home())
+    return Path(kök) / "DikteX" / "settings.json"
+
+
+class AyarYedeği:
+    """Ayar dosyasının denetim öncesi hâli."""
+
+    def __init__(self) -> None:
+        self._yol = ayar_dosyası()
+        # Uygulama başlatılmadan ÖNCE okunuyor: motor açılışta dosyaya
+        # yazabiliyor ve sonradan alınan yedek zaten kirlenmiş olurdu.
+        self._içerik = self._yol.read_bytes() if self._yol.exists() else None
+
+    def geri_koy(self) -> None:
+        if self._içerik is None:
+            return
+        try:
+            self._yol.write_bytes(self._içerik)
+            print(f"Ayarlar geri kondu: {self._yol}")
+        except OSError:
+            # Geri koyamamak denetimi başarısız saydırmamalı, ama sessiz de
+            # kalmamalı: kullanıcı ayarlarının değiştiğini bilmeli.
+            print(f"UYARI: ayarlar geri konamadı — {self._yol}")
+
+
 #: Kurulu/çalışan sürümün süreç adları.
 ÇAKIŞAN_SÜREÇLER = {"diktex.exe", "omnivoice.exe", "diktex-engine.exe", "omnivoice-engine.exe"}
 
@@ -242,28 +276,6 @@ async def sayfayı_bekle(port: int, süre: float, süreç: subprocess.Popen) -> 
 
 # ── Renderer tarafı yardımcıları ───────────────────────────────────────────
 
-#: `window.omnivoice.invoke` sarmalayıcısı.
-#:
-#: Sahte anahtarı gerçekten ayıran ölçüm bu: tıklamanın IPC'ye dönüşüp
-#: dönüşmediğini başka türlü göremiyoruz.
-KAYDEDİCİ = """
-(() => {
-  if (window.__denetim) return 'zaten kurulu';
-  const asıl = window.omnivoice.invoke.bind(window.omnivoice);
-  window.__denetim = { çağrılar: [], hatalar: [] };
-  window.omnivoice.invoke = async (kanal, ...arg) => {
-    window.__denetim.çağrılar.push(kanal);
-    try {
-      return await asıl(kanal, ...arg);
-    } catch (hata) {
-      window.__denetim.hatalar.push(kanal + ': ' + String(hata));
-      throw hata;
-    }
-  };
-  return 'kuruldu';
-})()
-"""
-
 ANAHTARLARI_LİSTELE = """
 (() => Array.from(document.querySelectorAll('[role="switch"]')).map((d) => ({
   etiket: d.getAttribute('aria-label') || '(etiketsiz)',
@@ -310,7 +322,37 @@ AYARLARA_GİT = """
 # ── Denetim ────────────────────────────────────────────────────────────────
 
 
+#: Motorun bağlanmasını bekleyen yoklama.
+#:
+#: Bu beklemeden önce ölçüm yapmak **yanlış alarm üretiyordu**: motor
+#: henüz ayakta değilken yapılan IPC çağrıları hata veriyor, anahtar
+#: kımıldamıyor ve gerçek bir anahtar "sahte" damgası yiyor. Ölçüm
+#: aracının, ölçtüğü sistemin hazır olmasını beklemesi gerekiyor.
+MOTOR_HAZIR = """
+window.omnivoice.invoke('privacy:get')
+  .then(() => 'hazır')
+  .catch((e) => 'bekliyor: ' + String(e))
+"""
+
+
+async def motoru_bekle(cdp: Cdp, süre: float = 60.0) -> None:
+    son = time.monotonic() + süre
+    son_hata = "?"
+    while time.monotonic() < son:
+        sonuç = str(await cdp.js(MOTOR_HAZIR))
+        if sonuç == "hazır":
+            # Motor yanıt veriyor; React'in `privacy:get` sonucunu alıp
+            # yeniden çizmesi için kısa bir pay.
+            await asyncio.sleep(1.5)
+            return
+        son_hata = sonuç
+        await asyncio.sleep(1.0)
+    raise SystemExit(f"Motor {süre:.0f} saniyede bağlanmadı — son durum: {son_hata}")
+
+
 async def denetle(cdp: Cdp) -> list[Bulgu]:
+    print("Motorun bağlanması bekleniyor...")
+    await motoru_bekle(cdp)
     await cdp.js(AYARLARA_GİT)
     await asyncio.sleep(1.5)
 
@@ -341,10 +383,12 @@ async def denetle(cdp: Cdp) -> list[Bulgu]:
         print(f"  - {etiket}: {bulgu.başlangıç} -> {bulgu.tıklama_sonrası}")
 
     # Kalıcılık: pencereyi yeniden yükleyip değerleri tekrar okuyoruz.
-    # Bu adım, "IPC çağırıyor ama hiçbir yere yazmıyor" durumunu yakalıyor.
+    # Sahte anahtarı asıl ele veren adım: yalnız `useState` tutan bir
+    # anahtar burada koda gömülü varsayılanına geri döner.
     print("\nPencere yeniden yükleniyor (kalıcılık ölçümü)...")
     await cdp.çağır("Page.reload", ignoreCache=False)
-    await asyncio.sleep(4.0)
+    await asyncio.sleep(2.0)
+    await motoru_bekle(cdp)
     await cdp.js(AYARLARA_GİT)
     await asyncio.sleep(1.5)
 
@@ -367,8 +411,8 @@ async def denetle(cdp: Cdp) -> list[Bulgu]:
 def rapor_yaz(bulgular: list[Bulgu]) -> int:
     genişlik = max((len(b.etiket) for b in bulgular), default=10) + 2
     print("\n" + "=" * (genişlik + 58))
-    print(f"{'ANAHTAR':<{genişlik}} {'DEĞİŞİM':<14} {'KALICI':<8} {'IPC':<18} HÜKÜM")
-    print("=" * (genişlik + 58))
+    print(f"{'ANAHTAR':<{genişlik}} {'DEĞİŞİM':<16} {'YENİDEN YÜKLEMEDE':<20} HÜKÜM")
+    print("=" * (genişlik + 60))
 
     sahte = 0
     for b in sorted(bulgular, key=lambda x: (x.gerçek, x.etiket)):
@@ -377,14 +421,16 @@ def rapor_yaz(bulgular: list[Bulgu]) -> int:
             if b.görsel_değişti
             else "yok"
         )
-        kalıcı = "evet" if b.kalıcı else "hayır"
-        print(f"{b.etiket:<{genişlik}} {değişim:<16} {kalıcı:<10} {b.hüküm}")
+        kalıcı = (
+            "korundu" if b.kalıcı else f"sıfırlandı → {b.yeniden_yükleme_sonrası}"
+        )
+        print(f"{b.etiket:<{genişlik}} {değişim:<16} {kalıcı:<20} {b.hüküm}")
         if not b.gerçek:
             sahte += 1
             if b.not_:
                 print(f"{'':<{genişlik}} └─ {b.not_}")
 
-    print("=" * (genişlik + 58))
+    print("=" * (genişlik + 60))
     toplam = len(bulgular)
     print(f"{toplam - sahte}/{toplam} anahtar gerçek.")
     if sahte:
@@ -412,6 +458,7 @@ async def main() -> int:
     ortam = dict(os.environ)
     # Denetim gerçek dikte yapmıyor; motor yine de açılıyor çünkü ayarların
     # çoğu oraya yazılıyor ve kalıcılık ölçümü onsuz anlamsız olurdu.
+    yedek = AyarYedeği()
     süreç = subprocess.Popen(
         [str(electron_yolu()), ".", f"--remote-debugging-port={CDP_PORT}"],
         cwd=str(MASAÜSTÜ),
@@ -423,9 +470,6 @@ async def main() -> int:
             cdp = Cdp(ws)
             await cdp.çağır("Runtime.enable")
             await cdp.çağır("Page.enable")
-            # Renderer'ın motora bağlanması bekleniyor: bağlanmadan yapılan
-            # IPC çağrıları hata verir ve her anahtar sahte görünürdü.
-            await asyncio.sleep(4.0)
             bulgular = await denetle(cdp)
         return rapor_yaz(bulgular)
     finally:
@@ -434,6 +478,10 @@ async def main() -> int:
             süreç.wait(timeout=10)
         except subprocess.TimeoutExpired:
             süreç.kill()
+        # Motor kapanırken son bir kez yazabiliyor; yedeği ondan SONRA
+        # geri koyuyoruz, yoksa geri koyduğumuz değer hemen eziliyor.
+        time.sleep(1.5)
+        yedek.geri_koy()
 
 
 if __name__ == "__main__":
