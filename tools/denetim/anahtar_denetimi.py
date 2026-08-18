@@ -552,8 +552,25 @@ GÖVDE_UZUNLUĞU = """
 """
 
 
+async def arayüzü_bekle(cdp: Cdp, süre: float = 60.0) -> None:
+    """Kenar çubuğu çizilene kadar bekler.
+
+    Ölçmeden önce beklemek şart. Paketlenmiş sürümde arayüz geliştirme
+    derlemesinden geç açılıyor ve beklemeden bakınca gezinme hiç
+    bulunamıyordu — "hiçbir ekran çizilmiyor" gibi görünen bir yanlış alarm.
+    Anahtar denetiminde aynı hata bir kez yapılmıştı.
+    """
+    son = time.monotonic() + süre
+    while time.monotonic() < son:
+        if int(await cdp.js("document.querySelectorAll('nav button').length") or 0) > 0:
+            return
+        await asyncio.sleep(0.5)
+    raise SystemExit(f"Arayüz {süre:.0f} saniyede çizilmedi — pencere boş açılmış olabilir.")
+
+
 async def ekranları_denetle(cdp: Cdp) -> list[EkranBulgusu]:
     await cdp.js(HATA_TUZAĞI)
+    await arayüzü_bekle(cdp)
     ekranlar = await cdp.js(EKRANLARI_LİSTELE)
     if not isinstance(ekranlar, list) or not ekranlar:
         return [EkranBulgusu(ad="(gezinme bulunamadı)")]
